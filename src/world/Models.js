@@ -200,15 +200,41 @@ export function deskModel({ len = 2.4, small = false } = {}) {
   box(len + 0.14, 0.07, 1.02, 'lightWood', 0, h + 0.035, 0, g);
 
   if (!small) {
-    // Cristal de seguridad de recepción con abertura para hablar
-    const glassFrame = box(len, 0.72, 0.04, 'darkMetal', 0, h + 0.43, -0.44, g);
-    const glassPane = new THREE.Mesh(new THREE.BoxGeometry(len - 0.2, 0.62, 0.015), M('glass'));
-    glassPane.position.set(0, h + 0.45, -0.44); g.add(glassPane);
-    // Ventanilla semicircular inferior para pasar expedientes
-    box(0.48, 0.08, 0.08, 'darkMetal', 0, h + 0.08, -0.44, g);
+    // Columnas metálicas esbeltas de soporte para el mostrador de recepción
+    const postY = h + 0.38;
+    const postMat = 'chrome';
+    cyl(0.024, 0.024, 0.76, postMat, -len / 2 + 0.12, postY, -0.44, g, 10);
+    cyl(0.024, 0.024, 0.76, postMat, len / 2 - 0.12, postY, -0.44, g, 10);
+    cyl(0.024, 0.024, 0.76, postMat, -1.9, postY, -0.44, g, 10);
+    cyl(0.024, 0.024, 0.76, postMat, 1.9, postY, -0.44, g, 10);
 
-    // Mostrador elevado para visitantes
-    box(len + 0.14, 0.06, 0.35, 'lightWood', 0, 1.26, -0.32, g);
+    // Viga superior horizontal de latón pulido
+    box(len, 0.04, 0.06, 'brass', 0, h + 0.76, -0.44, g);
+
+    // Mamparas de cristal de seguridad en los laterales (dejando el centro de 3.8m COMPLETAMENTE DESPEJADO para hablar y ver claramente a los personajes)
+    const wingW = Math.max(0.4, (len - 3.8) / 2);
+    const wingX = len / 2 - wingW / 2;
+    // Cristal izquierdo
+    const paneL = new THREE.Mesh(new THREE.BoxGeometry(wingW, 0.68, 0.015), M('glass'));
+    paneL.position.set(-wingX, h + 0.38, -0.44); g.add(paneL);
+    // Cristal derecho
+    const paneR = new THREE.Mesh(new THREE.BoxGeometry(wingW, 0.68, 0.015), M('glass'));
+    paneR.position.set(wingX, h + 0.38, -0.44); g.add(paneR);
+
+    // Mostrador frontal elevado para visitantes con borde biselado
+    box(len + 0.12, 0.05, 0.28, 'lightWood', 0, h + 0.08, -0.56, g);
+
+    // Lámpara de escritorio articulada de latón con luz cálida
+    const lamp = new THREE.Group();
+    lamp.position.set(0.65, h + 0.07, 0.2);
+    cyl(0.09, 0.09, 0.02, 'brass', 0, 0.01, 0, lamp);
+    cyl(0.012, 0.012, 0.35, 'brass', 0, 0.18, 0, lamp);
+    const shade = cyl(0.08, 0.14, 0.12, 'brass', 0, 0.38, 0.05, lamp);
+    shade.rotation.x = 0.4;
+    const bulb = new THREE.PointLight(0xffe2aa, 4.5, 4.2, 1.8);
+    bulb.position.set(0, 0.35, 0.08);
+    lamp.add(bulb);
+    g.add(lamp);
   }
 
   // Monitores CRT de tubo retro

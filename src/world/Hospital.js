@@ -156,11 +156,11 @@ export class Hospital {
   addWallTrims(g, wallCells, map) {
     const faces = [];
     for (const [x, z] of wallCells) {
-      // Comprobar caras contiguas vacías
-      if (z > 0 && map[z - 1][x] !== '#') faces.push({ x, z, dir: 'n', angle: 0, px: x * S, pz: z * S - S / 2 });
-      if (z < this.rows - 1 && map[z + 1][x] !== '#') faces.push({ x, z, dir: 's', angle: Math.PI, px: x * S, pz: z * S + S / 2 });
-      if (x > 0 && map[z][x - 1] !== '#') faces.push({ x, z, dir: 'w', angle: Math.PI / 2, px: x * S - S / 2, pz: z * S });
-      if (x < this.cols - 1 && map[z][x + 1] !== '#') faces.push({ x, z, dir: 'e', angle: -Math.PI / 2, px: x * S + S / 2, pz: z * S });
+      // Comprobar caras contiguas vacías con desplazamiento hacia afuera para evitar z-fighting
+      if (z > 0 && map[z - 1][x] !== '#') faces.push({ x, z, dir: 'n', angle: 0, px: x * S, pz: z * S - S / 2 - 0.02 });
+      if (z < this.rows - 1 && map[z + 1][x] !== '#') faces.push({ x, z, dir: 's', angle: Math.PI, px: x * S, pz: z * S + S / 2 + 0.02 });
+      if (x > 0 && map[z][x - 1] !== '#') faces.push({ x, z, dir: 'w', angle: Math.PI / 2, px: x * S - S / 2 - 0.02, pz: z * S });
+      if (x < this.cols - 1 && map[z][x + 1] !== '#') faces.push({ x, z, dir: 'e', angle: -Math.PI / 2, px: x * S + S / 2 + 0.02, pz: z * S });
     }
 
     if (faces.length === 0) return;
@@ -268,6 +268,19 @@ export class Hospital {
     m.position.set(d.x * S, 0, d.z * S);
     m.rotation.y = (d.rot || 0) * Math.PI / 180;
     g.add(m);
+
+    // Registro de escondite interactivo estilo Resident Evil
+    if (d.hiding) {
+      this.interactables.push({
+        id: 'hiding:' + d.x + ',' + d.z,
+        kind: 'hiding',
+        x: d.x * S,
+        z: d.z * S,
+        range: 2.3,
+        label: 'Esconderse en el casillero',
+        spot: d,
+      });
+    }
 
     const foot = FOOT[d.type];
     if (!foot || !foot[2]) return;

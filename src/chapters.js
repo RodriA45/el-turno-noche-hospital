@@ -13,17 +13,18 @@ export const CHAPTERS = [
       const { hospital, audio } = game;
       hospital.setLights(true);
 
-      // Compañeras de turno paradas frente al mostrador de recepción
+      // Compañeras de turno paradas frente al mostrador de recepción (visibles y orientadas hacia Clara)
       const marta = game.actor('marta', 'marta');
-      marta.place(1, 2.2, 5.2, Math.PI / 2);
+      marta.place(1, 2.7, 5.5, Math.PI / 2);
       const silvia = game.actor('silvia', 'silvia');
-      silvia.place(1, 2.2, 6.8, Math.PI / 2);
+      silvia.place(1, 2.7, 6.5, Math.PI / 2);
 
       await game.title('CAPÍTULO 1', 'PRIMER TURNO', 'Hospital San Anselmo · 23:55 PM');
       await game.fade(0, 1.2);
       game.cine(true);
 
-      await game.lookAt(2.2 * 3, 1.5, 6.0 * 3, 1.2);
+      // Cámara enfoca a las compañeras a la altura de los ojos sobre el mostrador
+      await game.lookAt(2.7 * 3, 1.55, 6.0 * 3, 1.0);
       await game.say('Clara, bienvenida formalmente al turno noche del San Anselmo.', 'Marta');
       await game.say('El hospital es de los años 50. Los pisos crujen con el viento, pero los pacientes de planta baja duermen temprano.', 'Marta');
       await game.say('En el escritorio te dejamos el libro de registro de guardia, los reportes médicos y las llaves comunes.', 'Silvia');
@@ -32,6 +33,15 @@ export const CHAPTERS = [
       await game.say('NUNCA mires las cámaras del último piso. El piso 4 está completamente clausurado y fuera de servicio.', 'Silvia');
       await game.say('¿Por qué? ¿Qué ocurrió en ese piso?', 'Clara');
       await game.say('La última recepcionista que estuvo en tu lugar, Andrea... las miró durante una madrugada.', 'Marta');
+
+      // FLASHBACK CINEMATOGRÁFICO VHS DE ANDREA EN EL PISO 4
+      await game.flashback('andrea', {
+        title: 'EXPEDIENTE POLICIAL #84-C · INCIDENTE CUARTO PISO',
+        date: 'OCT 14 1984 · 04:12:08 AM',
+        location: 'PISO 4 — CLAUSURADO TRAS LA TRAGEDIA',
+      }, 5.5);
+
+      await game.lookAt(2.7 * 3, 1.55, 6.0 * 3, 0.4);
       await game.say('Hoy está internada en el psiquiátrico provincial de Santa Inés. No reconoce a su familia.', 'Marta');
       await game.say('Solo se balancea en su cama y repite sin parar: "Él sigue arriba... él sigue arriba en la oscuridad...".', 'Marta');
       await game.say('No es ninguna broma de bienvenida, Clara. Puedes vigilar la entrada, el piso 2 y el piso 3.', 'Silvia');
@@ -222,6 +232,14 @@ export const CHAPTERS = [
           audio.cry(2.5);
           await g.sleep(2.5);
           await g.say('...¿Por qué me encerraron?... Me falta el aire... me falta el aire...', 'Voz infantil', { thought: true });
+
+          // FLASHBACK CINEMATOGRÁFICO VHS: CÁMARA EXTERIOR EN LA TORMENTA Y LA SOMBRA EN LA CABINA
+          await g.flashback('phone_rain', {
+            title: 'CÁMARA EXTERIOR · ACCESO DE AMBULANCIAS',
+            date: 'OCT 14 · 02:30:42 AM',
+            location: 'CABINA TELEFÓNICA PÚBLICA · LLUVIA TORRENCIAL',
+          }, 5.5);
+
           audio.thump();
           await g.say('Cortaron... Era la voz de un niño pequeño llorando con desesperación.', 'Clara', { thought: true });
           g.cine(false);
@@ -372,6 +390,13 @@ export const CHAPTERS = [
             'Expediente Clasificado · Caso Gemelos Valenzuela',
             'Fecha de Ingreso: 14 de Noviembre de 1984.\nDiagnóstico: Trastorno disociativo severo y dependencia psicopática.\n\n[VARIAS HOJAS FUERON ARRANCADAS CON VIOLENCIA]\n\nAl dorso de la última hoja, alguien escribió con letras temblorosas:\n"NO DEJEN QUE VUELVAN A ENCONTRARSE. POR NADA DEL MUNDO ABRAN LA HABITACIÓN DEL CUARTO PISO".'
           );
+
+          // FLASHBACK CINEMATOGRÁFICO VHS: EXPEDIENTE CLÍNICO DE 1984 Y FOTOS DE LOS GEMELOS
+          await g.flashback('autopsy', {
+            title: 'REGISTRO MÉDICO CONFIDENCIAL #108-B',
+            date: 'NOV 14 1984 · 03:15:20 AM',
+            location: 'ARCHIVO CLÍNICO RESTRINGIDO',
+          }, 5.5);
 
           g.setFlag('has_forbidden_key');
           await g.say('¡Había otra llave de hierro pesada dentro del sobre!... Es la llave de la habitación prohibida del Piso 4.', 'Clara', { thought: true });
@@ -632,6 +657,13 @@ export const CHAPTERS = [
           await g.say('No... no... ¡el cuello frío!... ¡Mamá me encerró!... ¡Él no respira!...', 'Hermano asesino');
           await g.say('¡Él era el preferido de mamá!... ¡Le puse la almohada en la cara para que se callara!', 'Hermano asesino');
 
+          // FLASHBACK CINEMATOGRÁFICO VHS: RECONSTRUCCIÓN DEL CRIMEN EN EL QUIRÓFANO Y EL BISTURÍ
+          await g.flashback('scalpel', {
+            title: 'REGISTRO FORENSE · RECONSTRUCCIÓN DEL CRIMEN',
+            date: 'OCT 14 1984 · 03:45:12 AM',
+            location: 'QUIRÓFANO 4 — ASFIXIA MECÁNICA',
+          }, 5.5);
+
           // Clara revela la terrible verdad
           await g.say('¡Tus padres te encerraron aquí porque sabían que eras un asesino!', 'Clara');
           await g.say('¡Pero tu hermano nunca lo supo! ¡Él me trajo hasta aquí porque pensaba que eras una víctima inocente y quería salvarte!', 'Clara');
@@ -660,8 +692,15 @@ export const CHAPTERS = [
           await g.say('La policía intervino el San Anselmo y clausuró el hospital definitivamente.', 'Clara');
           await g.say('Pero a veces, en mitad de la noche, me pregunto si esta pesadilla alguna vez terminará...', 'Clara');
 
+          // FLASHBACK CINEMATOGRÁFICO FINAL: EL BUCLE TEMPORAL ETERNO
+          await g.flashback('timeloop', {
+            title: 'REGISTRO DE GUARDIAS · CICLO SIN FIN',
+            date: '1984 - 1996 - 2008 - HOY · 23:55 PM',
+            location: 'HOSPITAL SAN ANSELMO · RECEPCIÓN',
+          }, 6.0);
+
           // Cinemática final del bucle temporal
-          await g.sleep(1.5);
+          await g.sleep(1.0);
           await g.title('EPÍLOGO', 'EL BUCLE ETERNO', 'Hospital San Anselmo · 23:55 PM');
           await g.say('Una nueva recepcionista novata cruza la puerta giratoria para su primer turno de noche...', 'Voz en off');
           await g.say('Y la recepcionista saliente le entrega las llaves y le susurra: "Hay una sola regla... Nunca mires las cámaras del último piso...".', 'Voz en off');

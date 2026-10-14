@@ -103,6 +103,49 @@ export class AudioManager {
     setTimeout(() => this.tone(50, 0.16, 'sine', vol * 0.8, 32), 170);
   }
 
+  // Efectos de sonido cinematográficos AAA estilo Resident Evil / VHS
+  braam() {
+    if (!this.ctx) return;
+    this.tone(48, 2.2, 'sawtooth', 0.65, 26);
+    this.tone(96, 1.8, 'sawtooth', 0.35, 32);
+    this.noiseBurst(0.8, 0.45, 180, 'lowpass');
+  }
+
+  vhsPlay() {
+    if (!this.ctx) return;
+    // Clic de inserción de cinta y chasquido de cabezal analógico
+    this.noiseBurst(0.08, 0.4, 2800, 'bandpass');
+    setTimeout(() => this.tone(340, 0.25, 'triangle', 0.18, 120), 70);
+    setTimeout(() => this.noiseBurst(0.35, 0.22, 1200, 'highpass'), 120);
+  }
+
+  thunder() {
+    if (!this.ctx) return;
+    this.noiseBurst(1.8, 0.55, 160, 'lowpass');
+    this.tone(42, 1.4, 'sine', 0.6, 24);
+  }
+
+  flatline(duration = 2.4) {
+    if (!this.ctx) return;
+    this.tone(1150, duration, 'sine', 0.28);
+  }
+
+  lockerHide() {
+    if (!this.ctx) return;
+    // Chirrido metálico de bisagra y cierre del pestillo
+    this.tone(280, 0.35, 'sawtooth', 0.15, 180);
+    setTimeout(() => {
+      this.thump();
+      this.noiseBurst(0.12, 0.3, 400);
+    }, 280);
+  }
+
+  lockerExit() {
+    if (!this.ctx) return;
+    this.tone(320, 0.12, 'sawtooth', 0.12, 420);
+    this.noiseBurst(0.1, 0.2, 800);
+  }
+
   update(dt, camera, ghostPos, chasing, tension) {
     if (!this.ctx) return;
     const l = this.ctx.listener, p = camera.position;

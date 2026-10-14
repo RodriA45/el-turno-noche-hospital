@@ -31,14 +31,16 @@ A lo largo de 5 capítulos de tensión psicológica creciente, llamadas telefón
 ### Características Principales
 
 - **Formato Episódico Estilo Fears to Fathom:** 5 capítulos narrativos con títulos cinemáticos, decisiones que bifurcan los eventos, notas legibles e interactividad inmersiva.
+- **Cinemáticas de Flashbacks en Video VHS (1984):** Reconstrucciones audiovisuales de expedientes policiales y recuerdos con distorsión analógica de cinta magnética, código de tiempo retro, tracking jitter, relación de aspecto cinematográfica y ambientación de horror psicológico.
+- **Mecánica de Escondites Estilo Resident Evil:** Casilleros y armarios clínicos interactivos donde Clara puede refugiarse de entidades hostiles en la oscuridad, con perspectiva en primera persona a través de las rejillas de ventilación y simulación de ritmo cardíaco.
 - **100% Nativo en el Navegador:** Sin necesidad de descargar gigabytes de paquetes ni motores pesados. Carga directa mediante Three.js y Vite.
 - **Soporte Completo para PC y Dispositivos Móviles:**
   - **PC:** Control en primera persona con bloqueo de ratón en 360° y teclado.
   - **Móviles (Android / iOS):** Joystick analógico flotante virtual, zona táctil para mirar, botones dedicados de linterna, agacharse e interactuar, y advertencia de orientación apaisada.
 - **Gráficos 3D Realistas y Ambientación Opresiva:**
   - Linterna con proyección óptica real (cookie/gobo de Fresnel), halo difuso, punto focal central y balanceo por inercia física en mano.
-  - Texturas PBR procedimentales en alta resolución (revoque hospitalario descascarado, linóleo damero con reflejos especulares y marcas de desgaste, techos acústicos microperforados).
-  - Arquitectura hospitalaria fiel: zócalos de goma oscura, guardacamillas protectores continuos, monitores CRT retro con pantalla curva, taquillas y armarios de medicamentos con clave.
+  - Texturas PBR procedimentales en alta resolución (revoque hospitalario descascarado, linóleo damero con reflejos especulares y marcas de desgaste, techos acústicos modulares T-bar).
+  - Arquitectura hospitalaria fiel: mostrador de recepción en madera y latón, zócalos de goma oscura, guardacamillas protectores, monitores CRT retro con pantalla curva, taquillas y armarios de medicamentos con clave.
 - **Sistema de Monitores CCTV Realista:** Cámaras de vigilancia con líneas de escaneo analógicas CRT, reloj en tiempo real, piloto de grabación parpadeante (REC), estática y reflejo en el cristal del monitor.
 - **Audio 3D Espacial Procedural (Web Audio API):** Sin dependencias de archivos de audio externos. Todo sintetizado en tiempo real por código: drones de sub-graves, silbidos de viento, motor HRTF de paneo 3D para el fantasma, pasos, sollozos infantiles y timbres analógicos.
 - **Eventos de Reacción Rápida (QTE):** Esquiva de sillas de ruedas fuera de control, camillas en la oscuridad y confrontaciones directas.
@@ -51,11 +53,12 @@ A lo largo de 5 capítulos de tensión psicológica creciente, llamadas telefón
 |---|---|---|
 | **Moverse** | `W`, `A`, `S`, `D` o Flechas | Joystick analógico táctil (mitad izquierda) |
 | **Mirar / Girar** | Movimiento del ratón | Deslizar dedo (mitad derecha) |
-| **Interactuar** | Tecla `E` | Botón táctil `[ACTUAR]` (se ilumina en verde) |
+| **Interactuar / Esconderse** | Tecla `E` | Botón táctil `[ACTUAR]` (se ilumina en verde) |
 | **Linterna** | Tecla `F` (consume batería) | Botón táctil `[LINTERNA]` |
 | **Agacharse / Sigilo** | Tecla `C` o `Ctrl Izquierdo` | Botón táctil `[AGACHADA]` |
 | **Correr (Sprint)** | `Shift Izquierdo` (consume aguante) | Empujar joystick virtual al extremo superior |
 | **Elegir opciones** | Teclas `1` y `2` o clic | Tocar directamente sobre la decisión |
+| **Omitir flashback** | Tecla `Espacio` o clic | Tocar la pantalla |
 | **QTEs (Esquivar)** | Tecla en pantalla (`A`, `D`, `ESPACIO`) | Tocar el botón rojo pulsante |
 | **Pausa / Cerrar** | Tecla `Escape` | Botón `[PAUSA]` en esquina superior |
 
@@ -109,6 +112,8 @@ Across 5 chapters of escalating psychological dread, chilling telephone calls at
 ### Key Features
 
 - **Episodic Fears to Fathom Style:** 5 narrative chapters featuring cinematic title cards, branching moral choices, readable lore notes, and intense environmental storytelling.
+- **Cinematic 1984 VHS Flashbacks:** Archival police files and psychological video cutscenes featuring authentic magnetic tape distortion, vintage timecodes, tracking jitter, letterbox cinemascope, and retro horror atmosphere.
+- **Resident Evil Locker Hiding Mechanic:** Interactive lockers and clinical wardrobes where Clara can hide from hostile dark entities, with first-person perspective through ventilation slats and heart-rate tension simulation.
 - **100% Native Web Browser Game:** No multi-gigabyte downloads or bloated game engines. Direct loading powered by Three.js and Vite.
 - **Full Desktop and Mobile Support:**
   - **Desktop (PC / Mac):** First-person navigation with pointer lock and 360° mouse look.
@@ -129,11 +134,12 @@ Across 5 chapters of escalating psychological dread, chilling telephone calls at
 |---|---|---|
 | **Move** | `W`, `A`, `S`, `D` or Arrow Keys | Virtual Analog Joystick (left side) |
 | **Look Around** | Mouse Movement | Drag finger on screen (right side) |
-| **Interact** | `E` Key | Touch `[ACT]` button (pulses green when near) |
+| **Interact / Hide** | `E` Key | Touch `[ACT]` button (pulses green when near) |
 | **Flashlight** | `F` Key (consumes battery) | Touch `[FLASH]` button |
 | **Crouch / Stealth** | `C` or `Left Ctrl` | Touch `[CROUCH]` button |
 | **Sprint** | `Left Shift` (consumes stamina) | Push joystick to outer top ring |
 | **Dialogue Choices** | `1` & `2` Keys or Click | Tap desired option card |
+| **Skip Flashback** | `Space` Key or Click | Tap screen |
 | **QTE (Dodge)** | Indicated Key (`A`, `D`, `SPACE`) | Tap the large pulsing red QTE button |
 | **Pause / Close Note**| `Escape` Key | Touch `[PAUSE]` in top-right corner |
 
@@ -193,7 +199,8 @@ INICIAR_JUEGO.bat
 │   ├── player/
 │   │   └── Player.js       # Jugador en 1ª persona, linterna con cookie, sigilo y cámara
 │   ├── ui/
-│   │   └── Cctv.js         # Renderizado de cámaras de seguridad CCTV en canvas CRT 2D
+│   │   ├── Cctv.js         # Renderizado de cámaras de seguridad CCTV en canvas CRT 2D
+│   │   └── Flashback.js    # Reproductor cinemático VHS de flashbacks y archivos de 1984
 │   └── world/
 │       ├── Hospital.js     # Constructor de arquitectura, zócalos, colisiones e iluminación
 │       ├── Models.js       # Modelos 3D anatómicos, muebles clínicos, CRT, camillas y accesorios

@@ -41,8 +41,10 @@ function patientFloor(n) {
     }
   }
   f.carve(25, 5, 25, 5); f.carve(25, 7, 25, 7);
-  // pasillo: sillas de ruedas y detalles
+  // pasillo: sillas de ruedas, armarios y detalles
   f.deco('wheelchair', 3.4, 6.7, 70);
+  f.deco('locker', 5.2, 4.2, 90, { hiding: true });
+  f.deco('locker', 17.2, 4.2, 90, { hiding: true });
   f.deco('plant', 24.4, 6.6, 0);
   f.deco('trash', 12.6, 5.6, 0);
   f.decal(24, 6, 'e', n === 4 ? 'PISO 4' : `PISO ${n}`, { w: 1.4, h: 0.5, y: 2.3, size: 120, fg: '#e8e0cc', bg: '#0f3a2a' });
@@ -79,7 +81,7 @@ export function buildFloor(n) {
     f.deco('cabinet', 15.5, 1.2, 0); f.deco('cabinet', 16.8, 1.2, 0); f.deco('cabinet', 18.2, 1.2, 0);
     f.deco('cabinet', 15.4, 3.0, 90); f.deco('shelf', 17.6, 3.9, 0); f.deco('desk', 17.0, 2.4, 0, { len: 2.2, small: true });
     // Seguridad
-    f.deco('desk', 21.5, 1.4, 0, { len: 2.6, small: true }); f.deco('locker', 23.3, 2.0, 270); f.deco('locker', 23.3, 3.0, 270); f.deco('chair', 21.3, 2.3, 200);
+    f.deco('desk', 21.5, 1.4, 0, { len: 2.6, small: true }); f.deco('locker', 23.3, 2.0, 270, { hiding: true }); f.deco('locker', 23.3, 3.0, 270, { hiding: true }); f.deco('chair', 21.3, 2.3, 200);
     // Consultorio
     f.deco('bed', 12.4, 9.8, 90 * 0); f.deco('iv', 11.2, 9.4, 0); f.deco('cabinet', 10.4, 8.2, 0);
     // Almacén / Farmacia
@@ -88,11 +90,12 @@ export function buildFloor(n) {
     f.deco('sink', 10.6, 1.4, 0); f.deco('sink', 12.4, 1.4, 0);
     f.deco('trash', 12.6, 3.6, 0);
     f.decal(25, 6, 'e', 'ESCALERA ↑', { w: 1.3, h: 0.4, y: 2.5, size: 100, fg: '#e8e0cc', bg: '#0f3a2a' });
-    // Luces
-    f.light(3, 3.2, 20); f.light(6, 8.8, 20);
+    // Luces de recepción y dependencias
+    f.light(3.6, 5.0, 36, 0xfff4e0); f.light(3.6, 7.0, 36, 0xfff4e0);
+    f.light(1.8, 6.0, 26, 0xdfeee2); f.light(6, 8.8, 22);
     f.light(12, 6, 24); f.light(17, 6, 24, 0xdfeee2, { unstable: true }); f.light(22, 6, 24);
-    f.light(16.5, 2.5, 10, 0xffe6b8); f.light(21.5, 2.5, 10, 0xffe6b8);
-    f.ambient = 2.0; f.fog = 0.055;
+    f.light(16.5, 2.5, 14, 0xffe6b8); f.light(21.5, 2.5, 14, 0xffe6b8);
+    f.ambient = 2.4; f.fog = 0.050;
     return f;
   }
   if (n === 2 || n === 3) {
@@ -115,11 +118,13 @@ export function buildFloor(n) {
     f.deco(i % 2 ? 'gurney' : 'bed', a + 1.0, 1.9, 0);
     f.deco('wheelchair', a + 1.8, 10.1, 30 + i * 40);
     if (i === 1) f.deco('crate', b - 0.5, 8.8, 20);
+    if (i === 2) f.deco('locker', a + 1.2, 3.6, 0, { hiding: true });
   });
   f.carve(25, 5, 25, 5); f.carve(25, 7, 25, 7);
   f.stair(25, 7, 'down', { floor: 3, x: 25, z: 6, yaw: Math.PI / 2 });
   // Celda del hermano
   f.deco('bed', 2.2, 5.2, 0); f.deco('chair', 3.6, 7.4, 40); f.deco('crate', 1.4, 7.6, 10);
+  f.deco('locker', 1.8, 4.4, 0, { hiding: true });
   f.decal(14, 6, 'n', 'AYÚDALO', { w: 2.4, h: 0.9, y: 1.7, size: 130, fg: '#0a0a0a', bg: null, name: 'help', font: 'bold {s}px "Special Elite", monospace', hidden: true });
   f.decal(24, 6, 'e', 'PISO 4 · RESTRINGIDO', { w: 1.8, h: 0.4, y: 2.4, size: 80, fg: '#d5c49a', bg: '#3a1d1d' });
   f.light(16, 6, 3, 0xff4030, { unstable: true });

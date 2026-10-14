@@ -5,6 +5,7 @@ import { Ghost, Actor } from '../enemy/Ghost.js';
 import { PEOPLE } from '../world/Models.js';
 import { CAMS, drawFeed } from '../ui/Cctv.js';
 import { CHAPTERS } from '../chapters.js';
+import { FlashbackPlayer } from '../ui/Flashback.js';
 
 const $ = id => document.getElementById(id);
 const CANCEL = Symbol('cancel');
@@ -22,6 +23,8 @@ export class Game {
     this.frozen = false; this.look = null; this.shake = 0; this.ambientLevel = 0; this.ambT = 8;
     this.chapterIdx = 0; this.time = 0; this.checkpoint = null;
     this.scene = new THREE.Scene(); this.scene.background = new THREE.Color(0x020203);
+    this.flashbackPlayer = new FlashbackPlayer($('flashback-canvas'));
+    this.isHiding = false; this.hidingSpot = null;
     this.buildMenu();
     this.bindUi();
     addEventListener('keydown', e => this.onKey(e));
@@ -56,6 +59,8 @@ export class Game {
   }
 
   onKey(e) {
+    if (this.skipFlashback && (e.code === 'Space' || e.code === 'KeyE' || e.code === 'Escape')) { this.skipFlashback(); return; }
+    if (this.isHiding && (e.code === 'KeyE' || e.code === 'Escape')) { this.exitHiding(); return; }
     if (this.state === 'ui') {
       if (this.choiceCb && (e.code === 'Digit1' || e.code === 'Numpad1')) this.choiceCb(0);
       if (this.choiceCb && (e.code === 'Digit2' || e.code === 'Numpad2')) this.choiceCb(1);
@@ -68,7 +73,8 @@ export class Game {
 
   toMenu() {
     this.run++; this.state = 'menu'; this.input.unlock();
-    ['hud', 'touch-ui', 'pause', 'end', 'titlecard', 'note', 'choice', 'keypad', 'cctv', 'qte', 'rotate-warning'].forEach(i => show(i, false));
+    ['hud', 'touch-ui', 'pause', 'end', 'titlecard', 'note', 'choice', 'keypad', 'cctv', 'qte', 'rotate-warning', 'flashback', 'hiding'].forEach(i => show(i, false));
+    this.flashbackPlayer.stop(); this.isHiding = false;
     $('fx-fade').style.opacity = 0; this.buildMenu(); show('menu', true);
     this.scene = new THREE.Scene(); this.scene.background = new THREE.Color(0x020203);
   }
@@ -98,7 +104,8 @@ export class Game {
     this.ghost.onCatch = () => this.catchPlayer();
     this.ghost.onStep = null;
 
-    ['menu', 'pause', 'end', 'note', 'choice', 'keypad', 'cctv', 'qte'].forEach(id => show(id, false));
+    this.isHiding = false; this.flashbackPlayer.stop();
+    ['menu', 'pause', 'end', 'note', 'choice', 'keypad', 'cctv', 'qte', 'flashback', 'hiding'].forEach(id => show(id, false));
     show('hud', true); show('touch-ui', this.input.isTouch); show('rotate-warning', this.input.isTouch);
     $('fx-fade').style.transition = 'none'; $('fx-fade').style.opacity = 1;
     $('subs').classList.add('hidden'); $('objective').textContent = '';
@@ -270,6 +277,78 @@ export class Game {
     });
   }
 
+  // ----- cinemáticas de flashbacks estilo VHS 1984
+  flashback(sceneId, meta = {}, duration = 5.5) {
+    return new Promise((res, rej) => {
+      const tk = this.run;
+      this._openUi();
+      this.audio.vhsPlay();
+      this.audio.braam();
+      if (sceneId === 'phone_rain') this.audio.thunder();
+      if (sceneId === 'scalpel') this.audio.flatline(4.0);
+
+      show('flashback', true);
+      this.flashbackPlayer.play(sceneId, meta);
+
+      let finished = false;
+      const finish = () => {
+        if (finished || tk !== this.run) return;
+        finished = true;
+        this.skipFlashback = null;
+        this.flashbackPlayer.stop();
+        show('flashback', false);
+        this._closeUi();
+        res();
+      };
+
+      this.skipFlashback = finish;
+      $('flashback').onclick = finish;
+
+      this.waiters.push({
+        cond: dt => {
+          if (this.flashbackPlayer.t >= duration) {
+            finish();
+            return true;
+          }
+          return false;
+        },
+        res() {},
+        rej,
+        tk,
+        t: 0,
+        timeout: Infinity,
+      });
+    });
+  }
+
+  // ----- escondites (lockers) estilo Resident Evil
+  enterHiding(spot) {
+    if (this.isHiding) return;
+    this.isHiding = true;
+    this.hidingReturnPos = this.player.pos.clone();
+    this.hidingReturnYaw = this.player.yaw;
+    this.audio.lockerHide();
+    this.player.flashOn = false;
+    this.player.pos.set(spot.x * S, 1.45, spot.z * S);
+    this.player.yaw = ((spot.rot || 0) + 180) * Math.PI / 180;
+    show('hiding', true);
+    show('hud', false);
+    show('touch-ui', false);
+  }
+
+  exitHiding() {
+    if (!this.isHiding) return;
+    this.isHiding = false;
+    this.audio.lockerExit();
+    if (this.hidingReturnPos) {
+      this.player.pos.copy(this.hidingReturnPos);
+      this.player.yaw = this.hidingReturnYaw;
+    }
+    show('hiding', false);
+    show('hud', true);
+    show('touch-ui', this.input.isTouch);
+  }
+
   // ----- fantasmas / sustos
   async jumpscare() {
     this.audio.screech(); this.flash(0.9); this.shake = 1;
@@ -278,7 +357,7 @@ export class Game {
     await this.sleep(0.7); g.vanish();
   }
   catchPlayer() {
-    if (this.frozen || this.state !== 'play') return;
+    if (this.frozen || this.state !== 'play' || this.isHiding) return;
     this.audio.screech(); this.flash(0.95); this.shake = 1; this.frozen = true;
     const cp = this.checkpoint;
     (async () => {
@@ -296,7 +375,9 @@ export class Game {
 
   // ------------------------------------------------------------------ interacción
   interact() {
+    if (this.isHiding) return this.exitHiding();
     const it = this.player.findInteractable(); if (!it) return;
+    if (it.kind === 'hiding') return this.enterHiding(it.spot);
     if (it.kind === 'door') return this.useDoor(it.door);
     if (it.kind === 'stairs') {
       if (this.stairsBlocked) { this.audio.locked(); this.say(typeof this.stairsBlocked === 'string' ? this.stairsBlocked : 'No debería subir ahora.', 'Clara', { thought: true }); return; }
@@ -372,8 +453,16 @@ export class Game {
     const pr = $('prompt');
     if (it) { const lab = typeof it.label === 'function' ? it.label() : it.label; pr.textContent = `[E] ${it.kind === 'door' && it.door.open ? 'Cerrar' : it.kind === 'door' ? 'Abrir' : ''} ${lab}`.replace('  ', ' '); pr.classList.remove('hidden'); }
     else pr.classList.add('hidden');
-    $('state-tag').textContent = (this.player.crouch ? 'AGACHADA · ' : '') + (this.player.hasFlash && !this.player.flashOn ? 'LINTERNA APAGADA' : '');
+    $('state-tag').textContent = (this.isHiding ? 'OCULTA EN CASILLERO · ' : this.player.crouch ? 'AGACHADA · ' : '') + (this.player.hasFlash && !this.player.flashOn ? 'LINTERNA APAGADA' : '');
     if (this.cctvDraw) this.cctvDraw(t);
+    if (this.flashbackPlayer.active) this.flashbackPlayer.render(dt);
+    if (this.isHiding) {
+      this.hidingHeartTimer = (this.hidingHeartTimer || 0) - dt;
+      if (this.hidingHeartTimer <= 0) {
+        this.audio.heartbeat(0.55);
+        this.hidingHeartTimer = 0.85;
+      }
+    }
   }
 
   ambientEvents(dt) {

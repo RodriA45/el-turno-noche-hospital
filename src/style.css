@@ -177,3 +177,28 @@ body.is-touch #subs { bottom: 6%; }
 #qte-bar { width: 220px; height: 8px; margin: 18px auto 0; background: rgba(255,255,255,.15); border-radius: 4px; overflow: hidden; }
 #qte-bar i { display: block; height: 100%; width: 100%; background: #ff4545; }
 @media (max-height: 520px) { .cctv-box { padding: 6px; border-width: 3px; } .choice-btn { padding: 10px 14px; font-size: 14px; margin: 6px 0; } #choice-q { font-size: 18px; margin: 6px 0 10px; } }
+
+/* ================= FLASHBACKS CINEMATOGRÁFICOS VHS ================= */
+#flashback { position: fixed; inset: 0; z-index: 35; background: #000; display: block; }
+#flashback-canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+
+/* ================= ESCONDITE / VISTA DESDE CASILLERO ================= */
+#hiding { position: fixed; inset: 0; z-index: 20; pointer-events: none; }
+.locker-slats {
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(180deg, rgba(5,6,8,0.95) 0px, rgba(5,6,8,0.95) 30px, transparent 30px, transparent 46px);
+  box-shadow: inset 0 0 160px rgba(0,0,0,0.98), inset 0 0 60px rgba(0,0,0,0.95);
+  border-left: 35px solid rgba(8,10,12,0.98);
+  border-right: 35px solid rgba(8,10,12,0.98);
+}
+#hiding-hud {
+  position: absolute; left: 50%; bottom: 14%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 12px;
+  background: rgba(0,0,0,0.75); padding: 10px 24px; border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.18);
+  font-family: 'Special Elite', monospace; font-size: 16px; color: var(--bone);
+  text-shadow: 0 2px 8px #000;
+}
+.heart-pulse { font-size: 24px; animation: heartBeat 0.8s infinite; display: inline-block; }
+@keyframes heartBeat { 0%, 100% { transform: scale(1); } 30% { transform: scale(1.3); } }
+

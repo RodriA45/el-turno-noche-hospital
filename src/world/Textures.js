@@ -89,37 +89,40 @@ export function flashlightCookie() {
   }, 1, 1, false);
 }
 
-// Pared de hospital: pintura verde clínica desgastada + azulejo esmaltado con moho y salpicaduras
+// Pared de hospital: revoque envejecido superior + zócalo de azulejos clínicos vitrificados
 export function wallMaps() {
   const map = paint(1024, 1024, (g, w, h) => {
-    // Fondo de revoque hospitalario verde pálido sucio
-    g.fillStyle = '#8f9a88';
+    // Fondo de revoque hospitalario verde pálido / salvia envejecido
+    g.fillStyle = '#9aa594';
     g.fillRect(0, 0, w, h);
 
-    // Variaciones sutiles de yeso y humedad
-    stains(g, w, h, 28, 220, '45,40,24', 0.3);
-    stains(g, w, h, 15, 120, '25,32,24', 0.25);
+    // Variaciones suaves de tono y humedad en el yeso
+    stains(g, w, h, 16, 180, '50,55,42', 0.18);
 
-    // Escurrimientos verticales de goteras y óxido
-    for (let i = 0; i < 18; i++) {
-      const x = Math.random() * w, len = 120 + Math.random() * 450;
-      const gr = g.createLinearGradient(0, 0, 0, len);
-      gr.addColorStop(0, 'rgba(40,32,18,0.45)');
-      gr.addColorStop(0.7, 'rgba(50,42,25,0.25)');
-      gr.addColorStop(1, 'rgba(50,42,25,0)');
-      g.fillStyle = gr;
-      g.fillRect(x, 0, 6 + Math.random() * 18, len);
+    // Grietas sutiles y envejecimiento de la pintura
+    g.strokeStyle = 'rgba(50, 48, 38, 0.22)';
+    g.lineWidth = 1;
+    for (let i = 0; i < 12; i++) {
+      let cx = Math.random() * w, cy = 40 + Math.random() * (h * 0.45);
+      g.beginPath();
+      g.moveTo(cx, cy);
+      for (let s = 0; s < 6; s++) {
+        cx += (Math.random() - 0.5) * 35;
+        cy += Math.random() * 25;
+        g.lineTo(cx, cy);
+      }
+      g.stroke();
     }
 
-    // Franja de azulejos clínicos en la mitad inferior
-    const y0 = h * 0.58;
-    g.fillStyle = '#264239';
+    // Franja de azulejos clínicos vitrificados en la mitad inferior
+    const y0 = h * 0.56;
+    g.fillStyle = '#223c34';
     g.fillRect(0, y0, w, h - y0);
 
-    // Juntas de azulejos con suciedad incrustada
+    // Juntas de azulejos con cemento gris oscuro
     const tileSize = 64;
-    g.strokeStyle = 'rgba(10,18,14,0.65)';
-    g.lineWidth = 3;
+    g.strokeStyle = 'rgba(12, 22, 18, 0.7)';
+    g.lineWidth = 2.5;
     for (let x = 0; x <= w; x += tileSize) {
       g.beginPath(); g.moveTo(x, y0); g.lineTo(x, h); g.stroke();
     }
@@ -127,27 +130,29 @@ export function wallMaps() {
       g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke();
     }
 
-    // Brillo biselado en la parte superior del azulejo
-    g.fillStyle = '#b8b29c';
-    g.fillRect(0, y0 - 10, w, 10);
-    g.fillStyle = 'rgba(0,0,0,0.4)';
-    g.fillRect(0, y0, w, 6);
+    // Moldura decorativa divisoria entre el revoque y los azulejos
+    g.fillStyle = '#c5beab';
+    g.fillRect(0, y0 - 8, w, 8);
+    g.fillStyle = 'rgba(0, 0, 0, 0.35)';
+    g.fillRect(0, y0, w, 4);
 
-    // Salpicaduras de humedad y manchas en la zona baja
-    stains(g, w, h, 20, 140, '12,10,6', 0.4);
-    grain(g, w, h, 24);
+    // Salpicaduras de desinfectante y desgaste en la parte baja
+    stains(g, w, h, 14, 110, '15,22,18', 0.28);
+    grain(g, w, h, 20);
   });
 
   const bump = paint(512, 512, (g, w, h) => {
     g.fillStyle = '#808080';
     g.fillRect(0, 0, w, h);
     // Relieve de juntas de azulejos
-    const y0 = h * 0.58;
-    g.fillStyle = '#404040';
+    const y0 = h * 0.56;
+    g.fillStyle = '#383838';
     for (let x = 0; x <= w; x += 32) g.fillRect(x - 1, y0, 2, h - y0);
     for (let y = y0; y <= h; y += 32) g.fillRect(0, y - 1, w, 2);
-    // Relieve de revoque descascarado
-    grain(g, w, h, 95);
+    // Relieve suave de la moldura
+    g.fillStyle = '#b0b0b0';
+    g.fillRect(0, y0 - 4, w, 4);
+    grain(g, w, h, 60);
   }, 1, 1, false);
 
   return { map, bump };
@@ -220,26 +225,54 @@ export function floorMaps(rx, ry) {
   return { map, rough };
 }
 
-// Techo suspendido con placas acústicas microperforadas y manchas de filtración
+// Techo suspendido con placas acústicas microperforadas y módulos T-bar
 export function ceilingMap(rx, ry) {
   return paint(512, 512, (g, w, h) => {
-    g.fillStyle = '#949288';
+    // Tono marfil acústico hospitalario suave
+    g.fillStyle = '#d5d2c6';
     g.fillRect(0, 0, w, h);
 
-    // Borde de perfil de aluminio T-bar
-    g.strokeStyle = 'rgba(0,0,0,0.6)';
-    g.lineWidth = 5;
-    g.strokeRect(0, 0, w, h);
+    // Biselado perimetral del marco T-bar de aluminio
+    g.strokeStyle = '#8c8a82';
+    g.lineWidth = 4;
+    g.strokeRect(2, 2, w - 4, h - 4);
 
-    // Microperforaciones acústicas de yeso
-    g.fillStyle = 'rgba(20,20,15,0.18)';
-    for (let i = 0; i < 900; i++) {
-      g.fillRect(Math.random() * w, Math.random() * h, 1.5, 1.5);
+    // Línea interior sutil de sombra del plafón
+    g.strokeStyle = 'rgba(0, 0, 0, 0.12)';
+    g.lineWidth = 2;
+    g.strokeRect(6, 6, w - 12, h - 12);
+
+    // Microperforaciones acústicas punteadas
+    g.fillStyle = 'rgba(50, 48, 40, 0.12)';
+    for (let i = 0; i < 500; i++) {
+      const px = 10 + Math.random() * (w - 20);
+      const py = 10 + Math.random() * (h - 20);
+      const s = 1 + Math.random() * 1.8;
+      g.fillRect(px, py, s, s);
     }
 
-    // Manchas circulares de goteras amarillentas (óxido de tuberías)
-    stains(g, w, h, 5, 80, '60,42,16', 0.55);
-    grain(g, w, h, 26);
+    // Fisuras acústicas finas
+    g.strokeStyle = 'rgba(60, 58, 48, 0.14)';
+    g.lineWidth = 1.2;
+    for (let i = 0; i < 35; i++) {
+      const px = 15 + Math.random() * (w - 30);
+      const py = 15 + Math.random() * (h - 30);
+      const len = 4 + Math.random() * 8;
+      const ang = Math.random() * Math.PI * 2;
+      g.beginPath();
+      g.moveTo(px, py);
+      g.lineTo(px + Math.cos(ang) * len, py + Math.sin(ang) * len);
+      g.stroke();
+    }
+
+    // Viñeteado perimetral en cada plafón para dar relieve cúbico suave sin manchas repetidas
+    const rad = g.createRadialGradient(w / 2, h / 2, w * 0.28, w / 2, h / 2, w * 0.68);
+    rad.addColorStop(0, 'rgba(255, 255, 255, 0.05)');
+    rad.addColorStop(1, 'rgba(0, 0, 0, 0.10)');
+    g.fillStyle = rad;
+    g.fillRect(0, 0, w, h);
+
+    grain(g, w, h, 16);
   }, rx, ry);
 }
 
