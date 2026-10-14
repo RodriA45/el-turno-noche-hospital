@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="El Hotel: juego de terror episódico en 3D para el navegador. Eres la recepcionista del turno noche de un hospital de 4 pisos. Nunca mires las cámaras del cuarto piso." />
+    <title>El Hotel — Terror episódico 3D</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Cinzel:wght@500;800&family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <canvas id="game-canvas"></canvas>
+    <div id="fx-vignette"></div>
+    <div id="fx-grain"></div>
+    <div id="fx-flash"></div>
+    <div id="fx-danger"></div>
+    <div id="fx-fade"></div>
+
+    <main id="hud" class="hidden">
+      <div id="hud-left">
+        <div class="meter" id="meter-battery"><span>🔦 Batería</span><div class="bar"><i id="bar-battery"></i></div></div>
+        <div class="meter"><span>🏃 Aguante</span><div class="bar"><i id="bar-stamina"></i></div></div>
+      </div>
+      <div id="hud-right">
+        <div id="chapter-tag">Capítulo 1</div>
+        <div id="objective"></div>
+      </div>
+      <div id="crosshair"></div>
+      <div id="prompt" class="hidden"></div>
+      <div id="state-tag"></div>
+      <div id="subs" class="hidden"><b id="subs-who"></b><span id="subs-text"></span></div>
+    </main>
+
+    <div id="touch-ui" class="hidden">
+      <div id="touch-look"></div>
+      <div id="touch-move"></div>
+      <div id="stick"><div id="stick-knob"></div></div>
+      <button id="btn-pause" aria-label="Pausa">⏸</button>
+      <div id="touch-buttons">
+        <button id="tb-flash" data-key="KeyF" aria-label="Linterna">🔦</button>
+        <button id="tb-crouch" data-key="KeyC" aria-label="Agacharse">⬇️</button>
+        <button id="tb-act" data-key="KeyE" aria-label="Interactuar">✋</button>
+      </div>
+    </div>
+
+    <div id="rotate-warning" class="hidden"><div>📱↻<p>Gira tu teléfono en horizontal<br />para jugar</p></div></div>
+
+    <section id="titlecard" class="hidden"><div><p id="tc-chapter"></p><h2 id="tc-title"></h2><p id="tc-sub"></p></div></section>
+
+    <section id="note" class="overlay hidden">
+      <article class="paper">
+        <h2 id="note-title"></h2>
+        <p id="note-text"></p>
+        <small>Pulsa E o toca para cerrar</small>
+      </article>
+    </section>
+
+    <section id="choice" class="overlay hidden">
+      <div class="menu-box choice-box">
+        <p class="eyebrow" id="choice-eyebrow">Decisión</p>
+        <h2 id="choice-q"></h2>
+        <button id="choice-a" class="btn choice-btn"></button>
+        <button id="choice-b" class="btn choice-btn"></button>
+        <p class="tip">Teclas 1 / 2 o toca una opción</p>
+      </div>
+    </section>
+
+    <section id="keypad" class="overlay hidden">
+      <div class="menu-box small keypad-box">
+        <p class="eyebrow">Cerradura electrónica</p>
+        <div id="kp-display">----</div>
+        <div id="kp-grid"></div>
+        <button id="kp-close" class="btn ghost">Cancelar</button>
+      </div>
+    </section>
+
+    <section id="cctv" class="overlay hidden">
+      <div class="cctv-box">
+        <div class="cctv-tabs" id="cctv-tabs"></div>
+        <canvas id="cctv-canvas" width="640" height="360"></canvas>
+        <div class="cctv-foot"><span id="cctv-status">REC ●</span><button id="cctv-close" class="btn ghost">Cerrar monitores</button></div>
+      </div>
+    </section>
+
+    <section id="qte" class="hidden">
+      <div id="qte-box"><p id="qte-label">¡ESQUIVA!</p><button id="qte-key">A</button><div id="qte-bar"><i></i></div></div>
+    </section>
+
+    <section id="menu" class="overlay scrollable">
+      <div class="menu-box">
+        <p class="eyebrow">Hospital San Anselmo · Turno noche</p>
+        <h1>EL HOTEL</h1>
+        <p class="lead">Eres la recepcionista del turno noche en un hospital de cuatro pisos. Hay una sola regla: <b>nunca mires las cámaras del último piso.</b></p>
+        <div id="chapter-list"></div>
+        <ul class="controls desktop-only">
+          <li><kbd>W A S D</kbd> mover</li>
+          <li><kbd>Shift</kbd> correr</li>
+          <li><kbd>C</kbd> agacharse</li>
+          <li><kbd>F</kbd> linterna</li>
+          <li><kbd>E</kbd> interactuar</li>
+          <li><kbd>Ratón</kbd> mirar</li>
+        </ul>
+        <ul class="controls touch-only">
+          <li><kbd>Joystick izq.</kbd> mover</li>
+          <li><kbd>Empujar a tope</kbd> correr</li>
+          <li><kbd>Arrastrar der.</kbd> mirar</li>
+          <li><kbd>✋</kbd> interactuar</li>
+          <li><kbd>🔦</kbd> linterna</li>
+          <li><kbd>⬇️</kbd> agacharse</li>
+        </ul>
+        <p class="tip">Tus decisiones cambian lo que ocurre. Juega con auriculares.</p>
+      </div>
+    </section>
+
+    <section id="pause" class="overlay hidden">
+      <div class="menu-box small">
+        <h2>Pausa</h2>
+        <button id="btn-resume" class="btn">Continuar</button>
+        <button id="btn-menu" class="btn ghost">Menú de capítulos</button>
+      </div>
+    </section>
+
+    <section id="end" class="overlay hidden">
+      <div class="menu-box small">
+        <h2 id="end-title">Fin del capítulo</h2>
+        <p class="lead" id="end-text"></p>
+        <button id="btn-next" class="btn">Siguiente capítulo</button>
+        <button id="btn-menu2" class="btn ghost">Menú de capítulos</button>
+      </div>
+    </section>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
