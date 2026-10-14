@@ -93,6 +93,12 @@ INICIAR_JUEGO.bat
    ```
    *Los archivos optimizados y listos para producción se generarán en la carpeta `dist/`.*
 
+#### Despliegue en Vercel (1 Clic):
+El proyecto ya incluye `vercel.json` configurado para despliegue instantáneo:
+1. Ingresa en [vercel.com/new](https://vercel.com/new).
+2. Conecta tu cuenta de GitHub e importa el repositorio `el-turno-noche-hospital`.
+3. Haz clic en **Deploy**. Vercel compilará el juego y generará tu enlace público (HTTPS) de forma automática.
+
 ---
 
 <a name="english-version"></a>
@@ -174,12 +180,19 @@ INICIAR_JUEGO.bat
    ```
    *Static assets ready for deployment will be generated in `dist/`.*
 
+#### 1-Click Vercel Deployment:
+The repository includes a ready `vercel.json` configuration for instant web hosting:
+1. Visit [vercel.com/new](https://vercel.com/new).
+2. Connect your GitHub account and import `el-turno-noche-hospital`.
+3. Click **Deploy**. Vercel will build and assign your live production HTTPS domain automatically.
+
 ---
 
 ## Project Architecture / Estructura del Proyecto
 
 ```text
 ├── INICIAR_JUEGO.bat       # Lanzador automático de 1 clic (Windows)
+├── vercel.json             # Configuración de despliegue y cabeceras para Vercel
 ├── index.html              # HTML5 contenedor con HUD, canvas y overlays
 ├── package.json            # Configuración de dependencias (Three.js, Vite)
 ├── vite.config.js          # Configuración del bundler

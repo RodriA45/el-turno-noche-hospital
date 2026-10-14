@@ -90,25 +90,31 @@ export function flashlightCookie() {
 }
 
 // Pared de hospital: revoque envejecido superior + zócalo de azulejos clínicos vitrificados
+// Pared de hospital: revoque clínico envejecido superior + zócalo de azulejos vitrificados sin manchas repetitivas
 export function wallMaps() {
   const map = paint(1024, 1024, (g, w, h) => {
-    // Fondo de revoque hospitalario verde pálido / salvia envejecido
-    g.fillStyle = '#9aa594';
+    // Fondo de revoque hospitalario verde salvia clínico
+    g.fillStyle = '#96a190';
     g.fillRect(0, 0, w, h);
 
-    // Variaciones suaves de tono y humedad en el yeso
-    stains(g, w, h, 16, 180, '50,55,42', 0.18);
+    // Gradiente sutil de iluminación vertical natural
+    const wallGrad = g.createLinearGradient(0, 0, 0, h * 0.56);
+    wallGrad.addColorStop(0, 'rgba(30, 35, 28, 0.22)');
+    wallGrad.addColorStop(0.3, 'rgba(0, 0, 0, 0)');
+    wallGrad.addColorStop(1, 'rgba(15, 20, 16, 0.15)');
+    g.fillStyle = wallGrad;
+    g.fillRect(0, 0, w, h * 0.56);
 
-    // Grietas sutiles y envejecimiento de la pintura
-    g.strokeStyle = 'rgba(50, 48, 38, 0.22)';
+    // Microfisuras finas en el revoque
+    g.strokeStyle = 'rgba(60, 58, 48, 0.14)';
     g.lineWidth = 1;
-    for (let i = 0; i < 12; i++) {
-      let cx = Math.random() * w, cy = 40 + Math.random() * (h * 0.45);
+    for (let i = 0; i < 6; i++) {
+      let cx = (i * 170) % w, cy = 30 + (i * 75) % (h * 0.45);
       g.beginPath();
       g.moveTo(cx, cy);
-      for (let s = 0; s < 6; s++) {
-        cx += (Math.random() - 0.5) * 35;
-        cy += Math.random() * 25;
+      for (let s = 0; s < 5; s++) {
+        cx += (Math.random() - 0.5) * 28;
+        cy += Math.random() * 22;
         g.lineTo(cx, cy);
       }
       g.stroke();
@@ -116,12 +122,20 @@ export function wallMaps() {
 
     // Franja de azulejos clínicos vitrificados en la mitad inferior
     const y0 = h * 0.56;
-    g.fillStyle = '#223c34';
+    g.fillStyle = '#1c342b';
+    g.fillRect(0, y0, w, h - y0);
+
+    // Gradiente de brillo del azulejo vitrificado
+    const tileGrad = g.createLinearGradient(0, y0, 0, h);
+    tileGrad.addColorStop(0, 'rgba(255, 255, 255, 0.08)');
+    tileGrad.addColorStop(0.5, 'rgba(0, 0, 0, 0)');
+    tileGrad.addColorStop(1, 'rgba(0, 0, 0, 0.25)');
+    g.fillStyle = tileGrad;
     g.fillRect(0, y0, w, h - y0);
 
     // Juntas de azulejos con cemento gris oscuro
     const tileSize = 64;
-    g.strokeStyle = 'rgba(12, 22, 18, 0.7)';
+    g.strokeStyle = 'rgba(10, 20, 16, 0.75)';
     g.lineWidth = 2.5;
     for (let x = 0; x <= w; x += tileSize) {
       g.beginPath(); g.moveTo(x, y0); g.lineTo(x, h); g.stroke();
@@ -131,95 +145,67 @@ export function wallMaps() {
     }
 
     // Moldura decorativa divisoria entre el revoque y los azulejos
-    g.fillStyle = '#c5beab';
+    g.fillStyle = '#b8b09c';
     g.fillRect(0, y0 - 8, w, 8);
-    g.fillStyle = 'rgba(0, 0, 0, 0.35)';
+    g.fillStyle = 'rgba(0, 0, 0, 0.45)';
     g.fillRect(0, y0, w, 4);
 
-    // Salpicaduras de desinfectante y desgaste en la parte baja
-    stains(g, w, h, 14, 110, '15,22,18', 0.28);
-    grain(g, w, h, 20);
+    grain(g, w, h, 14);
   });
 
   const bump = paint(512, 512, (g, w, h) => {
     g.fillStyle = '#808080';
     g.fillRect(0, 0, w, h);
-    // Relieve de juntas de azulejos
     const y0 = h * 0.56;
     g.fillStyle = '#383838';
     for (let x = 0; x <= w; x += 32) g.fillRect(x - 1, y0, 2, h - y0);
     for (let y = y0; y <= h; y += 32) g.fillRect(0, y - 1, w, 2);
-    // Relieve suave de la moldura
     g.fillStyle = '#b0b0b0';
     g.fillRect(0, y0 - 4, w, 4);
-    grain(g, w, h, 60);
+    grain(g, w, h, 35);
   }, 1, 1, false);
 
   return { map, bump };
 }
 
-// Suelo de hospital: baldosas de linóleo damero con reflejos especulares, marcas de ruedas y charcos
+// Suelo de hospital: baldosas de linóleo damero limpio con juntas nítidas y reflejo natural
 export function floorMaps(rx, ry) {
   const map = paint(1024, 1024, (g, w, h) => {
     const t = 128;
     for (let y = 0; y < h; y += t) {
       for (let x = 0; x < w; x += t) {
         const k = ((x + y) / t) % 2 === 0;
-        // Tonos hueso envejecido y verde musgo descolorido
-        g.fillStyle = k ? '#c2bcaa' : '#71786c';
+        // Tonos hueso marfil y verde salvia sobrio
+        g.fillStyle = k ? '#bab4a2' : '#697263';
         g.fillRect(x, y, t, t);
 
-        // Biselado sutil de cada baldosa
-        g.fillStyle = 'rgba(255,255,255,0.08)';
-        g.fillRect(x, y, t, 3);
-        g.fillRect(x, y, 3, t);
-        g.fillStyle = 'rgba(0,0,0,0.18)';
-        g.fillRect(x, y + t - 3, t, 3);
-        g.fillRect(x + t - 3, y, 3, t);
+        // Biselado perimetral sutil
+        g.fillStyle = 'rgba(255,255,255,0.06)';
+        g.fillRect(x, y, t, 2);
+        g.fillRect(x, y, 2, t);
+        g.fillStyle = 'rgba(0,0,0,0.12)';
+        g.fillRect(x, y + t - 2, t, 2);
+        g.fillRect(x + t - 2, y, 2, t);
       }
     }
 
-    // Juntas negras entre baldosas
-    g.strokeStyle = 'rgba(0,0,0,0.65)';
-    g.lineWidth = 3.5;
+    // Juntas limpias entre baldosas
+    g.strokeStyle = 'rgba(0,0,0,0.55)';
+    g.lineWidth = 3;
     for (let i = 0; i <= w; i += t) {
       g.beginPath(); g.moveTo(i, 0); g.lineTo(i, h); g.stroke();
       g.beginPath(); g.moveTo(0, i); g.lineTo(w, i); g.stroke();
     }
 
-    // Marcas de fricción de neumáticos de camillas y sillas de ruedas
-    g.strokeStyle = 'rgba(20,18,14,0.35)';
-    g.lineWidth = 8;
-    for (let i = 0; i < 8; i++) {
-      g.beginPath();
-      const sx = Math.random() * w;
-      g.moveTo(sx, 0);
-      g.bezierCurveTo(sx + (Math.random() - 0.5) * 120, h * 0.35, sx + (Math.random() - 0.5) * 120, h * 0.7, sx, h);
-      g.stroke();
-    }
-
-    // Manchas de líquido, pisadas y moho
-    stains(g, w, h, 30, 130, '35,28,18', 0.42);
-    grain(g, w, h, 26);
+    // Desgaste suave y grano fino de linóleo
+    grain(g, w, h, 16);
   }, rx, ry);
 
   const rough = paint(512, 512, (g, w, h) => {
-    // Linóleo semibrillante con zonas desgastadas opacas en el centro de tránsito
-    g.fillStyle = '#8a8a8a';
+    // Linóleo semibrillante encerado
+    g.fillStyle = '#6a6a6a';
     g.fillRect(0, 0, w, h);
-    // Desgaste de paso
-    stains(g, w, h, 25, 90, '20,20,20', 0.55);
-    // Charcos reflectantes (rugosidad muy baja = brillo casi espejo)
-    for (let i = 0; i < 4; i++) {
-      const px = Math.random() * w, py = Math.random() * h, pr = 30 + Math.random() * 50;
-      const gr = g.createRadialGradient(px, py, 0, px, py, pr);
-      gr.addColorStop(0, '#111111');
-      gr.addColorStop(0.8, '#333333');
-      gr.addColorStop(1, '#8a8a8a');
-      g.fillStyle = gr;
-      g.beginPath(); g.arc(px, py, pr, 0, Math.PI * 2); g.fill();
-    }
-    grain(g, w, h, 70);
+    grain(g, w, h, 30);
   }, rx * 2, ry * 2, false);
 
   return { map, rough };

@@ -81,10 +81,63 @@
     </section>
 
     <section id="cctv" class="overlay hidden">
-      <div class="cctv-box">
-        <div class="cctv-tabs" id="cctv-tabs"></div>
-        <canvas id="cctv-canvas" width="640" height="360"></canvas>
-        <div class="cctv-foot"><span id="cctv-status">REC ●</span><button id="cctv-close" class="btn ghost">Cerrar monitores</button></div>
+      <div class="cctv-tablet">
+        <div class="cctv-top-bar">
+          <div class="cctv-info-left">
+            <span class="cctv-rec-dot">● REC</span>
+            <span id="cctv-cam-title">CAM 01 · RECEPCIÓN Y HALL</span>
+          </div>
+          <div class="cctv-info-center">
+            <span id="cctv-anomaly-status" class="cctv-anomaly-pill">ANOMALÍAS: 0/3</span>
+          </div>
+          <div class="cctv-info-right">
+            <span class="cctv-time" id="cctv-time-display">00:04:18 AM</span>
+            <span class="cctv-signal">SEÑAL: ÓPTIMA</span>
+          </div>
+        </div>
+
+        <div class="cctv-viewport-wrap">
+          <canvas id="cctv-canvas" width="840" height="480"></canvas>
+          <div class="cctv-scanlines"></div>
+          <div class="cctv-vignette"></div>
+
+          <!-- Alerta de Anomalía / Movimiento -->
+          <div id="cctv-alert-banner" class="hidden">
+            <span class="alert-icon">⚠</span>
+            <span id="cctv-alert-msg">¡MOVIMIENTO DETECTADO!</span>
+          </div>
+
+          <!-- Retícula de inspección de anomalía interactiva -->
+          <div id="cctv-reticle" class="hidden">
+            <div class="cctv-bracket-tl"></div>
+            <div class="cctv-bracket-tr"></div>
+            <div class="cctv-bracket-bl"></div>
+            <div class="cctv-bracket-br"></div>
+            <div id="cctv-reticle-label">¡ANOMALÍA DETECTADA! CLIC PARA REGISTRAR</div>
+          </div>
+
+          <!-- Indicador de interferencia estática -->
+          <div id="cctv-static-overlay" class="hidden"></div>
+        </div>
+
+        <div class="cctv-bottom-bar">
+          <div class="cctv-controls-left">
+            <button id="cctv-light-btn" class="cctv-btn">
+              <span class="btn-icon">💡</span>
+              <span class="btn-text">ILUMINAR SECTOR [ESPACIO]</span>
+            </button>
+            <button id="cctv-close" class="cctv-btn ghost">
+              <span class="btn-icon">⬇</span>
+              <span class="btn-text">BAJAR MONITOR [E]</span>
+            </button>
+          </div>
+
+          <!-- Mini Mapa de Cámaras estilo Five Nights at Freddy's -->
+          <div class="cctv-fnaf-map" id="cctv-fnaf-map">
+            <div class="map-label">PLANO CCTV · HOSPITAL SAN ANSELMO</div>
+            <div class="cctv-map-grid" id="cctv-map-grid"></div>
+          </div>
+        </div>
       </div>
     </section>
 

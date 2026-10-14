@@ -3,7 +3,7 @@ import { Hospital } from '../world/Hospital.js';
 import { Player } from '../player/Player.js';
 import { Ghost, Actor } from '../enemy/Ghost.js';
 import { PEOPLE } from '../world/Models.js';
-import { CAMS, drawFeed } from '../ui/Cctv.js';
+import { CAMS, ANOMALIES, drawFeed, hitTestAnomaly } from '../ui/Cctv.js';
 import { CHAPTERS } from '../chapters.js';
 import { FlashbackPlayer } from '../ui/Flashback.js';
 
@@ -99,6 +99,7 @@ export class Game {
     this.player = new Player(this.camera, this.scene, this.hospital, this.input);
     if (this.isMobile) this.player.spot.shadow.mapSize.set(this.lowEnd ? 256 : 512, this.lowEnd ? 256 : 512);
     this.player.onStep = v => this.audio.step(v);
+    this.player.onFlashToggle = () => this.audio.flashClick();
     this.player.hasFlash = !!this.story.flashlight; this.player.flashOn = false;
     this.ghost = new Ghost(this.scene, this.hospital);
     this.ghost.onCatch = () => this.catchPlayer();
@@ -248,20 +249,219 @@ export class Game {
     });
   }
 
-  cctv(onView = null) {
+  cctv(options = {}) {
+    const opts = typeof options === 'function' ? { onView: options } : (options || {});
+    const {
+      onView = null,
+      targetAnomalies = ['child_waiting', 'wheelchair_moved', 'door_peek'],
+      onAnomalyFound = null,
+      onClimaxTrigger = null,
+    } = opts;
+
     return new Promise((res, rej) => {
-      const tk = this.run; this._openUi(); show('touch-ui', false);
-      const tabs = $('cctv-tabs'); tabs.innerHTML = ''; let cur = 0; const viewed = new Set();
-      CAMS.forEach((c, i) => {
-        const b = document.createElement('button'); b.textContent = c.name.split(' · ')[0] + (c.forbidden ? ' ⚠' : '');
-        if (c.forbidden) b.classList.add('forbidden');
-        b.onclick = () => { cur = i; viewed.add(c.id); this.audio.static_(); onView?.(c.id); sync(); };
-        tabs.appendChild(b);
-      });
-      const sync = () => [...tabs.children].forEach((b, i) => b.classList.toggle('active', i === cur));
-      sync(); show('cctv', true); viewed.add(1);
-      this.cctvDraw = t => drawFeed($('cctv-canvas'), CAMS[cur], t, this.cctvState);
-      this.closeCctv = () => { if (tk !== this.run) return; this.closeCctv = null; this.cctvDraw = null; show('cctv', false); show('touch-ui', this.input.isTouch); this._closeUi(); res([...viewed]); };
+      const tk = this.run;
+      this._openUi();
+      show('touch-ui', false);
+      this.audio.cctvFlip();
+
+      const canvas = $('cctv-canvas');
+      const mapGrid = $('cctv-map-grid');
+      const camTitle = $('cctv-cam-title');
+      const reticle = $('cctv-reticle');
+      const alertBanner = $('cctv-alert-banner');
+      const alertMsg = $('cctv-alert-msg');
+      const anomalyPill = $('cctv-anomaly-status');
+      const lightBtn = $('cctv-light-btn');
+      const closeBtn = $('cctv-close');
+
+      if (mapGrid) mapGrid.innerHTML = '';
+      let cur = 0;
+      let panX = 0;
+      let targetPanX = 0;
+      let lightOn = false;
+      let isJumpscaring = false;
+      const viewed = new Set();
+      const foundAnomalies = new Set();
+
+      this.cctvState.anomaliesActive = targetAnomalies;
+      this.cctvState.jumpscareActive = false;
+      this.cctvState.jumpscareProgress = 0;
+
+      // Actualizar píldora de anomalías
+      const updateAnomalyCount = () => {
+        if (anomalyPill) {
+          anomalyPill.textContent = `ANOMALÍAS: ${foundAnomalies.size}/${targetAnomalies.length}`;
+          if (foundAnomalies.size >= targetAnomalies.length) {
+            anomalyPill.style.borderColor = '#4ade80';
+            anomalyPill.style.color = '#86efac';
+            this.cctvState.climaxReady = true;
+            if (alertBanner && alertMsg) {
+              alertMsg.textContent = '¡ALERTA EN PISO 4! SEÑAL DETECTADA EN CAM 05';
+              alertBanner.classList.remove('hidden');
+            }
+            this.audio.cctvAlert();
+            onClimaxTrigger?.();
+          }
+        }
+      };
+      updateAnomalyCount();
+
+      // Botones del mapa estilo FNAF
+      const buttons = mapGrid ? CAMS.map((c, i) => {
+        const b = document.createElement('button');
+        b.className = 'cctv-cam-node' + (c.forbidden ? ' forbidden' : '');
+        b.textContent = c.code + (c.forbidden ? ' ⚠' : '');
+        b.onclick = () => {
+          if (isJumpscaring) return;
+          cur = i;
+          viewed.add(c.id);
+          this.audio.cctvBeep();
+          this.audio.static_();
+          onView?.(c.id);
+
+          if (c.id === 5 && this.cctvState.climaxReady && !isJumpscaring) {
+            triggerJumpscare();
+          }
+          sync();
+        };
+        mapGrid.appendChild(b);
+        return b;
+      }) : [];
+
+      const sync = () => {
+        buttons.forEach((b, i) => {
+          b.classList.toggle('active', i === cur);
+          const c = CAMS[i];
+          const hasUndiscovered = targetAnomalies.some(aId => {
+            const anom = Object.values(ANOMALIES).find(an => an.id === aId);
+            return anom && anom.camId === c.id && !foundAnomalies.has(aId);
+          });
+          b.classList.toggle('alert', hasUndiscovered || (c.id === 5 && this.cctvState.climaxReady));
+        });
+        if (camTitle) camTitle.textContent = CAMS[cur].name;
+      };
+
+      sync();
+      show('cctv', true);
+      viewed.add(CAMS[cur].id);
+
+      // Conmutar luz de sector
+      const toggleLight = () => {
+        if (isJumpscaring) return;
+        lightOn = !lightOn;
+        this.audio.cctvLight();
+        if (lightBtn) lightBtn.classList.toggle('light-active', lightOn);
+
+        if (CAMS[cur].id === 5 && this.cctvState.climaxReady && !isJumpscaring) {
+          triggerJumpscare();
+        }
+      };
+      if (lightBtn) lightBtn.onclick = toggleLight;
+      this.cctvToggleLight = toggleLight;
+
+      // Paneo con el ratón / arrastre táctil
+      const onMove = (e) => {
+        if (isJumpscaring || !canvas) return;
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.clientX ?? e.touches?.[0]?.clientX ?? rect.width / 2;
+        const clientY = e.clientY ?? e.touches?.[0]?.clientY ?? rect.height / 2;
+        const normX = (clientX - rect.left) / rect.width;
+        const normY = (clientY - rect.top) / rect.height;
+        targetPanX = (normX - 0.5) * -100;
+
+        const activeUndiscovered = targetAnomalies.filter(id => !foundAnomalies.has(id));
+        const hit = hitTestAnomaly(CAMS[cur].id, normX, normY, activeUndiscovered);
+        if (hit && reticle) {
+          reticle.classList.remove('hidden');
+          reticle.style.left = `${normX * 100}%`;
+          reticle.style.top = `${normY * 100}%`;
+          reticle.style.width = `${hit.rect.w * rect.width + 20}px`;
+          reticle.style.height = `${hit.rect.h * rect.height + 20}px`;
+        } else if (reticle) {
+          reticle.classList.add('hidden');
+        }
+      };
+
+      if (canvas) {
+        canvas.onmousemove = onMove;
+        canvas.ontouchmove = onMove;
+      }
+
+      // Clic para registrar anomalía
+      const onClick = (e) => {
+        if (isJumpscaring || !canvas) return;
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.clientX ?? e.changedTouches?.[0]?.clientX ?? rect.width / 2;
+        const clientY = e.clientY ?? e.changedTouches?.[0]?.clientY ?? rect.height / 2;
+        const normX = (clientX - rect.left) / rect.width;
+        const normY = (clientY - rect.top) / rect.height;
+
+        const activeUndiscovered = targetAnomalies.filter(id => !foundAnomalies.has(id));
+        const hit = hitTestAnomaly(CAMS[cur].id, normX, normY, activeUndiscovered);
+        if (hit) {
+          foundAnomalies.add(hit.id);
+          this.audio.cctvAlert();
+          updateAnomalyCount();
+          if (reticle) reticle.classList.add('hidden');
+          onAnomalyFound?.(hit, foundAnomalies.size, targetAnomalies.length);
+          sync();
+        }
+      };
+
+      if (canvas) canvas.onclick = onClick;
+
+      // Secuencia de jumpscare en la cámara 5
+      const triggerJumpscare = () => {
+        isJumpscaring = true;
+        this.cctvState.jumpscareActive = true;
+        this.audio.jumpscare();
+        this.shakeCam(1.4);
+        let jStart = performance.now();
+        const jAnim = (now) => {
+          const elapsed = (now - jStart) / 1000;
+          this.cctvState.jumpscareProgress = Math.min(1.0, elapsed / 1.1);
+          if (elapsed < 1.3) {
+            requestAnimationFrame(jAnim);
+          } else {
+            finish({ jumpscare: true });
+          }
+        };
+        requestAnimationFrame(jAnim);
+      };
+
+      // Bucle de dibujo
+      this.cctvDraw = (t) => {
+        panX += (targetPanX - panX) * 0.12;
+        drawFeed(canvas, CAMS[cur], t, this.cctvState, panX, lightOn);
+      };
+
+      const finish = (resultMeta = {}) => {
+        if (tk !== this.run) return;
+        this.closeCctv = null;
+        this.cctvDraw = null;
+        this.cctvToggleLight = null;
+        if (canvas) {
+          canvas.onmousemove = null;
+          canvas.ontouchmove = null;
+          canvas.onclick = null;
+        }
+        if (lightBtn) lightBtn.onclick = null;
+        if (reticle) reticle.classList.add('hidden');
+        if (alertBanner) alertBanner.classList.add('hidden');
+        this.audio.cctvFlip();
+        show('cctv', false);
+        show('touch-ui', this.input.isTouch);
+        this._closeUi();
+        res({
+          viewed: [...viewed],
+          foundAnomalies: [...foundAnomalies],
+          jumpscare: !!resultMeta.jumpscare,
+        });
+      };
+
+      this.closeCctv = () => finish();
+      if (closeBtn) closeBtn.onclick = () => finish();
+
       this.waiters.push({ cond: () => false, rej, tk, res() {}, t: 0, timeout: Infinity });
     });
   }

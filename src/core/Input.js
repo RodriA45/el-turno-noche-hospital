@@ -18,6 +18,8 @@ export class Input {
     addEventListener('blur', () => this.keys.clear());
     addEventListener('mousemove', e => {
       if (!this.locked || this.isTouch) return;
+      // Filtrar saltos sintéticos del cursor del navegador al re-centrar el ratón en PointerLock
+      if (Math.abs(e.movementX) > 350 || Math.abs(e.movementY) > 350) return;
       this.dx += e.movementX; this.dy += e.movementY;
     });
     document.addEventListener('pointerlockchange', () => {

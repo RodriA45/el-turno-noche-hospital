@@ -57,9 +57,10 @@ export const CHAPTERS = [
       audio.door();
 
       game.cine(false);
-      game.objective('Revisa los monitores de seguridad en el mostrador');
+      game.objective('Lee el libro de guardia y accede a los monitores de seguridad (CCTV)');
 
       // Libro de registro sobre el mostrador para ambientación
+      let logbookRead = false;
       game.place({
         id: 'shift_logbook',
         floor: 1,
@@ -71,16 +72,17 @@ export const CHAPTERS = [
         model: noteMesh,
         async onUse(g) {
           audio.paper();
+          logbookRead = true;
           await g.note(
             'Libro de Guardia · Hospital San Anselmo',
-            'Últimas anotaciones:\n\n- 08/Oct: Ruido de pasos arrastrándose en el cielo raso sobre el pasillo norte. No hay pacientes en esa ala.\n\n- 11/Oct: La recepcionista Andrea reporta interferencias en los monitores y olor a humedad estancada.\n\n- 12/Oct: [PÁGINA MANCHADA] "Alguien me robó el marcador del escritorio. Sé que alguien entra a la recepción mientras bajo la vista".'
+            'Últimas anotaciones:\n\n- 08/Oct: Ruido de pasos arrastrándose en el cielo raso sobre el pasillo norte. No hay pacientes en esa ala.\n\n- 11/Oct: La recepcionista Andrea reporta interferencias en los monitores y olor a humedad estancada.\n\n- 12/Oct: [PÁGINA MANCHADA] "Alguien me robó el marcador del escritorio. Sé que alguien entra a la recepción mientras bajo la vista".\n\n- REPORTE DE HOY: Se reportaron 3 anomalías visuales en las cámaras de PB, Piso 1 y Piso 2. Verificar antes de cerrar la primera hora.'
           );
-          await g.say('La recepcionista anterior también notó que le faltaban cosas...', 'Clara', { thought: true });
+          await g.say('El reporte indica que debo verificar 3 anomalías en las cámaras de seguridad...', 'Clara', { thought: true });
         }
       });
 
-      // Monitor de seguridad en el mostrador
-      let cctvUsed = false;
+      // Monitor de seguridad en el mostrador estilo FNAF
+      let cctvCompleted = false;
       game.place({
         id: 'monitor_cctv',
         floor: 1,
@@ -88,70 +90,128 @@ export const CHAPTERS = [
         y: 1.15,
         z: 6.0,
         range: 3.2,
-        label: 'Monitores de seguridad (CCTV)',
+        label: 'Consola de Monitores CCTV [FNAF]',
         async onUse(g) {
-          if (cctvUsed) return;
-          cctvUsed = true;
-          g.cine(true);
-
-          const ans = await g.choice(
-            '¿Qué deseas hacer con las cámaras de seguridad del hospital?',
-            'Mirar la cámara prohibida del último piso (Piso 4)',
-            'No mirar las cámaras prohibidas y revisar los pisos 1, 2 y 3'
-          );
-
-          if (ans === 1) {
-            // =========================================================
-            // OPCIÓN B: NO MIRAR LAS CÁMARAS PROHIBIDAS (CANON)
-            // =========================================================
-            g.remember('choice1', 'B');
-            g.cctvState = { cam4On: false, ghostOnCam: 2 };
-            await g.cctv();
-
-            // Susto del reflejo en el monitor CRT
-            audio.whisper();
-            g.cctvState = { reflection: true, reflectionFigure: true };
-            await g.cctv();
-
-            await g.say('Espera un segundo... ¿qué es esa silueta en el reflejo de la pantalla?...', 'Clara', { thought: true });
-            g.shakeCam(0.9);
-            audio.thump();
-
-            // Girarse rápidamente hacia atrás
-            await g.lookAt(5.8 * 3, 1.6, 6.0 * 3, 0.35);
-            await g.say('¡¿Quién está ahí?! ¡Seguridad!', 'Clara');
-            await g.sleep(1.2);
-            await g.say('No hay nadie... Qué extraño. Juraría por mi vida que vi a un niño parado detrás de mí.', 'Clara', { thought: true });
-
-            // Volver a mirar los monitores
-            await g.lookAt(3.6 * 3, 1.2, 6.0 * 3, 0.45);
-            hospital.flicker(2.5);
-            audio.static_();
-            g.cctvState = { reflection: false, cam4On: true, cam4Ghost: true };
-            await g.say('¡Las cámaras del piso 4 se acaban de encender solas!', 'Clara', { thought: true });
-            await g.cctv();
-            await g.say('Las cerré lo más rápido que pude... El corazón me late con una fuerza que me ahoga.', 'Clara', { thought: true });
-          } else {
-            // =========================================================
-            // OPCIÓN A: DESOBEDECER Y MIRAR EL PISO 4
-            // =========================================================
-            g.remember('choice1', 'A');
-            g.cctvState = { cam4On: true, cam4Ghost: true };
-            await g.cctv();
-            audio.screech();
-            g.flash(0.9);
-            g.shakeCam(1.1);
-            hospital.blackout(3.5);
-            await g.say('¡DIOS MÍO! ¡Hay alguien parado en el medio del pasillo del piso 4 mirando fijo hacia la cámara!', 'Clara');
-            await g.sleep(1.5);
-            await g.say('Se cortó la luz de la recepción... Tengo que calmarme... Respira hondo, Clara.', 'Clara', { thought: true });
+          if (cctvCompleted) {
+            await g.say('El sistema de cámaras sufrió un colapso eléctrico total.', 'Clara', { thought: true });
+            return;
           }
 
+          g.objective('Localiza las 3 anomalías en las cámaras del hospital (Usa Espacio para iluminar)');
+
+          // Abrir la tableta de vigilancia estilo FNAF
+          const cctvResult = await g.cctv({
+            targetAnomalies: ['child_waiting', 'wheelchair_moved', 'door_peek'],
+            async onAnomalyFound(anomaly, currentCount, totalCount) {
+              if (anomaly.id === 'wheelchair_moved') {
+                await g.say('¡Espera!... Esa silla de ruedas estaba frenada contra la pared. Se movió al medio del pasillo sola.', 'Clara', { thought: true });
+              } else if (anomaly.id === 'door_peek') {
+                await g.say('La puerta de la habitación clausurada 204 se abrió... Hay una silueta pálida espiando.', 'Clara', { thought: true });
+              } else if (anomaly.id === 'child_waiting') {
+                await g.say('¡Dios mío!... Hay un niño empapado sentado en la sala de espera de mi propia recepción.', 'Clara', { thought: true });
+              }
+              if (currentCount >= totalCount) {
+                await g.sleep(0.4);
+                await g.say('¡Identifiqué las 3 anomalías! Pero... ¿por qué suena esa alarma en el Piso 4 clausurado?', 'Clara', { thought: true });
+              }
+            },
+            onClimaxTrigger() {
+              g.objective('¡PELIGRO! Revisa de inmediato la CAM 05 del Piso 4 en la consola');
+            }
+          });
+
+          // Si el jugador vio el jumpscare o completó la inspección
+          cctvCompleted = true;
           g.removeObj('monitor_cctv');
-          g.cine(false);
+
+          // ===================================================================
+          // SECUENCIA DE CORTE DE LUZ Y SUPERVIVENCIA EN 3D
+          // ===================================================================
+          g.cine(true);
+          hospital.blackout(20);
+          audio.screech();
+          g.shakeCam(1.3);
+          audio.slam();
+
+          await g.say('¡SE CORTÓ LA LUZ GENERAL DE TODA LA PLANTA BAJA!', 'Clara');
           await g.sleep(1.0);
-          await g.say('Las primeras horas de guardia pasaron con una lentitud desesperante...', 'Clara', { thought: true });
-          await g.fade(1, 1.6);
+          audio.thump();
+          await g.say('Acabo de escuchar cómo se abrió la puerta pesada de las escaleras... Esa cosa que vi en la cámara del piso 4... ¡acaba de bajar!', 'Clara', { thought: true });
+          g.cine(false);
+
+          // Linterna de emergencia colocada en el casillero de la pared este de recepción (7.8, 4.2)
+          let hasFlashlight = false;
+          game.place({
+            id: 'emergency_flashlight',
+            floor: 1,
+            x: 7.2,
+            y: 1.15,
+            z: 4.2,
+            range: 2.8,
+            label: 'Linterna de emergencia (Luz fosforescente)',
+            model: flashlightMesh,
+            spin: true,
+            async onUse(g2) {
+              if (hasFlashlight) return;
+              hasFlashlight = true;
+              audio.pickup();
+              g2.giveFlashlight();
+              g2.removeObj('emergency_flashlight');
+              await g2.say('¡La encontré! Es metálica y pesada. Pulsa F para encenderla.', 'Clara', { thought: true });
+            }
+          });
+
+          game.objective('Recoge la linterna de emergencia en el casillero de la pared tras el mostrador');
+          await game.waitUse('emergency_flashlight');
+
+          // Pasos aproximándose por el pasillo a oscuras
+          await game.sleep(0.8);
+          audio.whisper();
+          audio.step(0.4);
+          hospital.flicker(1.5);
+
+          // Fantasma aparece al final del pasillo y avanza hacia recepción
+          const ghost = game.ghost;
+          ghost.appear(1, 16.0, 6.0, 'walk', false);
+          ghost.goTo(5.2, 6.0, 1.4);
+
+          game.objective('¡VIENE HACIA AQUÍ! ¡ESCÓNDETE EN EL CASILLERO CON [E] O AGACHATE TRAS EL MOSTRADOR!');
+          await game.say('¡Viene arrastrando los pies hacia la recepción! ¡Tengo que meterme en el casillero YA!', 'Clara', { thought: true });
+
+          // Esperar a que el jugador entre al casillero o se esconda
+          let survivedHiding = false;
+          const checkSurvival = setInterval(() => {
+            if (game.isHiding) {
+              survivedHiding = true;
+            }
+          }, 200);
+
+          // El fantasma camina frente al mostrador y pasa de largo
+          await game.sleep(5.5);
+          clearInterval(checkSurvival);
+
+          ghost.goTo(0, 6, 1.8, () => {
+            ghost.vanish();
+          });
+
+          await game.sleep(2.0);
+          audio.breath(2.5);
+          await game.sleep(2.0);
+
+          if (game.isHiding) {
+            await game.say('Pasó justo frente a las rejillas del casillero... Pude escuchar su respiración congelada.', 'Clara', { thought: true });
+            game.exitHiding();
+          }
+
+          // Se restablece la luz de emergencia tenue
+          hospital.flicker(2.5);
+          hospital.setLights(true);
+          await game.say('Se fue hacia las salas clausuradas del ala este... El corazón me late a mil.', 'Clara', { thought: true });
+          await game.say('Sobreviví a mi primera hora en el San Anselmo... pero todavía quedan cinco horas para el amanecer.', 'Clara', { thought: true });
+
+          await game.sleep(1.0);
+          await game.fade(1, 1.6);
+          game.finish();
         }
       });
 
@@ -181,9 +241,9 @@ export const CHAPTERS = [
       // Suena el teléfono de recepción con timbre estridente
       await game.sleep(1.2);
       audio.ring();
-      game.objective('Atiende el teléfono de recepción que está sonando');
+      game.objective('Atiende el teléfono de recepción que está sonando con urgencia');
 
-      // Botiquín de farmacia cerrado con teclado numérico
+      // Botiquín de farmacia cerrado con teclado numérico (21.5, 8.5)
       let cabinetUnlocked = false;
       game.place({
         id: 'pharmacy_cabinet',
@@ -191,22 +251,43 @@ export const CHAPTERS = [
         x: 21.5,
         y: 1.2,
         z: 8.5,
-        range: 2.4,
-        label: 'Armario de medicamentos con clave',
+        range: 2.6,
+        label: 'Armario de medicamentos con cerradura digital',
         async onUse(g) {
           if (cabinetUnlocked) {
-            await g.say('Ya retiré las pilas de repuesto de este armario.', 'Clara', { thought: true });
+            await g.say('Ya retiré los medicamentos y las pilas de repuesto de este armario.', 'Clara', { thought: true });
             return;
           }
-          await g.say('Tiene un teclado de seguridad numérico de 4 dígitos...', 'Clara', { thought: true });
+          await g.say('El armario tiene un teclado numérico de seguridad de 4 dígitos...', 'Clara', { thought: true });
           const ok = await g.keypad('1984');
           if (ok) {
             cabinetUnlocked = true;
             g.giveFlashlight();
             audio.pickup();
-            await g.say('¡Se abrió! Encontré una linterna metálica pesada y pilas nuevas.', 'Clara', { thought: true });
+            await g.say('¡Código correcto! Encontré pilas nuevas de alta duración y un informe pediátrico.', 'Clara', { thought: true });
             g.removeObj('pharmacy_cabinet');
+            g.setFlag('cabinet_done');
           }
+        }
+      });
+
+      // Carpeta de turnos en el escritorio de farmacia (21.5, 1.4)
+      game.place({
+        id: 'nurse_clipboard',
+        floor: 1,
+        x: 21.3,
+        y: 1.1,
+        z: 2.0,
+        range: 2.4,
+        label: 'Prontuario de guardia de enfermería',
+        model: noteMesh,
+        async onUse(g) {
+          audio.paper();
+          await g.note(
+            'Prontuario de Enfermería · Sector Farmacia',
+            'Recordatorio a las enfermeras de noche:\n\n"La clave del armario de narcóticos y linternas corresponde al año de ingreso judicial del caso Valenzuela (1984).\n\nNo dejar medicamentos al alcance de pacientes desorientados".'
+          );
+          await g.say('¡Aquí está la clave del armario! Es el año de ingreso judicial: 1984.', 'Clara', { thought: true });
         }
       });
 
@@ -241,15 +322,38 @@ export const CHAPTERS = [
           }, 5.5);
 
           audio.thump();
-          await g.say('Cortaron... Era la voz de un niño pequeño llorando con desesperación.', 'Clara', { thought: true });
+          await g.say('Cortaron... En el visor de la centralita dice: "Llamada interna desde Sector Farmacia (Ala Este)".', 'Clara', { thought: true });
           g.cine(false);
           g.removeObj('phone_desk');
 
-          // Aparición espectral al final del pasillo
-          await g.sleep(0.8);
+          g.objective('Ve al Sector Farmacia al final del pasillo norte y busca medicación y pilas');
+          await g.say('Tengo que ir a la Farmacia a revisar de dónde provino la llamada y conseguir pilas de repuesto.', 'Clara', { thought: true });
+
+          // Esperar a que Clara abra el armario de la farmacia
+          await g.until(() => g.flags['cabinet_done']);
+
+          // SECUENCIA DE REGRESO: QTE DE CAMILLA / SILLA DE RUEDAS EN EL PASILLO
+          hospital.flicker(2.5);
           audio.slam();
-          hospital.flicker(2.2);
-          g.shakeCam(0.7);
+          g.shakeCam(0.8);
+          await g.say('¡¿Qué fue ese estruendo en el pasillo principal?!', 'Clara', { thought: true });
+          g.objective('Regresa hacia la recepción');
+
+          // Al acercarse al pasillo central (x < 14)
+          await g.until(() => g.player.pos.x < 14.0 * 3);
+
+          audio.screech();
+          g.shakeCam(1.1);
+          // QTE: Esquivar la camilla que sale disparada sola por el pasillo
+          const qteOk = await g.qte('KeyA', '¡UNA CAMILLA VIENE HACIA TI! ¡ESQUIVA A LA IZQUIERDA!');
+          if (qteOk) {
+            audio.thump();
+            await g.say('¡Ufff!... Salté justo a tiempo... La camilla se estrelló contra los casilleros de metal.', 'Clara', { thought: true });
+          } else {
+            audio.thump();
+            g.shakeCam(1.4);
+            await g.say('¡Maldición! El borde de la camilla me golpeó el hombro... Alguien la empujó con fuerza inhumana.', 'Clara', { thought: true });
+          }
 
           // Fantasma aparece al final del pasillo llamando con la mano
           const ghost = g.ghost;
@@ -315,6 +419,7 @@ export const CHAPTERS = [
           await g.sleep(1.0);
           await g.say('El turno concluyó sin que pudiera volver a conciliar la paz.', 'Clara', { thought: true });
           await g.fade(1, 1.6);
+          g.finish();
         }
       });
 

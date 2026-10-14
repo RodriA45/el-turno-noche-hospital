@@ -67,40 +67,170 @@ export class AudioManager {
     s.start(0, Math.random()); s.stop(this.ctx.currentTime + dur + 0.05);
   }
 
-  step(vol = 0.25) { this.noiseBurst(0.09, vol * 0.8, 350); }
-  pickup() { this.tone(660, 0.18, 'sine', 0.25); setTimeout(() => this.tone(990, 0.3, 'sine', 0.2), 90); }
-  paper() { this.noiseBurst(0.25, 0.2, 3000, 'highpass'); }
-  battery() { this.tone(300, 0.15, 'square', 0.12); setTimeout(() => this.tone(450, 0.2, 'square', 0.12), 100); }
-  door() { this.tone(110, 0.55, 'sawtooth', 0.07, 70); this.noiseBurst(0.3, 0.1, 500, 'bandpass'); }
-  locked() { this.tone(90, 0.1, 'square', 0.2); setTimeout(() => this.tone(80, 0.12, 'square', 0.2), 120); }
-  thump() { this.tone(70, 0.5, 'sine', 0.9, 30); this.noiseBurst(0.3, 0.4, 200); }
-  knock() { [0, 160, 330].forEach(t => setTimeout(() => { this.tone(120, 0.12, 'sine', 0.6, 60); this.noiseBurst(0.08, 0.4, 600); }, t)); }
-  growl() { this.tone(70, 1.0, 'sawtooth', 0.35, 35); this.tone(140, 0.9, 'sawtooth', 0.15, 60); }
-  screech() { this.tone(500, 0.8, 'sawtooth', 0.5, 1800); this.noiseBurst(0.9, 0.7, 3000, 'highpass'); this.thump(); }
-  win() { [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => this.tone(f, 0.8, 'sine', 0.2), i * 180)); }
-  entityStep() { if (this.ctx) this.noiseBurst(0.12, 0.9, 260, 'lowpass', this.panner); }
-  ring() { if (!this.ctx) return; [0, 220, 440, 660].forEach(t => setTimeout(() => { this.tone(1400, 0.16, 'square', 0.12); this.tone(1100, 0.16, 'square', 0.1); }, t)); }
-  pickupPhone() { this.noiseBurst(0.15, 0.25, 900, 'bandpass'); }
+  step(vol = 0.25) {
+    if (!this.ctx) return;
+    // Paso realista sobre linóleo de hospital: golpe de taco de goma + palmada de suela + resonancia de pasillo
+    const t = this.ctx.currentTime;
+    const isLeft = Math.random() > 0.5;
+    const pitch = isLeft ? 110 : 95;
+    // Golpe de talón
+    this.tone(pitch, 0.06, 'triangle', vol * 0.7, pitch * 0.6);
+    // Fricción de la suela en la baldosa
+    this.noiseBurst(0.04, vol * 0.45, isLeft ? 1400 : 1150, 'bandpass');
+    // Resonancia acústica del suelo
+    setTimeout(() => {
+      this.noiseBurst(0.08, vol * 0.18, 380, 'lowpass');
+    }, 25);
+  }
+
+  flashClick() {
+    if (!this.ctx) return;
+    // Clic metálico táctil de interruptor de linterna pesada
+    this.noiseBurst(0.02, 0.4, 3200, 'highpass');
+    this.tone(1800, 0.03, 'square', 0.15, 600);
+    setTimeout(() => {
+      this.noiseBurst(0.03, 0.3, 1800, 'bandpass');
+      this.tone(850, 0.04, 'sine', 0.12, 400);
+    }, 35);
+  }
+
+  pickup() {
+    this.tone(580, 0.12, 'sine', 0.22, 750);
+    setTimeout(() => this.tone(880, 0.22, 'sine', 0.25, 1100), 80);
+    this.noiseBurst(0.06, 0.15, 2000, 'bandpass');
+  }
+
+  paper() {
+    // Crujido realista de expediente de papel seco
+    this.noiseBurst(0.12, 0.35, 2400, 'bandpass');
+    setTimeout(() => this.noiseBurst(0.18, 0.3, 1800, 'highpass'), 60);
+    setTimeout(() => this.noiseBurst(0.1, 0.2, 3200, 'bandpass'), 150);
+  }
+
+  battery() {
+    this.tone(440, 0.12, 'sine', 0.15, 550);
+    setTimeout(() => this.tone(660, 0.16, 'sine', 0.18, 880), 90);
+  }
+
+  door() {
+    // Puerta de hospital pesada: crujido de bisagra metálica + pestillo
+    this.tone(140, 0.38, 'sawtooth', 0.08, 90);
+    this.noiseBurst(0.25, 0.12, 600, 'bandpass');
+    setTimeout(() => {
+      // Chasquido de pestillo al encastrar
+      this.noiseBurst(0.04, 0.25, 1800, 'highpass');
+      this.tone(320, 0.05, 'triangle', 0.15, 120);
+    }, 280);
+  }
+
+  locked() {
+    // Pomo trabado forcejeando contra marco metálico
+    this.noiseBurst(0.05, 0.35, 800, 'bandpass');
+    this.tone(85, 0.08, 'square', 0.22, 60);
+    setTimeout(() => {
+      this.noiseBurst(0.06, 0.4, 750, 'bandpass');
+      this.tone(75, 0.1, 'square', 0.25, 50);
+    }, 110);
+  }
+
+  thump() {
+    this.tone(55, 0.6, 'sine', 0.95, 24);
+    this.noiseBurst(0.35, 0.5, 180, 'lowpass');
+  }
+
+  knock() {
+    // Tres golpes secos contra madera o cristal blindado
+    [0, 180, 360].forEach(t => setTimeout(() => {
+      this.tone(135, 0.09, 'sine', 0.75, 50);
+      this.noiseBurst(0.06, 0.45, 900, 'bandpass');
+    }, t));
+  }
+
+  growl() {
+    this.tone(65, 1.2, 'sawtooth', 0.4, 30);
+    this.tone(130, 1.0, 'sawtooth', 0.2, 50);
+    this.noiseBurst(0.9, 0.25, 300, 'lowpass');
+  }
+
+  screech() {
+    this.tone(650, 0.9, 'sawtooth', 0.6, 2200);
+    this.noiseBurst(1.1, 0.75, 3500, 'highpass');
+    this.thump();
+  }
+
+  win() {
+    [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => this.tone(f, 0.8, 'sine', 0.2), i * 180));
+  }
+
+  entityStep() {
+    if (this.ctx) {
+      this.noiseBurst(0.14, 0.95, 240, 'lowpass', this.panner);
+      this.tone(48, 0.12, 'sine', 0.5, 28, this.panner);
+    }
+  }
+
+  ring() {
+    if (!this.ctx) return;
+    // Timbre electromecánico de teléfono analógico de baquelita
+    [0, 240, 480, 720].forEach(t => setTimeout(() => {
+      this.tone(1450, 0.14, 'square', 0.14);
+      this.tone(1220, 0.14, 'square', 0.12);
+      this.noiseBurst(0.08, 0.06, 3000, 'highpass');
+    }, t));
+  }
+
+  pickupPhone() {
+    this.noiseBurst(0.18, 0.35, 850, 'bandpass');
+    this.tone(280, 0.08, 'triangle', 0.12, 140);
+  }
+
   breath(secs = 3) {
     if (!this.ctx) return;
     for (let i = 0; i < secs; i++) {
-      setTimeout(() => this.noiseBurst(0.9, 0.45, 700, 'bandpass'), i * 1300);
-      setTimeout(() => this.noiseBurst(0.7, 0.3, 500, 'bandpass'), i * 1300 + 650);
+      setTimeout(() => this.noiseBurst(0.95, 0.5, 650, 'bandpass'), i * 1300);
+      setTimeout(() => this.noiseBurst(0.75, 0.35, 450, 'bandpass'), i * 1300 + 650);
     }
   }
+
   cry(secs = 4) {
     if (!this.ctx) return;
-    for (let i = 0; i < secs * 2; i++) setTimeout(() => this.tone(520 + Math.random() * 120, 0.4, 'sine', 0.16, 380 + Math.random() * 80), i * 450);
+    for (let i = 0; i < secs * 2; i++) {
+      setTimeout(() => this.tone(520 + Math.random() * 120, 0.45, 'sine', 0.18, 360 + Math.random() * 80), i * 450);
+    }
   }
-  whisper() { this.noiseBurst(1.2, 0.35, 2600, 'bandpass'); }
-  ding() { this.tone(880, 0.9, 'sine', 0.2); }
-  slam() { this.thump(); this.noiseBurst(0.25, 0.7, 1200); }
-  qte() { this.tone(180, 0.15, 'square', 0.25); }
-  static_() { this.noiseBurst(0.6, 0.3, 4000, 'highpass'); }
+
+  whisper() {
+    this.noiseBurst(1.4, 0.4, 2400, 'bandpass');
+    this.tone(190, 0.8, 'sine', 0.12, 120);
+  }
+
+  ding() {
+    this.tone(920, 1.1, 'sine', 0.22);
+  }
+
+  slam() {
+    this.thump();
+    this.noiseBurst(0.3, 0.8, 1400);
+    this.tone(38, 0.9, 'sine', 0.7, 18);
+  }
+
+  qte() {
+    this.tone(220, 0.18, 'sawtooth', 0.3, 90);
+  }
+
+  static_() {
+    this.noiseBurst(0.7, 0.35, 4500, 'highpass');
+  }
 
   heartbeat(vol) {
-    this.tone(55, 0.14, 'sine', vol, 35);
-    setTimeout(() => this.tone(50, 0.16, 'sine', vol * 0.8, 32), 170);
+    // Latido bifásico visceral lub-dub
+    const v = Math.min(1.0, vol);
+    this.tone(48, 0.14, 'sine', v * 0.95, 28);
+    this.tone(28, 0.22, 'sine', v * 0.8, 18);
+    setTimeout(() => {
+      this.tone(56, 0.12, 'sine', v * 0.75, 34);
+      this.tone(34, 0.18, 'sine', v * 0.6, 22);
+    }, 160);
   }
 
   // Efectos de sonido cinematográficos AAA estilo Resident Evil / VHS
@@ -144,6 +274,49 @@ export class AudioManager {
     if (!this.ctx) return;
     this.tone(320, 0.12, 'sawtooth', 0.12, 420);
     this.noiseBurst(0.1, 0.2, 800);
+  }
+
+  cctvFlip() {
+    if (!this.ctx) return;
+    // Efecto de levantar/bajar monitor mecánico
+    this.noiseBurst(0.15, 0.35, 600, 'bandpass');
+    this.tone(140, 0.18, 'sine', 0.25, 90);
+  }
+
+  cctvBeep() {
+    if (!this.ctx) return;
+    // Bip digital de cambio de cámara estilo FNAF
+    this.tone(1800, 0.04, 'sine', 0.2);
+    setTimeout(() => this.tone(2400, 0.05, 'sine', 0.18), 35);
+  }
+
+  cctvLight() {
+    if (!this.ctx) return;
+    // Zumbido eléctrico de la luz de la cámara
+    this.tone(120, 0.22, 'sawtooth', 0.18, 110);
+    this.noiseBurst(0.08, 0.15, 1200);
+  }
+
+  cctvAlert() {
+    if (!this.ctx) return;
+    // Alarma urgente de anomalía detectada
+    this.tone(950, 0.15, 'sawtooth', 0.3, 1150);
+    setTimeout(() => this.tone(1150, 0.18, 'sawtooth', 0.35, 1400), 160);
+  }
+
+  jumpscare() {
+    if (!this.ctx) return;
+    // Golpe brutal de disonancia y estática para susto de cámara
+    this.noiseBurst(0.9, 0.85, 2500, 'highpass');
+    this.tone(850, 0.8, 'sawtooth', 0.7, 180);
+    this.tone(920, 0.8, 'square', 0.6, 210);
+    this.tone(55, 1.2, 'sine', 0.8, 30);
+  }
+
+  fnafGlitch() {
+    if (!this.ctx) return;
+    this.noiseBurst(0.25, 0.45, 1800);
+    this.tone(340, 0.08, 'sawtooth', 0.2, 80);
   }
 
   update(dt, camera, ghostPos, chasing, tension) {

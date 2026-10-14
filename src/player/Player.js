@@ -60,19 +60,30 @@ export class Player {
   update(dt, t, frozen = false) {
     const inp = this.input;
     if (!frozen) {
-      this.yaw -= inp.dx * this.sens;
-      this.pitch = Math.max(-1.45, Math.min(1.45, this.pitch - inp.dy * this.sens));
+      // Limitar deltas máximos por frame para evitar tirones y rotaciones anómalas al mover el mouse rápido
+      const maxDelta = 90;
+      const cdx = Math.max(-maxDelta, Math.min(maxDelta, inp.dx));
+      const cdy = Math.max(-maxDelta, Math.min(maxDelta, inp.dy));
 
-      // Inercia / balanceo suave de la linterna según la velocidad del ratón
-      const targetSwayX = -inp.dx * 0.0006;
-      const targetSwayY = inp.dy * 0.0006;
-      this.flashSwayX += (targetSwayX - this.flashSwayX) * Math.min(1, dt * 10);
-      this.flashSwayY += (targetSwayY - this.flashSwayY) * Math.min(1, dt * 10);
-      this.spot.target.position.set(this.flashSwayX * 12, this.flashSwayY * 12, -6);
+      this.yaw -= cdx * this.sens;
+      // Normalizar yaw para mantener precisión numérica
+      this.yaw = ((this.yaw + Math.PI) % (Math.PI * 2) + (Math.PI * 2)) % (Math.PI * 2) - Math.PI;
+
+      this.pitch = Math.max(-1.42, Math.min(1.42, this.pitch - cdy * this.sens));
+
+      // Inercia / balanceo suave de la linterna con límites estrictos
+      const targetSwayX = Math.max(-0.35, Math.min(0.35, -cdx * 0.0004));
+      const targetSwayY = Math.max(-0.35, Math.min(0.35, cdy * 0.0004));
+      this.flashSwayX += (targetSwayX - this.flashSwayX) * Math.min(1, dt * 12);
+      this.flashSwayY += (targetSwayY - this.flashSwayY) * Math.min(1, dt * 12);
+      this.spot.target.position.set(this.flashSwayX * 10, this.flashSwayY * 10, -6);
     }
 
     if (!frozen && (inp.wasPressed('KeyC') || inp.wasPressed('ControlLeft'))) this.crouch = !this.crouch;
-    if (!frozen && inp.wasPressed('KeyF') && this.hasFlash && this.battery > 0) this.flashOn = !this.flashOn;
+    if (!frozen && inp.wasPressed('KeyF') && this.hasFlash && this.battery > 0) {
+      this.flashOn = !this.flashOn;
+      this.onFlashToggle?.();
+    }
 
     let f = frozen ? 0 : (inp.down('KeyW') || inp.down('ArrowUp') ? 1 : 0) - (inp.down('KeyS') || inp.down('ArrowDown') ? 1 : 0);
     let r = frozen ? 0 : (inp.down('KeyD') || inp.down('ArrowRight') ? 1 : 0) - (inp.down('KeyA') || inp.down('ArrowLeft') ? 1 : 0);

@@ -160,14 +160,285 @@ body.is-touch #subs { bottom: 6%; }
 #kp-display.err { color: #ff5a5a; border-color: #5a1b1b; animation: shakeX .3s; }
 @keyframes shakeX { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
 
-.cctv-box { width: min(760px, 96vw); padding: 12px; background: #0b0d0c; border: 6px solid #1d1f1e; border-radius: 10px; box-shadow: 0 0 60px #000, inset 0 0 40px rgba(60,255,160,.05); }
-#cctv-canvas { width: 100%; display: block; background: #000; border-radius: 4px; image-rendering: pixelated; }
-.cctv-tabs { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
-.cctv-tabs button { pointer-events: auto; cursor: pointer; flex: 1; padding: 8px 4px; font-family: 'Special Elite', monospace; font-size: 13px; color: #8fe8b8; background: #0e1512; border: 1px solid #1f3a2c; border-radius: 3px; }
-.cctv-tabs button.active { background: #1f4a36; color: #fff; }
-.cctv-tabs button.forbidden { color: #ff7a7a; border-color: #5a2323; }
-.cctv-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-family: 'Special Elite', monospace; color: #8fe8b8; }
-.cctv-foot .btn { margin: 0; padding: 8px 16px; font-size: 13px; }
+/* ================= MONITOR CCTV ESTILO FIVE NIGHTS AT FREDDY'S ================= */
+.cctv-tablet {
+  width: min(920px, 96vw);
+  max-height: 94vh;
+  display: flex;
+  flex-direction: column;
+  background: #090c0a;
+  border: 5px solid #1a221d;
+  border-radius: 12px;
+  box-shadow: 0 0 80px rgba(0, 0, 0, 0.95), inset 0 0 40px rgba(0, 20, 10, 0.6);
+  padding: 10px 14px;
+  box-sizing: border-box;
+  font-family: 'Special Elite', monospace;
+  position: relative;
+  overflow: hidden;
+}
+
+.cctv-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px 8px;
+  border-bottom: 2px solid #16241c;
+  color: #7de8b0;
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+
+.cctv-info-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: bold;
+}
+
+.cctv-rec-dot {
+  color: #ff3344;
+  animation: pulse .7s infinite alternate;
+  text-shadow: 0 0 8px #ff1122;
+}
+
+.cctv-anomaly-pill {
+  background: rgba(220, 38, 38, 0.18);
+  border: 1px solid #ef4444;
+  color: #ffaaaa;
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-shadow: 0 0 6px rgba(255, 50, 50, 0.7);
+}
+
+.cctv-info-right {
+  display: flex;
+  gap: 16px;
+  color: #5ea882;
+  font-size: 12px;
+}
+
+.cctv-viewport-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: 58vh;
+  background: #000;
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 8px 0;
+  border: 2px solid #101c15;
+}
+
+#cctv-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+  cursor: crosshair;
+}
+
+.cctv-scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.28) 0px,
+    rgba(0, 0, 0, 0.28) 2px,
+    transparent 2px,
+    transparent 4px
+  );
+  opacity: 0.85;
+}
+
+.cctv-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at center, transparent 40%, rgba(0, 0, 0, 0.65) 90%);
+}
+
+#cctv-alert-banner {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(180, 10, 20, 0.9);
+  color: #fff;
+  padding: 6px 18px;
+  border-radius: 4px;
+  font-size: 14px;
+  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 0 20px rgba(255, 0, 0, 0.7);
+  animation: pulse .4s infinite alternate;
+  z-index: 5;
+  pointer-events: none;
+}
+
+#cctv-reticle {
+  position: absolute;
+  pointer-events: auto;
+  cursor: pointer;
+  border: 2px dashed #ffea00;
+  background: rgba(255, 234, 0, 0.12);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 15px rgba(255, 234, 0, 0.5);
+  animation: reticlePulse .5s infinite alternate;
+  z-index: 6;
+  border-radius: 6px;
+  transition: width 0.15s, height 0.15s;
+}
+
+@keyframes reticlePulse {
+  0% { transform: translate(-50%, -50%) scale(0.97); }
+  100% { transform: translate(-50%, -50%) scale(1.03); }
+}
+
+#cctv-reticle-label {
+  position: absolute;
+  bottom: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 11px;
+  color: #fff;
+  background: #b91c1c;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-weight: bold;
+}
+
+.cctv-bottom-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.cctv-controls-left {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cctv-btn {
+  pointer-events: auto;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-family: 'Special Elite', monospace;
+  font-size: 12px;
+  color: #a4f5ca;
+  background: #0f1c14;
+  border: 1px solid #234832;
+  border-radius: 4px;
+  transition: all .15s ease;
+}
+
+.cctv-btn:hover {
+  background: #1b3827;
+  color: #fff;
+  border-color: #3bb371;
+  box-shadow: 0 0 10px rgba(59, 179, 113, 0.3);
+}
+
+.cctv-btn.ghost {
+  background: #121312;
+  border-color: #262c28;
+  color: #8c9c92;
+}
+
+.cctv-btn.ghost:hover {
+  background: #252a26;
+  color: #fff;
+}
+
+.cctv-btn.light-active {
+  background: #ffcc00;
+  color: #000;
+  border-color: #fff;
+  box-shadow: 0 0 20px #ffcc00;
+}
+
+/* Mini Mapa de Cámaras FNAF */
+.cctv-fnaf-map {
+  background: #070907;
+  border: 1px solid #1a281e;
+  border-radius: 6px;
+  padding: 6px 10px;
+  min-width: 320px;
+  flex: 1;
+}
+
+.map-label {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: #49755b;
+  margin-bottom: 4px;
+  text-align: right;
+}
+
+.cctv-map-grid {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.cctv-cam-node {
+  pointer-events: auto;
+  cursor: pointer;
+  padding: 6px 10px;
+  font-size: 11px;
+  background: #0c1510;
+  color: #72cca1;
+  border: 1px solid #1a3324;
+  border-radius: 3px;
+  position: relative;
+  transition: all .15s;
+}
+
+.cctv-cam-node:hover {
+  background: #142a1d;
+  color: #fff;
+}
+
+.cctv-cam-node.active {
+  background: #1b4a2e;
+  color: #fff;
+  border-color: #4ade80;
+  box-shadow: 0 0 12px rgba(74, 222, 128, 0.4);
+}
+
+.cctv-cam-node.forbidden {
+  color: #ff7777;
+  border-color: #631d1d;
+  background: #190909;
+}
+
+.cctv-cam-node.forbidden.active {
+  background: #631515;
+  border-color: #ff3344;
+  box-shadow: 0 0 14px rgba(255, 51, 68, 0.6);
+}
+
+.cctv-cam-node.alert {
+  animation: camAlertPulse .5s infinite alternate;
+}
+
+@keyframes camAlertPulse {
+  0% { border-color: #ef4444; box-shadow: 0 0 6px #ef4444; color: #fff; }
+  100% { border-color: #ffffff; box-shadow: 0 0 16px #ffffff; color: #ff5555; }
+}
 
 #qte { position: fixed; inset: 0; z-index: 25; display: grid; place-items: center; background: radial-gradient(circle, rgba(0,0,0,0) 20%, rgba(120,0,6,.45)); }
 #qte-box { text-align: center; }
