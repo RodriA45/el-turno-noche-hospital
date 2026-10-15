@@ -42,15 +42,25 @@ const postProcess = new PostProcess(renderer, game.scene, camera, isMobile, lowE
 game.postProcess = postProcess;
 
 function resize() {
+  const w = window.visualViewport ? Math.round(window.visualViewport.width) : window.innerWidth;
+  const h = window.visualViewport ? Math.round(window.visualViewport.height) : window.innerHeight;
   renderer.setPixelRatio(pixelRatio);
-  renderer.setSize(innerWidth, innerHeight);
-  camera.aspect = innerWidth / innerHeight;
+  renderer.setSize(w, h);
+  camera.aspect = w / h;
   camera.updateProjectionMatrix();
-  postProcess.resize(innerWidth, innerHeight, pixelRatio);
+  postProcess.resize(w, h, pixelRatio);
 }
 
 addEventListener('resize', resize);
-addEventListener('orientationchange', () => setTimeout(resize, 250));
+addEventListener('orientationchange', () => {
+  resize();
+  setTimeout(resize, 80);
+  setTimeout(resize, 250);
+  setTimeout(resize, 500);
+});
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', resize);
+}
 
 // Calidad adaptativa en caso de caídas de FPS
 let fpsAcc = 0, fpsN = 0;

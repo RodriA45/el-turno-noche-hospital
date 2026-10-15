@@ -2,8 +2,17 @@ export class AudioManager {
   constructor() { this.ctx = null; this.heartT = 0; this.tension = 0; }
 
   start() {
-    if (this.ctx) { this.ctx.resume(); return; }
+    if (this.ctx) {
+      if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+      return;
+    }
     const ctx = this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const resumeAudio = () => {
+      if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+    };
+    window.addEventListener('touchstart', resumeAudio, { passive: true });
+    window.addEventListener('pointerdown', resumeAudio, { passive: true });
+
     const savedVol = localStorage.getItem('hospital_vol');
     const initVol = savedVol !== null ? Math.max(0, Math.min(1, +savedVol)) : 0.85;
     this.master = ctx.createGain(); this.master.gain.value = initVol; this.master.connect(ctx.destination);
