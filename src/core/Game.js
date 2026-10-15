@@ -127,10 +127,11 @@ export class Game {
 
   toMenu() {
     this.run++; this.state = 'menu'; this.input.unlock();
-    ['hud', 'touch-ui', 'pause', 'end', 'titlecard', 'note', 'choice', 'keypad', 'cctv', 'qte', 'rotate-warning', 'flashback', 'hiding'].forEach(i => show(i, false));
+    ['hud', 'touch-ui', 'pause', 'end', 'titlecard', 'note', 'choice', 'keypad', 'cctv', 'qte', 'flashback', 'hiding'].forEach(i => show(i, false));
     this.flashbackPlayer.stop(); this.isHiding = false;
     $('fx-fade').style.opacity = 0; this.buildMenu(); show('menu', true);
     this.scene = new THREE.Scene(); this.scene.background = new THREE.Color(0x020203);
+    this.postProcess?.setScene(this.scene);
   }
 
   // ------------------------------------------------------------------ capítulo
@@ -149,6 +150,7 @@ export class Game {
 
     this.scene = new THREE.Scene(); this.scene.background = new THREE.Color(0x020203);
     this.scene.fog = new THREE.FogExp2(0x040506, 0.06);
+    this.postProcess?.setScene(this.scene);
     this.hospital = new Hospital(this.scene);
     this.player = new Player(this.camera, this.scene, this.hospital, this.input);
     if (this.isMobile) this.player.spot.shadow.mapSize.set(this.lowEnd ? 256 : 512, this.lowEnd ? 256 : 512);
@@ -161,7 +163,7 @@ export class Game {
 
     this.isHiding = false; this.flashbackPlayer.stop();
     ['menu', 'pause', 'end', 'note', 'choice', 'keypad', 'cctv', 'qte', 'flashback', 'hiding'].forEach(id => show(id, false));
-    show('hud', true); show('touch-ui', this.input.isTouch); show('rotate-warning', this.input.isTouch);
+    show('hud', true); show('touch-ui', this.input.isTouch);
     $('fx-fade').style.transition = 'none'; $('fx-fade').style.opacity = 1;
     $('subs').classList.add('hidden'); $('objective').textContent = '';
     $('chapter-tag').textContent = `Capítulo ${i + 1}`;
@@ -183,6 +185,7 @@ export class Game {
   }
 
   finish() {
+    if (this.state === 'end') return;
     const i = this.chapterIdx; const last = i >= CHAPTERS.length - 1;
     if (!last) { this.progress = Math.max(this.progress, i + 2); localStorage.setItem('hotel_progress', this.progress); }
     this.state = 'end'; this.input.unlock();
@@ -291,11 +294,12 @@ export class Game {
     return new Promise((res, rej) => {
       const tk = this.run; this._openUi(); show('touch-ui', false);
       let val = ''; const disp = $('kp-display'); const grid = $('kp-grid');
-      const render = () => { disp.textContent = (val + '----').slice(0, 4).replace(/[^\d]/g, '-').split('').map((c, i) => i < val.length ? val[i] : '-').join(''); };
+      const targetLen = code ? code.length : 4;
+      const render = () => { disp.textContent = (val + '----').slice(0, targetLen).split('').map((c, i) => i < val.length ? val[i] : '-').join(''); };
       grid.innerHTML = '';
       const press = d => {
-        if (val.length >= 4) return; val += d; this.audio.qte(); render();
-        if (val.length === 4) {
+        if (val.length >= targetLen) return; val += d; this.audio.qte(); render();
+        if (val.length === targetLen) {
           if (val === code) { disp.classList.remove('err'); setTimeout(() => finish(true), 350); this.audio.pickup(); }
           else { disp.classList.add('err'); this.audio.locked(); setTimeout(() => { val = ''; disp.classList.remove('err'); render(); }, 450); }
         }
@@ -787,8 +791,7 @@ export class Game {
       setTimeout(() => a.thunder(), 1100);
     }
     else if (r < 0.45) {
-      a.panner.positionX.value = p.pos.x + (Math.random() - 0.5) * 18;
-      a.panner.positionZ.value = p.pos.z + (Math.random() - 0.5) * 18;
+      a.setPannerPosition(p.pos.x + (Math.random() - 0.5) * 18, 1.2, p.pos.z + (Math.random() - 0.5) * 18);
       for (let i = 0; i < 6; i++) setTimeout(() => a.entityStep(), i * 520);
     }
     else if (r < 0.65) {

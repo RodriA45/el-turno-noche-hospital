@@ -565,9 +565,9 @@ export const CHAPTERS = [
           audio.paper();
           await g.note(
             'Índice de Psiquiatría Forense · Sector Archivo',
-            'AVISO DE SEGURIDAD INTERNA:\n\n"Los expedientes correspondientes a homicidios y negligencias graves se encuentran archivados bajo custodia en la gaveta blindada 3.\n\nCódigo de desbloqueo: 315 (Legajo Valenzuela)".'
+            'AVISO DE SEGURIDAD INTERNA:\n\n"Los expedientes correspondientes a homicidios y negligencias graves se encuentran archivados bajo custodia en la gaveta blindada 3.\n\nCódigo de desbloqueo: 0315 (Legajo Valenzuela)".'
           );
-          await g.say('El memorándum indica que el código del archivador blindado es 315.', 'Clara', { thought: true });
+          await g.say('El memorándum indica que el código del archivador blindado es 0315.', 'Clara', { thought: true });
         }
       });
 
@@ -587,7 +587,7 @@ export const CHAPTERS = [
             return;
           }
           await g.say('El archivador metálico tiene un teclado numérico de seguridad...', 'Clara', { thought: true });
-          const ok = await g.keypad('315');
+          const ok = await g.keypad('0315');
           if (ok) {
             cabinetOpened = true;
             audio.pickup();

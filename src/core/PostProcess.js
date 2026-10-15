@@ -45,7 +45,7 @@ const HorrorShader = {
 
       // Aberración cromática radial reactiva al nivel de terror/tensión
       float chroma = 0.0012 + uTension * 0.009;
-      vec2 dir = normalize(toCenter);
+      vec2 dir = dist > 0.0001 ? toCenter / dist : vec2(0.0);
       vec2 rUv = uv + dir * (chroma * dist * dist * 2.2);
       vec2 bUv = uv - dir * (chroma * dist * dist * 1.8);
 
@@ -54,8 +54,8 @@ const HorrorShader = {
       float b = texture2D(tDiffuse, bUv).b;
       vec3 color = vec3(r, g, b);
 
-      // Viñeteado cinematográfico profundo
-      float vignette = smoothstep(0.85, 0.28, dist);
+      // Viñeteado cinematográfico profundo (GLSL estándar con edge0 < edge1)
+      float vignette = clamp(1.0 - smoothstep(0.28, 0.85, dist) * 0.72, 0.05, 1.0);
       color *= vignette;
 
       // Pulso cardíaco de sangre periférica (rojo en bordes en peligro)
@@ -67,7 +67,7 @@ const HorrorShader = {
 
       // Grano analógico cinematográfico (film grain fino)
       float grain = (rand(uv * uResolution + fract(uTime * 17.0)) - 0.5) * (0.045 + uTension * 0.035);
-      color += grain;
+      color = max(vec3(0.0), color + grain);
 
       gl_FragColor = vec4(color, 1.0);
     }
@@ -92,13 +92,17 @@ export class PostProcess {
 
     // 2. Unreal Bloom Pass sutil (resplandor en fluorescentes, ojos del ente y hotspot)
     if (!lowEnd) {
-      this.bloomPass = new UnrealBloomPass(
-        size,
-        isMobile ? 0.25 : 0.38, // intensidad
-        0.45,                   // radio
-        0.82                    // umbral (solo luces muy brillantes)
-      );
-      this.composer.addPass(this.bloomPass);
+      try {
+        this.bloomPass = new UnrealBloomPass(
+          size,
+          isMobile ? 0.22 : 0.35, // intensidad
+          0.45,                   // radio
+          0.82                    // umbral (solo luces muy brillantes)
+        );
+        this.composer.addPass(this.bloomPass);
+      } catch (e) {
+        console.warn('UnrealBloomPass no soportado en este dispositivo, omitiendo bloom:', e);
+      }
     }
 
     // 3. Shader de terror (aberración cromática, grano en GPU y viñeta)
@@ -109,6 +113,13 @@ export class PostProcess {
     // 4. Output pass con mapeo tonal y sRGB
     this.outputPass = new OutputPass();
     this.composer.addPass(this.outputPass);
+  }
+
+  setScene(scene) {
+    this.scene = scene;
+    if (this.renderPass) {
+      this.renderPass.scene = scene;
+    }
   }
 
   resize(w, h, pixelRatio) {
@@ -124,8 +135,14 @@ export class PostProcess {
   }
 
   render() {
-    if (this.enabled) {
-      this.composer.render();
+    if (this.enabled && this.composer) {
+      try {
+        this.composer.render();
+      } catch (err) {
+        console.warn('EffectComposer render failed, falling back to WebGLRenderer:', err);
+        this.enabled = false;
+        this.renderer.render(this.scene, this.camera);
+      }
     } else {
       this.renderer.render(this.scene, this.camera);
     }

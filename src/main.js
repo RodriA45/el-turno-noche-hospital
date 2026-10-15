@@ -81,8 +81,8 @@ function frame() {
   game.update(dt, t);
 
   // Sincronizar escena activa en caso de reinicio o cambio de nivel
-  if (postProcess.renderPass.scene !== game.scene) {
-    postProcess.renderPass.scene = game.scene;
+  if (postProcess.scene !== game.scene) {
+    postProcess.setScene(game.scene);
   }
 
   postProcess.update(dt, t, game.audio?.tension || 0, game.heartPulse || 0);

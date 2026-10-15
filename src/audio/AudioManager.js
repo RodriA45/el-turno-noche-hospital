@@ -407,23 +407,41 @@ export class AudioManager {
     setTimeout(() => this.noiseBurst(0.5, 0.3, 480, 'lowpass'), 80);
   }
 
+  setPannerPosition(x, y, z) {
+    if (!this.panner) return;
+    try {
+      if (this.panner.positionX) {
+        this.panner.positionX.value = x;
+        this.panner.positionY.value = y;
+        this.panner.positionZ.value = z;
+      } else if (this.panner.setPosition) {
+        this.panner.setPosition(x, y, z);
+      }
+    } catch (e) { /* ignore */ }
+  }
+
   update(dt, camera, ghostPos, chasing, tension) {
     if (!this.ctx) return;
-    const l = this.ctx.listener, p = camera.position;
-    const fw = { x: -Math.sin(camera.rotation.y), z: -Math.cos(camera.rotation.y) };
-    if (l.positionX) {
-      l.positionX.value = p.x; l.positionY.value = p.y; l.positionZ.value = p.z;
-      l.forwardX.value = fw.x; l.forwardY.value = 0; l.forwardZ.value = fw.z;
-      l.upX.value = 0; l.upY.value = 1; l.upZ.value = 0;
-    }
-    this.panner.positionX.value = ghostPos.x; this.panner.positionY.value = 1.2; this.panner.positionZ.value = ghostPos.z;
-    this.entityGain.gain.value += ((chasing ? 0.55 : 0.0) - this.entityGain.gain.value) * Math.min(1, dt * 2);
-    this.droneGain.gain.value += ((0.09 + tension * 0.25) - this.droneGain.gain.value) * Math.min(1, dt * 1.5);
-    this.tension = tension;
-    this.heartT -= dt;
-    if (tension > 0.12 && this.heartT <= 0) {
-      this.heartbeat(0.25 + tension * 0.6);
-      this.heartT = 1.15 - tension * 0.7;
-    }
+    try {
+      const l = this.ctx.listener, p = camera.position;
+      const fw = { x: -Math.sin(camera.rotation.y), z: -Math.cos(camera.rotation.y) };
+      if (l.positionX) {
+        l.positionX.value = p.x; l.positionY.value = p.y; l.positionZ.value = p.z;
+        l.forwardX.value = fw.x; l.forwardY.value = 0; l.forwardZ.value = fw.z;
+        l.upX.value = 0; l.upY.value = 1; l.upZ.value = 0;
+      } else if (l.setPosition) {
+        l.setPosition(p.x, p.y, p.z);
+        l.setOrientation(fw.x, 0, fw.z, 0, 1, 0);
+      }
+      this.setPannerPosition(ghostPos.x, 1.2, ghostPos.z);
+      this.entityGain.gain.value += ((chasing ? 0.55 : 0.0) - this.entityGain.gain.value) * Math.min(1, dt * 2);
+      this.droneGain.gain.value += ((0.09 + tension * 0.25) - this.droneGain.gain.value) * Math.min(1, dt * 1.5);
+      this.tension = tension;
+      this.heartT -= dt;
+      if (tension > 0.12 && this.heartT <= 0) {
+        this.heartbeat(0.25 + tension * 0.6);
+        this.heartT = 1.15 - tension * 0.7;
+      }
+    } catch (e) { /* ignore audio update glitch */ }
   }
 }

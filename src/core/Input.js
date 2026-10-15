@@ -17,15 +17,20 @@ export class Input {
     addEventListener('keyup', e => this.keys.delete(e.code));
     addEventListener('blur', () => this.keys.clear());
     addEventListener('mousemove', e => {
-      if (!this.locked || this.isTouch) return;
+      if (!this.locked) return;
       // Filtrar saltos sintéticos del cursor del navegador al re-centrar el ratón en PointerLock
       if (Math.abs(e.movementX) > 350 || Math.abs(e.movementY) > 350) return;
       this.dx += e.movementX; this.dy += e.movementY;
     });
     document.addEventListener('pointerlockchange', () => {
-      if (this.isTouch) return;
-      this.locked = document.pointerLockElement === dom;
-      this.onLockChange?.(this.locked);
+      const isLocked = document.pointerLockElement === dom;
+      if (isLocked) {
+        this.locked = true;
+        this.onLockChange?.(true);
+      } else if (!this.isTouch) {
+        this.locked = false;
+        this.onLockChange?.(false);
+      }
     });
     if (this.isTouch) this.setupTouch();
   }
@@ -97,21 +102,24 @@ export class Input {
   }
 
   lock() {
-    if (this.isTouch) { this.locked = true; this.onLockChange?.(true); }
-    else {
+    this.locked = true;
+    this.onLockChange?.(true);
+    if (!this.isTouch || matchMedia('(pointer: fine)').matches) {
       try {
         const p = this.dom.requestPointerLock?.();
         if (p && typeof p.catch === 'function') p.catch(() => {});
       } catch (e) { /* ignore pointer lock rejection */ }
     }
   }
+
   unlock() {
-    if (this.isTouch) { this.locked = false; this.axisX = this.axisY = 0; this.onLockChange?.(false); }
-    else {
-      try {
-        if (document.pointerLockElement) document.exitPointerLock?.();
-      } catch (e) { /* ignore */ }
-    }
+    this.locked = false;
+    this.axisX = 0;
+    this.axisY = 0;
+    this.onLockChange?.(false);
+    try {
+      if (document.pointerLockElement) document.exitPointerLock?.();
+    } catch (e) { /* ignore */ }
   }
   down(code) { return this.keys.has(code); }
   wasPressed(code) { return this.pressed.has(code); }

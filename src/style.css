@@ -637,3 +637,24 @@ body.is-touch #subs { bottom: 6%; }
   }
 }
 
+/* Aviso de orientación en dispositivos táctiles en vertical */
+#rotate-warning {
+  display: none !important;
+}
+
+@media (orientation: portrait) and (max-width: 900px) {
+  body.is-touch #rotate-warning:not(.hidden) {
+    display: grid !important;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(4, 5, 7, 0.96);
+    color: var(--bone);
+    place-items: center;
+    text-align: center;
+    padding: 24px;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 2px;
+  }
+}
+
