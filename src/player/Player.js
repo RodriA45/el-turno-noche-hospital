@@ -29,11 +29,22 @@ export class Player {
       const child = camera.children[i];
       if (child.isLight || child.isPoints || child.userData?.isPlayerAttachment) {
         camera.remove(child);
-        if (child.geometry) child.geometry.dispose();
-        if (child.material) {
-          if (child.material.map) child.material.map.dispose();
-          child.material.dispose();
-        }
+        child.traverse(node => {
+          if (node.geometry) node.geometry.dispose();
+          if (node.map) node.map.dispose();
+          if (node.shadow?.map) node.shadow.map.dispose();
+          if (node.material) {
+            if (Array.isArray(node.material)) {
+              node.material.forEach(m => {
+                if (m.map) m.map.dispose();
+                m.dispose();
+              });
+            } else {
+              if (node.material.map) node.material.map.dispose();
+              node.material.dispose();
+            }
+          }
+        });
       }
     }
 
@@ -418,11 +429,11 @@ export class Player {
     // Ruido que la entidad puede oír
     this.noise = !this.moving ? 1.5 : this.sprinting ? 14 : this.crouch ? 3 : 7;
 
-    // Mecánica de Asomo e Inclinación táctica (Lean con Q y E)
+    // Mecánica de Asomo e Inclinación táctica (Lean con Q/E o botones táctiles)
     let wantLean = 0;
     if (!frozen) {
-      if (inp.down('KeyQ')) wantLean -= 1.0;
-      if (inp.down('KeyE')) wantLean += 1.0;
+      if (inp.down('KeyQ') || inp.down('LeanLeft')) wantLean -= 1.0;
+      if ((inp.down('KeyE') || inp.down('LeanRight')) && (!this.currentInteractable || inp.down('LeanRight'))) wantLean += 1.0;
     }
     this.targetLean = wantLean;
     this.lean += (this.targetLean - this.lean) * Math.min(1, dt * 14);
@@ -545,6 +556,7 @@ export class Player {
       if (d > 0.8 && (dx * fw.x + dz * fw.z) / d < 0.40) continue;
       if (d < bestScore) { bestScore = d; best = it; }
     }
+    this.currentInteractable = best;
     return best;
   }
 }

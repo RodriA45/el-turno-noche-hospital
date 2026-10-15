@@ -27,7 +27,7 @@ export class Input {
       if (isLocked) {
         this.locked = true;
         this.onLockChange?.(true);
-      } else if (!this.isTouch) {
+      } else if (!this.isTouch || matchMedia('(pointer: fine)').matches) {
         this.locked = false;
         this.onLockChange?.(false);
       }
@@ -120,6 +120,7 @@ export class Input {
     this.locked = false;
     this.axisX = 0;
     this.axisY = 0;
+    this.sprintTouch = false;
     this.onLockChange?.(false);
     try {
       if (document.pointerLockElement) document.exitPointerLock?.();

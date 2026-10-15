@@ -141,6 +141,7 @@ export class Game {
       if (this.closeNote && (e.code === 'KeyE' || e.code === 'Escape')) this.closeNote();
       if (this.closeCctv && (e.code === 'Escape' || e.code === 'KeyE')) this.closeCctv();
     }
+    if (e.code === 'Escape' && this.state === 'play') { this.input.unlock(); return; }
     if (this.qteCb && e.code === this.qteCode) this.qteCb(true);
   }
 
@@ -148,6 +149,7 @@ export class Game {
     this.run++; this.state = 'menu'; this.input.unlock();
     ['hud', 'touch-ui', 'pause', 'end', 'titlecard', 'note', 'choice', 'keypad', 'cctv', 'qte', 'flashback', 'hiding', 'examiner'].forEach(i => show(i, false));
     this.flashbackPlayer.stop(); this.isHiding = false;
+    this.examiner?.clear();
     $('fx-fade').style.opacity = 0; this.buildMenu(); show('menu', true);
     this.scene = new THREE.Scene(); this.scene.background = new THREE.Color(0x020203);
     this.postProcess?.setScene(this.scene);
@@ -181,7 +183,7 @@ export class Game {
     this.ghost.onStep = null;
 
     this.isHiding = false; this.flashbackPlayer.stop();
-    ['menu', 'pause', 'end', 'note', 'choice', 'keypad', 'cctv', 'qte', 'flashback', 'hiding'].forEach(id => show(id, false));
+    ['menu', 'pause', 'end', 'note', 'choice', 'keypad', 'cctv', 'qte', 'flashback', 'hiding', 'examiner'].forEach(id => show(id, false));
     show('hud', true); show('touch-ui', this.input.isTouch);
     $('fx-fade').style.transition = 'none'; $('fx-fade').style.opacity = 1;
     $('subs').classList.add('hidden'); $('objective').textContent = '';
@@ -423,7 +425,7 @@ export class Game {
       const buttons = mapGrid ? CAMS.map((c, i) => {
         const b = document.createElement('button');
         b.className = 'cctv-cam-node' + (c.forbidden ? ' forbidden' : '');
-        b.textContent = c.code + (c.forbidden ? ' ⚠' : '');
+        b.textContent = c.code + (c.forbidden ? ' [!]' : '');
         b.onclick = () => {
           if (isJumpscaring) return;
           cur = i;
@@ -681,7 +683,7 @@ export class Game {
       try {
         await this.sleep(0.9); await this.fade(1, 0.5);
         this.ghost.vanish();
-        const c = this.catchSpot || cp;
+        const c = this.catchSpot || cp || { floor: 1, cx: 5, cz: 6, yaw: Math.PI / 2 };
         if (c.floor !== this.hospital.floorNum) this.toFloorInstant(c.floor, c.cx, c.cz, c.yaw); else this.player.setPos(c.cx, c.cz, c.yaw);
         await this.sleep(0.4); await this.fade(0, 0.6); this.frozen = false;
         this.onCaught?.();
@@ -694,6 +696,7 @@ export class Game {
   interact() {
     if (this.isHiding) return this.exitHiding();
     const it = this.player.findInteractable(); if (!it) return;
+    if (it.inUse) return;
     if (it.kind === 'hiding') return this.enterHiding(it.spot);
     if (it.kind === 'door') return this.useDoor(it.door);
     if (it.kind === 'stairs') {
@@ -703,9 +706,25 @@ export class Game {
       return;
     }
     this.audio.qte();
-    it.onUse?.(this);
-    (this.useWaiters?.[it.id] || []).splice(0).forEach(w => w.res());
-    if (it.once) this.hospital.remove(it.id), this.extra = this.extra.filter(e => e.id !== it.id);
+    if (it.once) {
+      this.hospital.remove(it.id);
+      this.extra = this.extra.filter(e => e.id !== it.id);
+    }
+    it.inUse = true;
+    const p = it.onUse?.(this);
+    if (p && typeof p.then === 'function') {
+      p.then(() => {
+        it.inUse = false;
+        (this.useWaiters?.[it.id] || []).splice(0).forEach(w => w.res());
+      }).catch(err => {
+        it.inUse = false;
+        if (err !== CANCEL) console.error(err);
+        (this.useWaiters?.[it.id] || []).splice(0).forEach(w => w.res());
+      });
+    } else {
+      it.inUse = false;
+      (this.useWaiters?.[it.id] || []).splice(0).forEach(w => w.res());
+    }
   }
 
   async useDoor(d) {
@@ -751,6 +770,12 @@ export class Game {
     const tension = g.mode === 'chase' ? 0.6 + Math.max(0, 1 - d / 14) * 0.4 : vis ? Math.max(0, 1 - d / 10) * 0.5 : 0;
     this.audio.update(dt, this.camera, g.pos, g.mode === 'chase' && vis, tension);
     $('fx-danger').style.opacity = tension * 0.85;
+
+    // Pulso cardíaco para el shader cinematográfico de post-procesado
+    let heartRate = tension > 0.5 ? 9.0 : tension > 0.2 ? 6.5 : 3.5;
+    if (this.isHiding && (this.breath < 0.3 || this.gaspCd > 0)) heartRate = 10.0;
+    const pulseFactor = (tension > 0.15 || (this.isHiding && this.breath < 0.4)) ? Math.max(0, Math.sin(t * heartRate)) : 0;
+    this.heartPulse = pulseFactor * (tension > 0 ? tension : 0.45);
 
     this.player.update(dt, t, frozen || !!this.look, d, tension);
 

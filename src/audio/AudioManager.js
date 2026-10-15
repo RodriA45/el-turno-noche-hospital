@@ -287,12 +287,6 @@ export class AudioManager {
     setTimeout(() => this.noiseBurst(0.35, 0.22, 1200, 'highpass'), 120);
   }
 
-  thunder() {
-    if (!this.ctx) return;
-    this.noiseBurst(1.8, 0.55, 160, 'lowpass');
-    this.tone(42, 1.4, 'sine', 0.6, 24);
-  }
-
   flatline(duration = 2.4) {
     if (!this.ctx) return;
     this.tone(1150, duration, 'sine', 0.28);

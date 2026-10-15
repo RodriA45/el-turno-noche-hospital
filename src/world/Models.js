@@ -4,7 +4,11 @@ import { faceTexture, clothTexture, noteTex, signTexture, paint } from './Textur
 const mats = {};
 function M(name) {
   if (mats[name]) return mats[name];
-  const std = (o) => new THREE.MeshStandardMaterial(o);
+  const std = (o) => {
+    const mat = new THREE.MeshStandardMaterial(o);
+    mat.userData.isShared = true;
+    return mat;
+  };
   const defs = {
     metal: () => std({ color: 0x9fa4a8, metalness: 0.88, roughness: 0.32 }),
     chrome: () => std({ color: 0xd8dde2, metalness: 0.95, roughness: 0.15 }),
@@ -18,7 +22,11 @@ function M(name) {
     plastic: () => std({ color: 0x3b4e56, roughness: 0.45 }),
     rubber: () => std({ color: 0x141414, roughness: 0.92 }),
     glass: () => std({ color: 0xa8c5cc, roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.35 }),
-    screen: () => new THREE.MeshBasicMaterial({ color: 0x5ee2a0 }),
+    screen: () => {
+      const mat = new THREE.MeshBasicMaterial({ color: 0x5ee2a0 });
+      mat.userData.isShared = true;
+      return mat;
+    },
     screenOff: () => std({ color: 0x050707, roughness: 0.15, metalness: 0.2 }),
     fabric: () => std({ color: 0x36454d, roughness: 0.95 }),
     leaf: () => std({ color: 0x384a28, roughness: 0.9 }),

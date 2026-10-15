@@ -68,10 +68,12 @@ export class Hospital {
       if (o.material) {
         if (Array.isArray(o.material)) {
           o.material.forEach(m => {
-            if (m.map) m.map.dispose();
-            m.dispose();
+            if (!m.userData?.isShared) {
+              if (m.map) m.map.dispose();
+              m.dispose();
+            }
           });
-        } else if (o.material !== this.wallMat && o.material !== this.doorMat && o.material !== this.exitMat && o.material !== this.baseboardMat && o.material !== this.bumperMat && o.material !== this.trimMat) {
+        } else if (!o.material.userData?.isShared && o.material !== this.wallMat && o.material !== this.doorMat && o.material !== this.exitMat && o.material !== this.baseboardMat && o.material !== this.bumperMat && o.material !== this.trimMat) {
           if (o.material.map) o.material.map.dispose();
           o.material.dispose();
         }

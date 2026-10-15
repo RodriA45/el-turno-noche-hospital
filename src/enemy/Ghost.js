@@ -79,7 +79,9 @@ export class Actor {
   }
 
   animate(dt, t) {
+    if (!this.mesh?.userData) return;
     const { legs, arms, head } = this.mesh.userData;
+    if (!legs || !arms || !head || !legs[0] || !legs[1] || !arms[0] || !arms[1]) return;
     const sp = this.moving ? 1 : 0;
     this.anim += dt * (this.speed * 3.2) * sp;
     const sw = Math.sin(this.anim) * 0.55 * sp;

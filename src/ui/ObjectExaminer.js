@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { flashlightCookie } from '../world/Textures.js';
 
 // =============================================================================
 // VISOR DE INSPECCIÓN DE OBJETOS 3D ESTILO RESIDENT EVIL (OBJECT EXAMINER)
@@ -112,6 +111,32 @@ export class ObjectExaminer {
       e.preventDefault();
       this.targetZoom = Math.max(0.7, Math.min(1.8, this.targetZoom - e.deltaY * 0.0015));
     }, { passive: false });
+
+    // Zoom con pellizco táctil en móviles
+    let pinchStartDist = 0;
+    let pinchStartZoom = 1.0;
+    cvs.addEventListener('touchstart', (e) => {
+      if (!this.active) return;
+      if (e.touches.length === 2) {
+        pinchStartDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        pinchStartZoom = this.targetZoom;
+      }
+    }, { passive: true });
+
+    cvs.addEventListener('touchmove', (e) => {
+      if (!this.active) return;
+      if (e.touches.length === 2 && pinchStartDist > 0) {
+        const curDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        const factor = curDist / pinchStartDist;
+        this.targetZoom = Math.max(0.7, Math.min(1.8, pinchStartZoom * factor));
+      }
+    }, { passive: true });
   }
 
   flip() {
@@ -126,17 +151,36 @@ export class ObjectExaminer {
     this.isFlipped = false;
   }
 
+  clear() {
+    this.currentModel = null;
+    while (this.pivot.children.length > 0) {
+      const ch = this.pivot.children[0];
+      this.pivot.remove(ch);
+      ch.traverse(node => {
+        if (node.geometry) node.geometry.dispose();
+        if (node.material) {
+          if (Array.isArray(node.material)) {
+            node.material.forEach(m => {
+              if (!m.userData?.isShared) {
+                if (m.map) m.map.dispose();
+                m.dispose();
+              }
+            });
+          } else if (!node.material.userData?.isShared) {
+            if (node.material.map) node.material.map.dispose();
+            node.material.dispose();
+          }
+        }
+      });
+    }
+  }
+
   examine(itemDef) {
     return new Promise((resolve) => {
       this.active = true;
       this.resetOrientation();
       this.resize();
-
-      // Limpiar objeto previo del pivote
-      while (this.pivot.children.length > 0) {
-        const ch = this.pivot.children[0];
-        this.pivot.remove(ch);
-      }
+      this.clear();
 
       // Montar nuevo modelo 3D detallado
       if (itemDef.model) {
@@ -159,6 +203,8 @@ export class ObjectExaminer {
         this.active = false;
         modal.classList.add('hidden');
         window.removeEventListener('keydown', keyHandler);
+        $('examiner-close').onclick = null;
+        $('examiner-flip').onclick = null;
         resolve(true);
       };
 

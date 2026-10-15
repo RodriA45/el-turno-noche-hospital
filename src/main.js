@@ -44,6 +44,7 @@ game.postProcess = postProcess;
 function resize() {
   const w = window.visualViewport ? Math.round(window.visualViewport.width) : window.innerWidth;
   const h = window.visualViewport ? Math.round(window.visualViewport.height) : window.innerHeight;
+  if (!w || !h) return;
   renderer.setPixelRatio(pixelRatio);
   renderer.setSize(w, h);
   camera.aspect = w / h;
