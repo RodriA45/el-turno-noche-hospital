@@ -3,6 +3,7 @@ import './style.css';
 import { Input } from './core/Input.js';
 import { AudioManager } from './audio/AudioManager.js';
 import { Game } from './core/Game.js';
+import { PostProcess } from './core/PostProcess.js';
 
 const $ = id => document.getElementById(id);
 const canvas = $('game-canvas');
@@ -25,11 +26,27 @@ renderer.toneMappingExposure = 1.15;
 
 const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.05, 80);
 
+const input = new Input(canvas);
+const audio = new AudioManager();
+
+const game = new Game({
+  renderer,
+  camera,
+  input,
+  audio,
+  isMobile,
+  lowEnd,
+});
+
+const postProcess = new PostProcess(renderer, game.scene, camera, isMobile, lowEnd);
+game.postProcess = postProcess;
+
 function resize() {
   renderer.setPixelRatio(pixelRatio);
   renderer.setSize(innerWidth, innerHeight);
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
+  postProcess.resize(innerWidth, innerHeight, pixelRatio);
 }
 
 addEventListener('resize', resize);
@@ -48,18 +65,6 @@ function adaptQuality(dt) {
   }
 }
 
-const input = new Input(canvas);
-const audio = new AudioManager();
-
-const game = new Game({
-  renderer,
-  camera,
-  input,
-  audio,
-  isMobile,
-  lowEnd,
-});
-
 let lastT = performance.now() * 0.001;
 
 function frame() {
@@ -74,7 +79,14 @@ function frame() {
   }
 
   game.update(dt, t);
-  renderer.render(game.scene, camera);
+
+  // Sincronizar escena activa en caso de reinicio o cambio de nivel
+  if (postProcess.renderPass.scene !== game.scene) {
+    postProcess.renderPass.scene = game.scene;
+  }
+
+  postProcess.update(dt, t, game.audio?.tension || 0, game.heartPulse || 0);
+  postProcess.render();
   input.endFrame();
 }
 

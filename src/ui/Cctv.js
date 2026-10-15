@@ -513,7 +513,7 @@ export function drawFeed(canvas, cam, t, s, panX = 0, lightOn = false) {
   if (lightOn) {
     g.fillStyle = '#ffcc00';
     g.textAlign = 'right';
-    g.fillText('💡 LUZ SECTOR: ON', w - 24, h - 18);
+    g.fillText('LUZ SECTOR: ON', w - 24, h - 18);
   }
 
   g.restore();

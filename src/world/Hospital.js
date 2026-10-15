@@ -63,7 +63,21 @@ export class Hospital {
   dispose() {
     if (!this.group) return;
     this.scene.remove(this.group);
-    this.group.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+    this.group.traverse(o => {
+      if (o.geometry) o.geometry.dispose();
+      if (o.material) {
+        if (Array.isArray(o.material)) {
+          o.material.forEach(m => {
+            if (m.map) m.map.dispose();
+            m.dispose();
+          });
+        } else if (o.material !== this.wallMat && o.material !== this.doorMat && o.material !== this.baseboardMat && o.material !== this.bumperMat && o.material !== this.trimMat) {
+          if (o.material.map) o.material.map.dispose();
+          o.material.dispose();
+        }
+      }
+    });
+    this.group = null;
   }
 
   /** Construye un piso. `extra` = definiciones dinámicas (objetos de capítulo). */

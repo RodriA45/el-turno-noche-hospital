@@ -4,13 +4,42 @@ export class AudioManager {
   start() {
     if (this.ctx) { this.ctx.resume(); return; }
     const ctx = this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-    this.master = ctx.createGain(); this.master.gain.value = 0.9; this.master.connect(ctx.destination);
+    const savedVol = localStorage.getItem('hospital_vol');
+    const initVol = savedVol !== null ? Math.max(0, Math.min(1, +savedVol)) : 0.85;
+    this.master = ctx.createGain(); this.master.gain.value = initVol; this.master.connect(ctx.destination);
 
-    // buffer de ruido
+    // Buffer de ruido
     const len = ctx.sampleRate * 2;
     this.noiseBuf = ctx.createBuffer(1, len, ctx.sampleRate);
     const d = this.noiseBuf.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+
+    // Reverberación convolutiva acústica del hospital (pasillos largos de linóleo y techos altos)
+    try {
+      const revLen = Math.floor(ctx.sampleRate * 2.2);
+      const revBuf = ctx.createBuffer(2, revLen, ctx.sampleRate);
+      const chL = revBuf.getChannelData(0), chR = revBuf.getChannelData(1);
+      for (let i = 0; i < revLen; i++) {
+        const decay = Math.exp(-i / (ctx.sampleRate * 0.42));
+        chL[i] = (Math.random() * 2 - 1) * decay;
+        chR[i] = (Math.random() * 2 - 1) * decay;
+        // Reflexiones tempranas marcadas de paredes de azulejos
+        if (i === Math.floor(ctx.sampleRate * 0.018)) { chL[i] += 0.45; chR[i] += 0.35; }
+        if (i === Math.floor(ctx.sampleRate * 0.034)) { chL[i] += 0.35; chR[i] += 0.42; }
+        if (i === Math.floor(ctx.sampleRate * 0.062)) { chL[i] += 0.28; chR[i] += 0.30; }
+      }
+      this.convolver = ctx.createConvolver();
+      this.convolver.buffer = revBuf;
+      this.reverbSend = ctx.createGain();
+      this.reverbSend.gain.value = 0.32;
+      this.reverbReturn = ctx.createGain();
+      this.reverbReturn.gain.value = 0.45;
+      this.reverbSend.connect(this.convolver);
+      this.convolver.connect(this.reverbReturn);
+      this.reverbReturn.connect(this.master);
+    } catch (e) {
+      this.reverbSend = this.master;
+    }
 
     // Drone ambiental
     const droneGain = this.droneGain = ctx.createGain(); droneGain.gain.value = 0.10;
@@ -320,7 +349,9 @@ export class AudioManager {
   }
 
   setMasterVolume(v) {
-    if (this.master) this.master.gain.value = Math.max(0, Math.min(1, v));
+    const val = Math.max(0, Math.min(1, v));
+    if (this.master) this.master.gain.value = val;
+    localStorage.setItem('hospital_vol', val);
   }
 
   batteryPickup() {

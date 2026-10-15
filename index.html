@@ -24,8 +24,20 @@
 
     <main id="hud" class="hidden">
       <div id="hud-left">
-        <div class="meter" id="meter-battery"><span>🔦 Batería</span><div class="bar"><i id="bar-battery"></i></div></div>
-        <div class="meter"><span>🏃 Aguante</span><div class="bar"><i id="bar-stamina"></i></div></div>
+        <div class="meter" id="meter-battery">
+          <span class="meter-label">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6l-3-3H9L6 6v3l3 3v9h6v-9l3-3V6z"/><circle cx="12" cy="6" r="1"/></svg>
+            Batería
+          </span>
+          <div class="bar"><i id="bar-battery"></i></div>
+        </div>
+        <div class="meter">
+          <span class="meter-label">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            Aguante
+          </span>
+          <div class="bar"><i id="bar-stamina"></i></div>
+        </div>
       </div>
       <div id="hud-right">
         <div id="chapter-tag">Capítulo 1</div>
@@ -41,15 +53,28 @@
       <div id="touch-look"></div>
       <div id="touch-move"></div>
       <div id="stick"><div id="stick-knob"></div></div>
-      <button id="btn-pause" aria-label="Pausa">⏸</button>
+      <button id="btn-pause" aria-label="Pausa">
+        <svg class="touch-svg" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+      </button>
       <div id="touch-buttons">
-        <button id="tb-flash" data-key="KeyF" aria-label="Linterna">🔦</button>
-        <button id="tb-crouch" data-key="KeyC" aria-label="Agacharse">⬇️</button>
-        <button id="tb-act" data-key="KeyE" aria-label="Interactuar">✋</button>
+        <button id="tb-flash" data-key="KeyF" aria-label="Linterna">
+          <svg class="touch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6l-3-3H9L6 6v3l3 3v9h6v-9l3-3V6z"/></svg>
+        </button>
+        <button id="tb-crouch" data-key="KeyC" aria-label="Agacharse">
+          <svg class="touch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 13l-7 7-7-7m7 7V4"/></svg>
+        </button>
+        <button id="tb-act" data-key="KeyE" aria-label="Interactuar">
+          <svg class="touch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
       </div>
     </div>
 
-    <div id="rotate-warning" class="hidden"><div>📱↻<p>Gira tu teléfono en horizontal<br />para jugar</p></div></div>
+    <div id="rotate-warning" class="hidden">
+      <div>
+        <svg class="rotate-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M12 18h.01"/><path d="M1 9l3-3 3 3"/><path d="M4 6v8a5 5 0 0 0 5 5"/></svg>
+        <p>Gira tu dispositivo a posición horizontal<br />para comenzar el turno</p>
+      </div>
+    </div>
 
     <section id="titlecard" class="hidden"><div><p id="tc-chapter"></p><h2 id="tc-title"></h2><p id="tc-sub"></p></div></section>
 
@@ -123,11 +148,15 @@
         <div class="cctv-bottom-bar">
           <div class="cctv-controls-left">
             <button id="cctv-light-btn" class="cctv-btn">
-              <span class="btn-icon">💡</span>
+              <span class="btn-icon">
+                <svg class="cctv-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6m-4 4h2M12 2a7 7 0 0 0-7 7c0 2.5 1.5 4.5 3 6h8c1.5-1.5 3-3.5 3-6a7 7 0 0 0-7-7z"/></svg>
+              </span>
               <span class="btn-text">ILUMINAR SECTOR [ESPACIO]</span>
             </button>
             <button id="cctv-close" class="cctv-btn ghost">
-              <span class="btn-icon">⬇</span>
+              <span class="btn-icon">
+                <svg class="cctv-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 9l-7 7-7-7"/></svg>
+              </span>
               <span class="btn-text">BAJAR MONITOR [E]</span>
             </button>
           </div>
@@ -148,7 +177,9 @@
     <div id="hiding" class="hidden">
       <div class="locker-slats"></div>
       <div id="hiding-hud">
-        <span class="heart-pulse">💓</span>
+        <span class="heart-pulse">
+          <svg class="heart-svg" viewBox="0 0 24 24" fill="#ff2233"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        </span>
         <div id="hiding-breath-wrap">
           <span id="hiding-breath-label">RESPIRACIÓN · Mantén [ESPACIO] para contener</span>
           <div class="bar breath-bar"><i id="bar-breath"></i></div>
@@ -192,9 +223,9 @@
           <li><kbd>Joystick izq.</kbd> mover</li>
           <li><kbd>Empujar a tope</kbd> correr</li>
           <li><kbd>Arrastrar der.</kbd> mirar</li>
-          <li><kbd>✋</kbd> interactuar</li>
-          <li><kbd>🔦</kbd> linterna</li>
-          <li><kbd>⬇️</kbd> agacharse</li>
+          <li><kbd>Tocar objeto</kbd> interactuar</li>
+          <li><kbd>Botón luz</kbd> linterna</li>
+          <li><kbd>Flecha abajo</kbd> agacharse</li>
         </ul>
         <p class="tip">Tus decisiones cambian lo que ocurre. Juega con auriculares.</p>
       </div>

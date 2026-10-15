@@ -50,6 +50,11 @@ export class Game {
 
     // Controles de configuración (Sensibilidad y Volumen)
     const sens1 = $('sens-slider'), sens2 = $('sens-slider-pause');
+    const savedSens = localStorage.getItem('hospital_sens');
+    const initSensNum = savedSens !== null ? Math.max(1, Math.min(10, ((+savedSens - 0.0008) / 0.0036) * 10)) : 5;
+    if (sens1) sens1.value = initSensNum;
+    if (sens2) sens2.value = initSensNum;
+
     const updateSens = v => {
       const s = 0.0008 + (v / 10) * 0.0036;
       this.player?.setSensitivity(s);
@@ -60,6 +65,11 @@ export class Game {
     if (sens2) sens2.oninput = e => updateSens(+e.target.value);
 
     const vol1 = $('vol-slider'), vol2 = $('vol-slider-pause');
+    const savedVol = localStorage.getItem('hospital_vol');
+    const initVolNum = savedVol !== null ? Math.round((+savedVol) * 100) : 85;
+    if (vol1) vol1.value = initVolNum;
+    if (vol2) vol2.value = initVolNum;
+
     const updateVol = v => {
       this.audio?.setMasterVolume(v / 100);
       if (vol1) vol1.value = v;
@@ -67,6 +77,15 @@ export class Game {
     };
     if (vol1) vol1.oninput = e => updateVol(+e.target.value);
     if (vol2) vol2.oninput = e => updateVol(+e.target.value);
+
+    // Contención de respiración en móviles mediante toque táctil en casillero
+    const hidingEl = $('hiding');
+    if (hidingEl) {
+      hidingEl.style.pointerEvents = 'auto';
+      hidingEl.addEventListener('pointerdown', (e) => { e.preventDefault(); this.touchHoldingBreath = true; });
+      hidingEl.addEventListener('pointerup', () => { this.touchHoldingBreath = false; });
+      hidingEl.addEventListener('pointercancel', () => { this.touchHoldingBreath = false; });
+    }
 
     // Pantalla completa
     const toggleFull = () => {

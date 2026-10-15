@@ -190,36 +190,74 @@ export const CHAPTERS = [
 
           // Fantasma aparece al final del pasillo y avanza hacia recepción
           const ghost = game.ghost;
-          ghost.appear(1, 16.0, 6.0, 'walk', false);
-          ghost.goTo(5.2, 6.0, 1.4);
+          ghost.appear(1, 16.0, 6.0, 'stand', false);
+          ghost.goTo(7.5, 6.0, 1.3);
 
           game.objective('¡VIENE HACIA AQUÍ! ¡ESCÓNDETE EN EL CASILLERO CON [E] Y CONTÉN LA RESPIRACIÓN [ESPACIO]!');
           await game.say('¡Viene arrastrando los pies hacia la recepción! ¡Tengo que meterme en el casillero YA y contener el aliento!', 'Clara', { thought: true });
 
-          // Esperar a que el jugador entre al casillero o se esconda
-          let survivedHiding = false;
-          const checkSurvival = setInterval(() => {
-            if (game.isHiding) {
-              survivedHiding = true;
+          // Período de acecho: evaluar si Clara se esconde y contiene la respiración
+          let spotted = false;
+          const waitStart = performance.now();
+          while (performance.now() - waitStart < 6200) {
+            await game.sleep(0.25);
+            // Cuando el fantasma llega cerca de recepción y los casilleros (x < 11.5)
+            if (ghost.pos.x < 11.5 * 3) {
+              if (!game.isHiding) {
+                spotted = true;
+                break;
+              } else if (game.gaspCd > 0 || !game.holdingBreath) {
+                spotted = true;
+                break;
+              }
             }
-          }, 200);
+          }
 
-          // El fantasma camina frente al mostrador y pasa de largo
-          await game.sleep(5.5);
-          clearInterval(checkSurvival);
+          if (spotted) {
+            // El ente detecta el ruido/respiración o ve a Clara descubierta
+            audio.screech();
+            audio.slam();
+            game.shakeCam(1.3);
+            game.flash(0.85);
+
+            if (game.isHiding) {
+              await game.say('¡ME ESCUCHÓ RESPIRAR! ¡ESTÁ FORZANDO LA PUERTA DEL CASILLERO!', 'Clara');
+              const qteOk = await game.qte('Space', '¡SUJETA LA PUERTA CON FUERZA! [ESPACIO]', 1800);
+              if (qteOk) {
+                audio.slam();
+                audio.ding();
+                await game.say('¡Ufff!... Logré trabar la puerta con el hombro. El ente gruñó y se alejó por el pasillo.', 'Clara', { thought: true });
+              } else {
+                audio.screech();
+                audio.thump();
+                game.shakeCam(1.5);
+                await game.say('¡La puerta se abrió violentamente! Apenas logré agacharme y esquivarlo por centímetros.', 'Clara', { thought: true });
+              }
+            } else {
+              await game.say('¡ME VIO! ¡NO ALCANCÉ A METERME EN EL CASILLERO!', 'Clara');
+              const qteDodge = await game.qte('KeyA', '¡ESQUIVA A LA IZQUIERDA DETRÁS DEL MOSTRADOR! [A]', 1700);
+              if (qteDodge) {
+                audio.slam();
+                audio.ding();
+                await game.say('¡Salté detrás del mostrador! La sombra pasó de largo en la oscuridad.', 'Clara', { thought: true });
+              } else {
+                audio.screech();
+                audio.thump();
+                game.shakeCam(1.5);
+              }
+            }
+          } else {
+            // Sigilo perfecto y respiración contenida
+            audio.breath(2.2);
+            await game.say('Pasó justo frente a las rejillas del casillero... Pude escuchar su respiración congelada.', 'Clara', { thought: true });
+          }
 
           ghost.goTo(0, 6, 1.8, () => {
             ghost.vanish();
           });
 
           await game.sleep(2.0);
-          audio.breath(2.5);
-          await game.sleep(2.0);
-
-          if (game.isHiding) {
-            await game.say('Pasó justo frente a las rejillas del casillero... Pude escuchar su respiración congelada.', 'Clara', { thought: true });
-            game.exitHiding();
-          }
+          if (game.isHiding) game.exitHiding();
 
           // Se restablece la luz de emergencia tenue
           hospital.flicker(2.5);
@@ -513,73 +551,157 @@ export const CHAPTERS = [
         }
       });
 
-      // Expediente clasificado en el escritorio del archivo
+      // Memorándum con pista de la combinación del archivador
       game.place({
-        id: 'archive_folder',
+        id: 'archive_memo',
         floor: 1,
-        x: 17.0,
-        y: 0.82,
-        z: 2.4,
+        x: 16.2,
+        y: 0.85,
+        z: 2.0,
         range: 2.4,
-        label: 'Expediente médico clasificado',
+        label: 'Memorándum de clasificación de expedientes',
         model: noteMesh,
         async onUse(g) {
           audio.paper();
           await g.note(
-            'Expediente Clasificado · Caso Gemelos Valenzuela',
-            'Fecha de Ingreso: 14 de Noviembre de 1984.\nDiagnóstico: Trastorno disociativo severo y dependencia psicopática.\n\n[VARIAS HOJAS FUERON ARRANCADAS CON VIOLENCIA]\n\nAl dorso de la última hoja, alguien escribió con letras temblorosas:\n"NO DEJEN QUE VUELVAN A ENCONTRARSE. POR NADA DEL MUNDO ABRAN LA HABITACIÓN DEL CUARTO PISO".'
+            'Índice de Psiquiatría Forense · Sector Archivo',
+            'AVISO DE SEGURIDAD INTERNA:\n\n"Los expedientes correspondientes a homicidios y negligencias graves se encuentran archivados bajo custodia en la gaveta blindada 3.\n\nCódigo de desbloqueo: 315 (Legajo Valenzuela)".'
           );
+          await g.say('El memorándum indica que el código del archivador blindado es 315.', 'Clara', { thought: true });
+        }
+      });
 
-          // FLASHBACK CINEMATOGRÁFICO VHS: EXPEDIENTE CLÍNICO DE 1984 Y FOTOS DE LOS GEMELOS
-          await g.flashback('autopsy', {
-            title: 'REGISTRO MÉDICO CONFIDENCIAL #108-B',
-            date: 'NOV 14 1984 · 03:15:20 AM',
-            location: 'ARCHIVO CLÍNICO RESTRINGIDO',
-          }, 5.5);
-
-          g.setFlag('has_forbidden_key');
-          await g.say('¡Había otra llave de hierro pesada dentro del sobre!... Es la llave de la habitación prohibida del Piso 4.', 'Clara', { thought: true });
-
-          const choice = await g.choice(
-            'Tienes en tus manos la llave de la habitación sellada del cuarto piso...',
-            'Subir ahora mismo al cuarto piso y abrir la puerta prohibida',
-            'Esperar y recabar más información antes de cometer una locura'
-          );
-
-          if (choice === 0) {
-            // Opción A: Subir de inmediato
-            g.remember('choice3', 'A');
-            await g.say('No puedo soportar esta incertidumbre. Voy a subir ahora mismo.', 'Clara', { thought: true });
-            hospital.flicker(3.0);
-            audio.screech();
-            g.shakeCam(1.0);
-            await g.say('¡Una ráfaga de aire helado bajó de golpe por el hueco de las escaleras!', 'Clara', { thought: true });
-          } else {
-            // Opción B: Esperar e investigar más
-            g.remember('choice3', 'B');
-            await g.say('Es demasiado peligroso subir sola de noche sin saber a qué me enfrento.', 'Clara', { thought: true });
+      // Archivador blindado con cerradura digital
+      let cabinetOpened = false;
+      game.place({
+        id: 'archive_cabinet',
+        floor: 1,
+        x: 17.0,
+        y: 0.82,
+        z: 2.4,
+        range: 2.5,
+        label: 'Archivador blindado de expedientes restringidos',
+        async onUse(g) {
+          if (cabinetOpened) {
+            await g.say('Ya retiré el expediente y la llave prohibida de este archivador.', 'Clara', { thought: true });
+            return;
           }
+          await g.say('El archivador metálico tiene un teclado numérico de seguridad...', 'Clara', { thought: true });
+          const ok = await g.keypad('315');
+          if (ok) {
+            cabinetOpened = true;
+            audio.pickup();
+            g.removeObj('archive_cabinet');
 
-          // Pesadilla del niño ensangrentado en el pasillo
-          await g.fade(1, 1.6);
-          g.cine(true);
-          await g.sleep(1.0);
-          audio.cry(4);
-          audio.thump();
-          await g.say('Esa noche tuve una pesadilla asfixiante...', 'Clara', { thought: true });
-          await g.say('Un niño de rodillas bañado en sangre lloraba desconsolado en medio del pasillo...', 'Clara', { thought: true });
-          await g.say('Y alrededor, sombras de médicos corrían gritando en medio del caos.', 'Clara', { thought: true });
+            await g.note(
+              'Expediente Clasificado · Caso Gemelos Valenzuela',
+              'Fecha de Ingreso: 14 de Noviembre de 1984.\nDiagnóstico: Trastorno disociativo severo y dependencia psicopática.\n\n[VARIAS HOJAS FUERON ARRANCADAS CON VIOLENCIA]\n\nAl dorso de la última hoja, alguien escribió con letras temblorosas:\n"NO DEJEN QUE VUELVAN A ENCONTRARSE. POR NADA DEL MUNDO ABRAN LA HABITACIÓN DEL CUARTO PISO".'
+            );
 
-          // Despertar al terminar el turno
-          await g.fade(0, 1.2);
-          g.cine(false);
-          await g.lookAt(3.6 * 3, 1.15, 6.0 * 3, 1.0);
-          await g.say('Al terminar el turno me senté a firmar el libro de guardia...', 'Clara', { thought: true });
-          await g.say('¡Mi felpón negro! El marcador permanente que siempre dejo en el lapicero... ¡no está!', 'Clara');
-          await g.say('Hay un círculo de tinta negra fresca en la madera... Alguien me lo robó mientras dormitaba.', 'Clara', { thought: true });
+            // FLASHBACK CINEMATOGRÁFICO VHS: EXPEDIENTE CLÍNICO DE 1984 Y FOTOS DE LOS GEMELOS
+            await g.flashback('autopsy', {
+              title: 'REGISTRO MÉDICO CONFIDENCIAL #108-B',
+              date: 'NOV 14 1984 · 03:15:20 AM',
+              location: 'ARCHIVO CLÍNICO RESTRINGIDO',
+            }, 5.5);
 
-          await g.fade(1, 1.6);
-          g.finish();
+            g.setFlag('has_forbidden_key');
+            await g.say('¡Había otra llave de hierro pesada dentro del sobre!... Es la llave de la habitación prohibida del Piso 4.', 'Clara', { thought: true });
+
+            // CORTE DE LUZ Y SECUENCIA DE SIGILO EN EL ARCHIVO
+            audio.spark();
+            audio.buzz(1.0);
+            hospital.blackout(18);
+            audio.whisper();
+            g.shakeCam(0.65);
+            await g.say('¡Se apagaron las luces del archivo! Y... se escuchan pasos arrastrándose afuera en el pasillo...', 'Clara', { thought: true });
+
+            g.objective('¡APAGA LA LINTERNA [F] Y AGÁCHATE [C]! Una silueta acecha frente al vidrio del archivo');
+
+            // Fantasma camina lentamente por el pasillo frente a la puerta de vidrio del archivo (x: 16, z: 6)
+            const shadow = g.ghost;
+            shadow.appear(1, 21.0, 6.0, 'stand', false);
+            shadow.goTo(11.0, 6.0, 0.9);
+
+            let detectedInArchive = false;
+            const checkStart = performance.now();
+            while (performance.now() - checkStart < 5000) {
+              await g.sleep(0.3);
+              if (shadow.pos.x > 13.5 * 3 && shadow.pos.x < 18.5 * 3) {
+                if (g.player.flashOn || !g.player.crouch) {
+                  detectedInArchive = true;
+                  break;
+                }
+              }
+            }
+
+            if (detectedInArchive) {
+              // La sombra vio la linterna o la figura de pie a través del vidrio
+              audio.screech();
+              audio.knock();
+              g.shakeCam(1.1);
+              await g.say('¡La silueta se detuvo frente al vidrio y forcejeó la puerta!', 'Clara', { thought: true });
+              const qteArchive = await g.qte('KeyS', '¡AGÁCHATE DE GOLPE BAJO EL ESCRITORIO! [S]', 1800);
+              if (qteArchive) {
+                audio.thump();
+                audio.ding();
+                await g.say('¡Ufff!... Me deslicé bajo el escritorio de metal y aguanté la respiración.', 'Clara', { thought: true });
+              } else {
+                audio.screech();
+                audio.thump();
+                g.shakeCam(1.3);
+              }
+            } else {
+              // Sigilo perfecto
+              audio.breath(2.2);
+              await g.say('La sombra se detuvo un instante ante el vidrio esmerilado... pero al estar a oscuras y agachada, no me vio y siguió de largo.', 'Clara', { thought: true });
+            }
+
+            shadow.goTo(6.0, 6.0, 1.6, () => shadow.vanish());
+            await g.sleep(2.0);
+            hospital.setLights(true);
+
+            const choice = await g.choice(
+              'Tienes en tus manos la llave de la habitación sellada del cuarto piso...',
+              'Subir ahora mismo al cuarto piso y abrir la puerta prohibida',
+              'Esperar y recabar más información antes de cometer una locura'
+            );
+
+            if (choice === 0) {
+              // Opción A: Subir de inmediato
+              g.remember('choice3', 'A');
+              await g.say('No puedo soportar esta incertidumbre. Voy a subir ahora mismo.', 'Clara', { thought: true });
+              hospital.flicker(3.0);
+              audio.screech();
+              g.shakeCam(1.0);
+              await g.say('¡Una ráfaga de aire helado bajó de golpe por el hueco de las escaleras!', 'Clara', { thought: true });
+            } else {
+              // Opción B: Esperar e investigar más
+              g.remember('choice3', 'B');
+              await g.say('Es demasiado peligroso subir sola de noche sin saber a qué me enfrento.', 'Clara', { thought: true });
+            }
+
+            // Pesadilla del niño ensangrentado en el pasillo
+            await g.fade(1, 1.6);
+            g.cine(true);
+            await g.sleep(1.0);
+            audio.cry(4);
+            audio.thump();
+            await g.say('Esa noche tuve una pesadilla asfixiante...', 'Clara', { thought: true });
+            await g.say('Un niño de rodillas bañado en sangre lloraba desconsolado en medio del pasillo...', 'Clara', { thought: true });
+            await g.say('Y alrededor, sombras de médicos corrían gritando en medio del caos.', 'Clara', { thought: true });
+
+            // Despertar al terminar el turno
+            await g.fade(0, 1.2);
+            g.cine(false);
+            await g.lookAt(3.6 * 3, 1.15, 6.0 * 3, 1.0);
+            await g.say('Al terminar el turno me senté a firmar el libro de guardia...', 'Clara', { thought: true });
+            await g.say('¡Mi felpón negro! El marcador permanente que siempre dejo en el lapicero... ¡no está!', 'Clara');
+            await g.say('Hay un círculo de tinta negra fresca en la madera... Alguien me lo robó mientras dormitaba.', 'Clara', { thought: true });
+
+            await g.fade(1, 1.6);
+            g.finish();
+          }
         }
       });
 
@@ -654,26 +776,116 @@ export const CHAPTERS = [
         await game.walk(guard, 0, 6, 2.0);
         guard.hide();
 
-        await game.say('Pero yo lo vi con mis propios ojos... ¡Sé perfectamente lo que apareció en la pantalla!', 'Clara', { thought: true });
+        audio.slam();
+        audio.buzz(1.5);
+        await game.say('Pero yo lo vi con mis propios ojos en la cámara...', 'Clara', { thought: true });
+        await game.say('¡De repente empezó a sonar una chicharra eléctrica en las escaleras! Raúl no vio nada o me mintió.', 'Clara', { thought: true });
+        await game.say('Tengo que subir yo misma a comprobarlo.', 'Clara', { thought: true });
       } else {
-        // Opción A: Subir sola al piso 4
+        // Opción A: Subir de inmediato sola al piso 4
         game.remember('choice4', 'A');
-        game.objective('Sube las escaleras hasta el Piso 4 e inspecciona el pasillo');
-        await game.say('Voy a subir yo misma. Tengo que comprobarlo con mis propios ojos.', 'Clara', { thought: true });
-
-        // Permitir subir escaleras
-        game.stairsBlocked = false;
-        await game.until(() => hospital.floorNum === 4);
-
-        // Mostrar el decal "AYÚDALO" en el piso 4
-        hospital.showDecal('help', true);
-        hospital.flicker(2.2);
-        audio.whisper();
-        await game.say('¡Aquí está! "AYÚDALO"... ¡La tinta del marcador negro todavía está fresca y goteando!', 'Clara', { thought: true });
-        audio.screech();
-        game.shakeCam(0.9);
-        await game.say('¡Alguien golpeó salvajemente desde el otro lado de la puerta prohibida! ¡Tengo que bajar ya!', 'Clara', { thought: true });
+        await game.say('Voy a subir yo misma de inmediato. Tengo que comprobarlo con mis propios ojos.', 'Clara', { thought: true });
       }
+
+      // SUBIDA AL PISO 4 CLAUSURADO
+      game.stairsBlocked = false;
+      game.objective('Sube por las escaleras hasta el Piso 4 e inspecciona el pasillo');
+      await game.until(() => hospital.floorNum === 4);
+
+      // El piso 4 está a oscuras con la línea de potencia cortada
+      hospital.setLights(false);
+      hospital.ambient.intensity = 0.22;
+      await game.say('El aire aquí arriba es gélido... La energía general del piso 4 está cortada.', 'Clara', { thought: true });
+
+      // Pilas industriales en la camilla auxiliar junto a las escaleras
+      game.place({
+        id: 'battery_floor4',
+        floor: 4,
+        x: 23.5,
+        y: 0.95,
+        z: 6.8,
+        range: 2.6,
+        label: 'Pilas industriales para linterna',
+        model: batteryMesh,
+        spin: true,
+        async onUse(g) {
+          g.giveBattery(0.7);
+          g.removeObj('battery_floor4');
+          await g.say('Encontré pilas alcalinas pesadas. Linterna restaurada al 100%.', 'Clara', { thought: true });
+        }
+      });
+
+      // Tablero de disyuntores de emergencia del piso 4
+      let breakerRestored = false;
+      game.place({
+        id: 'breaker_panel_4',
+        floor: 4,
+        x: 21.0,
+        y: 1.25,
+        z: 5.4,
+        range: 2.8,
+        label: 'Tablero eléctrico auxiliar del Piso 4',
+        async onUse(g) {
+          if (breakerRestored) return;
+          breakerRestored = true;
+          audio.spark();
+          audio.buzz(1.2);
+          hospital.flicker(2.2);
+          hospital.setLights(true);
+          hospital.showDecal('help', true);
+          g.removeObj('breaker_panel_4');
+          await g.say('¡Enganchó el generador auxiliar! Los fluorescentes rojos del pasillo comenzaron a parpadear.', 'Clara', { thought: true });
+        }
+      });
+
+      game.objective('Restaura los disyuntores en el tablero eléctrico auxiliar (Piso 4)');
+      await game.until(() => breakerRestored);
+
+      game.objective('Avanza con cautela por el pasillo e inspecciona la pared norte');
+      // Esperar a que Clara avance hacia el decal "AYÚDALO" (x < 15.5)
+      await game.until(() => game.player.pos.x < 15.5 * 3);
+
+      audio.whisper();
+      await game.say('¡Aquí está!... "AYÚDALO"... ¡La tinta del marcador negro todavía está fresca y goteando!', 'Clara', { thought: true });
+
+      // Clímax aterrador: golpes ensordecedores en la puerta sellada de la habitación 401
+      audio.slam();
+      audio.screech();
+      game.shakeCam(1.35);
+      game.flash(0.9);
+      await game.say('¡ALGUIEN ESTÁ GOLPEANDO SALVAJEMENTE DESDE EL INTERIOR DE LA PUERTA PROHIBIDA!', 'Clara');
+
+      // Silueta que se proyecta en las rejas
+      const stalker = game.actor('stalker', 'brother');
+      stalker.place(4, 3.2, 6.0, Math.PI / 2);
+      stalker.pose = 'reach';
+      audio.growl();
+
+      game.objective('¡HUYE DEL CUARTO PISO! ¡CORRE HACIA LAS ESCALERAS!');
+      await game.sleep(0.6);
+
+      // Clara corre hacia las escaleras
+      await game.until(() => game.player.pos.x > 18.0 * 3);
+
+      // QTE de escape
+      audio.slam();
+      game.shakeCam(0.9);
+      const escapeQte = await game.qte('KeyW', '¡UNA CAMILLA CAE SOBRE EL PASILLO! ¡SALTA! [W]', 1800);
+      if (escapeQte) {
+        audio.ding();
+        audio.thump();
+        await game.say('¡Salté por encima del armazón de metal!', 'Clara', { thought: true });
+      } else {
+        audio.thump();
+        audio.screech();
+        game.shakeCam(1.25);
+      }
+
+      await game.until(() => game.player.pos.x >= 24.0 * 3 || hospital.floorNum < 4);
+      stalker.hide();
+      audio.door();
+      await game.say('Logré cruzar la puerta cortafuego y trabarla desde las escaleras...', 'Clara', { thought: true });
+      await game.say('Hay alguien vivo... o algo inhumano... encerrado en ese piso.', 'Clara', { thought: true });
 
       await game.sleep(1.0);
       await game.fade(1, 1.6);
@@ -699,6 +911,24 @@ export const CHAPTERS = [
       await game.fade(0, 1.2);
 
       await game.say('Ya no puedo distinguir qué es real y qué es una pesadilla de la vigilia...', 'Clara', { thought: true });
+
+      // Pilas de repuesto para la huida final
+      game.place({
+        id: 'battery_c5',
+        floor: 1,
+        x: 3.6,
+        y: 1.14,
+        z: 7.2,
+        range: 2.6,
+        label: 'Pilas AA selladas de emergencia',
+        model: batteryMesh,
+        spin: true,
+        async onUse(g) {
+          g.giveBattery(1.0);
+          g.removeObj('battery_c5');
+          await g.say('Pilas nuevas para la linterna.', 'Clara', { thought: true });
+        }
+      });
 
       // Expediente completo y fotografía en el mostrador
       game.place({

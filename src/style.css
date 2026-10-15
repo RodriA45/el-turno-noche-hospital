@@ -27,6 +27,12 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #000; colo
 #hud { position: fixed; inset: 0; pointer-events: none; font-family: 'Special Elite', monospace; }
 #hud-left { position: absolute; left: 28px; bottom: 28px; display: grid; gap: 12px; width: 220px; }
 .meter span { font-size: 13px; opacity: 0.8; letter-spacing: 1px; }
+.meter-label { display: flex; align-items: center; gap: 6px; font-size: 13px; opacity: 0.85; letter-spacing: 1px; }
+.icon-svg { width: 15px; height: 15px; display: inline-block; flex-shrink: 0; }
+.touch-svg { width: 28px; height: 28px; display: block; margin: auto; }
+.rotate-svg { width: 56px; height: 56px; display: block; margin: 0 auto 14px; }
+.cctv-icon-svg { width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 4px; }
+.heart-svg { width: 24px; height: 24px; display: block; filter: drop-shadow(0 0 6px rgba(255, 34, 51, 0.7)); }
 .bar { margin-top: 4px; height: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); border-radius: 4px; overflow: hidden; }
 .bar i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #c9942a, #f0d27a); transition: width .15s; }
 #bar-stamina { background: linear-gradient(90deg, #2b7a5a, #7ad0a6); }
