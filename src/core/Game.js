@@ -6,6 +6,7 @@ import { PEOPLE } from '../world/Models.js';
 import { CAMS, ANOMALIES, drawFeed, hitTestAnomaly } from '../ui/Cctv.js';
 import { CHAPTERS } from '../chapters.js';
 import { FlashbackPlayer } from '../ui/Flashback.js';
+import { ObjectExaminer } from '../ui/ObjectExaminer.js';
 
 const $ = id => document.getElementById(id);
 const CANCEL = Symbol('cancel');
@@ -24,6 +25,10 @@ export class Game {
     this.chapterIdx = 0; this.time = 0; this.checkpoint = null;
     this.scene = new THREE.Scene(); this.scene.background = new THREE.Color(0x020203);
     this.flashbackPlayer = new FlashbackPlayer($('flashback-canvas'));
+    const examinerCanvas = $('examiner-canvas');
+    if (examinerCanvas) {
+      this.examiner = new ObjectExaminer(examinerCanvas);
+    }
     this.isHiding = false; this.hidingSpot = null;
     this.buildMenu();
     this.bindUi();
@@ -141,7 +146,7 @@ export class Game {
 
   toMenu() {
     this.run++; this.state = 'menu'; this.input.unlock();
-    ['hud', 'touch-ui', 'pause', 'end', 'titlecard', 'note', 'choice', 'keypad', 'cctv', 'qte', 'flashback', 'hiding'].forEach(i => show(i, false));
+    ['hud', 'touch-ui', 'pause', 'end', 'titlecard', 'note', 'choice', 'keypad', 'cctv', 'qte', 'flashback', 'hiding', 'examiner'].forEach(i => show(i, false));
     this.flashbackPlayer.stop(); this.isHiding = false;
     $('fx-fade').style.opacity = 0; this.buildMenu(); show('menu', true);
     this.scene = new THREE.Scene(); this.scene.background = new THREE.Color(0x020203);
@@ -327,6 +332,27 @@ export class Game {
       this.keypadKey = press; $('kp-close').onclick = () => finish(false);
       render(); show('keypad', true);
       this.waiters.push({ cond: () => false, rej, tk, res() {}, t: 0, timeout: Infinity });
+    });
+  }
+
+  // ----- Visor de inspección de objetos 3D estilo Resident Evil
+  examineItem(itemDef) {
+    return new Promise((res, rej) => {
+      const tk = this.run;
+      this._openUi();
+      show('touch-ui', false);
+      this.audio.pickup();
+      if (!this.examiner) {
+        this._closeUi();
+        res(true);
+        return;
+      }
+      this.examiner.examine(itemDef).then(result => {
+        if (tk !== this.run) return;
+        this._closeUi();
+        show('touch-ui', this.input.isTouch);
+        res(result);
+      }).catch(rej);
     });
   }
 
@@ -714,7 +740,6 @@ export class Game {
     }
 
     const frozen = this.frozen || this.state === 'ui';
-    this.player.update(dt, t, frozen || !!this.look);
     this.hospital.update(dt);
     this.ghost.update(dt, this.player, t);
     for (const a of Object.values(this.actors || {})) a.step(dt, t);
@@ -726,6 +751,13 @@ export class Game {
     const tension = g.mode === 'chase' ? 0.6 + Math.max(0, 1 - d / 14) * 0.4 : vis ? Math.max(0, 1 - d / 10) * 0.5 : 0;
     this.audio.update(dt, this.camera, g.pos, g.mode === 'chase' && vis, tension);
     $('fx-danger').style.opacity = tension * 0.85;
+
+    this.player.update(dt, t, frozen || !!this.look, d, tension);
+
+    // Renderizado 3D de estudio para el examinador de objetos si está activo
+    if (this.examiner?.active) {
+      this.examiner.render(dt);
+    }
 
     if (this.shake > 0) {
       this.camera.position.x += (Math.random() - 0.5) * this.shake * 0.12;

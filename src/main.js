@@ -49,6 +49,7 @@ function resize() {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
   postProcess.resize(w, h, pixelRatio);
+  game.examiner?.resize();
 }
 
 addEventListener('resize', resize);

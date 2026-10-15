@@ -1,4 +1,5 @@
 import { PEOPLE, noteMesh, keyMesh, flashlightMesh, batteryMesh, markerMesh, photoMesh } from './world/Models.js';
+import { createDetailedKey, createDetailedPolaroid, createDetailedFlashlight } from './ui/ObjectExaminer.js';
 
 export const CHAPTERS = [
   // =========================================================================
@@ -175,6 +176,12 @@ export const CHAPTERS = [
               audio.pickup();
               g2.giveFlashlight();
               g2.removeObj('emergency_flashlight');
+              await g2.examineItem({
+                title: 'LINTERNA INDUSTRIAL',
+                sub: 'Modelo táctico pesado · Hospital San Anselmo',
+                desc: 'Una sólida linterna de patrulla fabricada en aluminio anodizado y óptica estriada. Pulsa [F] para encender el haz de luz durante la guardia.',
+                model: createDetailedFlashlight
+              });
               await g2.say('¡La encontré! Es metálica y pesada. Pulsa F para encenderla.', 'Clara', { thought: true });
             }
           });
@@ -516,7 +523,13 @@ export const CHAPTERS = [
           g.giveFlashlight();
           g.setFlag('has_archive_key');
           g.removeObj('desk_keys');
-          await g.say('Es una llave de bronce antigua con una etiqueta que dice "Archivo Clínico".', 'Clara', { thought: true });
+          await g.examineItem({
+            title: 'LLAVE ANTIGUA DE BRONCE',
+            sub: 'Sector Archivo Clínico · Hospital San Anselmo',
+            desc: 'Una pesada llave de latón labrada a mano. Cuelga de una chapa metálica estampada donde se distingue el sello del hospital y la numeración grabada: "Nº 0315". Rota el modelo para examinarla en 360°.',
+            model: () => createDetailedKey('0315')
+          });
+          await g.say('Es una llave de bronce antigua con una chapa que dice "Archivo Clínico" y el número troquelado 0315.', 'Clara', { thought: true });
           await g.say('Pregunté a las recepcionistas del turno anterior, pero ninguna sabía de la existencia de esta llave.', 'Clara', { thought: true });
           g.objective('Ve al Archivo Clínico en el pasillo norte (Piso 1) e investiga');
         }
@@ -942,6 +955,12 @@ export const CHAPTERS = [
         model: photoMesh,
         async onUse(g) {
           audio.paper();
+          await g.examineItem({
+            title: 'FOTOGRAFÍA POLAROID (1984)',
+            sub: 'Evidencia Forense Nº 84 · Gemelos Valenzuela',
+            desc: 'Una fotografía de época de los dos hermanos en la habitación 401. Pulsa [F] para voltearla o rota con el ratón en 360° para leer la macabra inscripción al dorso.',
+            model: createDetailedPolaroid
+          });
           await g.note(
             'Expediente Forense Secreto · Gemelos Valenzuela',
             'FOTOGRAFÍA ADJUNTA: Dos niños gemelos idénticos en 1984.\nUno de ellos luce pálido, débil y conectado a un tubo de oxígeno...\n\nINFORME PERICIAL:\n"El gemelo enfermo falleció por asfixia mecánica en su cama. Su hermano sano lo asfixió con una almohada durante la medianoche.\nLa adinerada familia Valenzuela pagó una fortuna a la directiva para encubrir el homicidio.\nEncerraron al hermano asesino de por vida en la habitación 401 del cuarto piso clausurado.\nNadie fuera de estas cuatro paredes supo jamás cuál de los dos niños murió y cuál quedó encerrado".'

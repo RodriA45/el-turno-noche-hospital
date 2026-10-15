@@ -87,10 +87,14 @@ export class Input {
     document.querySelectorAll('[data-key]').forEach(btn => {
       btn.addEventListener('pointerdown', e => {
         e.preventDefault(); e.stopPropagation();
+        this.keys.add(btn.dataset.key);
         this.pressed.add(btn.dataset.key);
         btn.classList.add('down');
       });
-      const up = () => btn.classList.remove('down');
+      const up = () => {
+        this.keys.delete(btn.dataset.key);
+        btn.classList.remove('down');
+      };
       btn.addEventListener('pointerup', up); btn.addEventListener('pointerleave', up); btn.addEventListener('pointercancel', up);
     });
     $('btn-pause').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); this.unlock(); });

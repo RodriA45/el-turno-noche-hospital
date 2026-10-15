@@ -57,6 +57,15 @@
         <svg class="touch-svg" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
       </button>
       <div id="touch-buttons">
+        <button id="tb-lean-left" data-key="KeyQ" aria-label="Asomarse Izquierda">
+          <svg class="touch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 19l-7-7 7-7"/><path d="M19 12H9"/></svg>
+        </button>
+        <button id="tb-lean-right" data-key="KeyE" aria-label="Asomarse Derecha">
+          <svg class="touch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/><path d="M5 12h10"/></svg>
+        </button>
+        <button id="tb-watch" data-key="Tab" aria-label="Reloj Vital">
+          <svg class="touch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="7"/><path d="M12 9v3l2 2"/><path d="M10 2h4M10 22h4"/></svg>
+        </button>
         <button id="tb-flash" data-key="KeyF" aria-label="Linterna">
           <svg class="touch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6l-3-3H9L6 6v3l3 3v9h6v-9l3-3V6z"/></svg>
         </button>
@@ -77,6 +86,34 @@
     </div>
 
     <section id="titlecard" class="hidden"><div><p id="tc-chapter"></p><h2 id="tc-title"></h2><p id="tc-sub"></p></div></section>
+
+    <!-- Visor de Inspección de Objetos 3D Estilo Resident Evil -->
+    <section id="examiner" class="overlay hidden">
+      <div class="examiner-container">
+        <canvas id="examiner-canvas"></canvas>
+        <div class="examiner-vignette"></div>
+        <div class="examiner-header">
+          <span class="examiner-pill">INSPECCIÓN 3D · RESIDENT EVIL TIER</span>
+          <h2 id="examiner-title">Objeto</h2>
+          <p id="examiner-sub" class="examiner-sub"></p>
+        </div>
+        <div class="examiner-footer">
+          <p id="examiner-desc" class="examiner-desc"></p>
+          <div class="examiner-actions">
+            <button id="examiner-flip" class="btn btn-examiner">
+              <svg class="examiner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+              <span>Voltear [F]</span>
+            </button>
+            <button id="examiner-close" class="btn btn-examiner primary">
+              <svg class="examiner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>
+              <span>Guardar / Salir [E]</span>
+            </button>
+          </div>
+          <p class="examiner-hint desktop-only">Arrastra con el ratón para rotar 360° · Rueda para zoom · [F] Voltear</p>
+          <p class="examiner-hint touch-only">Desliza para rotar en 3D · Pellizca para zoom</p>
+        </div>
+      </div>
+    </section>
 
     <section id="note" class="overlay hidden">
       <article class="paper">
@@ -214,6 +251,8 @@
         <ul class="controls desktop-only">
           <li><kbd>W A S D</kbd> mover</li>
           <li><kbd>Shift</kbd> correr</li>
+          <li><kbd>Q / E</kbd> asomarse</li>
+          <li><kbd>Tab</kbd> reloj vital</li>
           <li><kbd>C</kbd> agacharse</li>
           <li><kbd>F</kbd> linterna</li>
           <li><kbd>E</kbd> interactuar</li>
@@ -223,6 +262,8 @@
           <li><kbd>Joystick</kbd> mover</li>
           <li><kbd>A tope</kbd> correr</li>
           <li><kbd>Giro</kbd> mirar</li>
+          <li><kbd class="kbd-icon" aria-label="Asomarse"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 12h8m-4-4l4 4-4 4"/></svg></kbd> asomarse</li>
+          <li><kbd class="kbd-icon" aria-label="Reloj"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="7"/><path d="M12 9v3l2 2"/></svg></kbd> reloj vital</li>
           <li><kbd class="kbd-icon" aria-label="Interactuar"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 2a4 4 0 00-4 4v6.5a1.5 1.5 0 003 0V6a1 1 0 012 0v6.5a1.5 1.5 0 003 0V7a1 1 0 012 0v5.5a1.5 1.5 0 003 0V9a1 1 0 012 0v4.5C21 18.2 17 22 12 22S3 18.2 3 13.5V6a4 4 0 018 0"/></svg></kbd> interactuar</li>
           <li><kbd class="kbd-icon" aria-label="Linterna"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M6 2h12v3l-2 3v12a2 2 0 01-2 2h-4a2 2 0 01-2-2V8L6 5V2zm2 2v.5l2 3v12.5h4V7.5l2-3V4H8z"/></svg></kbd> linterna</li>
           <li><kbd class="kbd-icon" aria-label="Agacharse"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 4v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg></kbd> agacharse</li>
