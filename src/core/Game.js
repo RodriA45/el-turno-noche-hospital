@@ -87,16 +87,30 @@ export class Game {
       hidingEl.addEventListener('pointercancel', () => { this.touchHoldingBreath = false; });
     }
 
-    // Pantalla completa
+    // Pantalla completa (con soporte webkit para iPad/Safari y ocultación si no está soportado como en iPhone)
+    const canFullscreen = !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen);
     const toggleFull = () => {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen?.().catch(() => {});
+      const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement);
+      if (!isFull) {
+        try {
+          const fn = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
+          if (fn) fn.call(document.documentElement);
+        } catch (e) {}
       } else {
-        document.exitFullscreen?.().catch(() => {});
+        try {
+          const exit = document.exitFullscreen || document.webkitExitFullscreen;
+          if (exit) exit.call(document);
+        } catch (e) {}
       }
     };
-    if ($('btn-fullscreen')) $('btn-fullscreen').onclick = toggleFull;
-    if ($('btn-fullscreen-pause')) $('btn-fullscreen-pause').onclick = toggleFull;
+    if ($('btn-fullscreen')) {
+      if (canFullscreen) $('btn-fullscreen').onclick = toggleFull;
+      else $('btn-fullscreen').style.display = 'none';
+    }
+    if ($('btn-fullscreen-pause')) {
+      if (canFullscreen) $('btn-fullscreen-pause').onclick = toggleFull;
+      else $('btn-fullscreen-pause').style.display = 'none';
+    }
 
     this.renderer.domElement.addEventListener('pointerdown', () => {
       if (this.state === 'play' && !this.input.locked && !this.input.isTouch) this.input.lock();

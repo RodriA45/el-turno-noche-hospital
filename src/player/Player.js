@@ -24,6 +24,19 @@ export class Player {
     // Inercia de linterna (sway)
     this.flashSwayX = 0; this.flashSwayY = 0;
 
+    // Limpiar luces u objetos adjuntos a la cámara de instancias anteriores
+    for (let i = camera.children.length - 1; i >= 0; i--) {
+      const child = camera.children[i];
+      if (child.isLight || child.isPoints || child.userData?.isPlayerAttachment) {
+        camera.remove(child);
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) {
+          if (child.material.map) child.material.map.dispose();
+          child.material.dispose();
+        }
+      }
+    }
+
     scene.add(camera);
 
     // Linterna principal con haz óptico (cookie con anillos de difracción Fresnel y hotspot)
@@ -36,6 +49,8 @@ export class Player {
     spot.shadow.camera.near = 0.2;
     spot.position.set(0.18, -0.14, 0.05);
     spot.target.position.set(0, 0, -6);
+    spot.userData.isPlayerAttachment = true;
+    spot.target.userData.isPlayerAttachment = true;
     camera.add(spot, spot.target);
     this.spot = spot;
     this.baseIntensity = 85;
@@ -43,6 +58,7 @@ export class Player {
     // Luz difusa de rebote en el suelo y paredes cercanas (bounce light)
     const bounce = new THREE.PointLight(0xffeedd, 0, 4.5, 2.0);
     bounce.position.set(0.18, -0.12, 0.3);
+    bounce.userData.isPlayerAttachment = true;
     camera.add(bounce);
     this.bounceLight = bounce;
 
@@ -85,6 +101,7 @@ export class Player {
       color: 0xfffcf0
     });
     const dustPoints = new THREE.Points(dustGeo, dustMat);
+    dustPoints.userData.isPlayerAttachment = true;
     camera.add(dustPoints);
     this.dustPoints = dustPoints;
     this.dustPositions = dustPositions;

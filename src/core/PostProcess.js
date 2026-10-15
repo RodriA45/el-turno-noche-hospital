@@ -113,6 +113,8 @@ export class PostProcess {
     // 4. Output pass con mapeo tonal y sRGB
     this.outputPass = new OutputPass();
     this.composer.addPass(this.outputPass);
+
+    document.body.classList.toggle('has-postprocess', this.enabled);
   }
 
   setScene(scene) {

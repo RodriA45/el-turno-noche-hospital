@@ -521,9 +521,8 @@ export function drawFeed(canvas, cam, t, s, panX = 0, lightOn = false) {
 
 // Verifica si las coordenadas de un clic caen dentro de la anomalía de la cámara actual
 export function hitTestAnomaly(camId, xRatio, yRatio, activeAnomalies = []) {
-  for (const anomId of activeAnomalies) {
-    const anom = ANOMALIES[camId];
-    if (anom && anom.id === anomId) {
+  for (const anom of Object.values(ANOMALIES)) {
+    if (anom.camId === camId && activeAnomalies.includes(anom.id)) {
       const r = anom.rect;
       if (
         xRatio >= r.x &&

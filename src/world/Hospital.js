@@ -71,7 +71,7 @@ export class Hospital {
             if (m.map) m.map.dispose();
             m.dispose();
           });
-        } else if (o.material !== this.wallMat && o.material !== this.doorMat && o.material !== this.baseboardMat && o.material !== this.bumperMat && o.material !== this.trimMat) {
+        } else if (o.material !== this.wallMat && o.material !== this.doorMat && o.material !== this.exitMat && o.material !== this.baseboardMat && o.material !== this.bumperMat && o.material !== this.trimMat) {
           if (o.material.map) o.material.map.dispose();
           o.material.dispose();
         }
