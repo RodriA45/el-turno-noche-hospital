@@ -319,6 +319,63 @@ export class AudioManager {
     this.tone(340, 0.08, 'sawtooth', 0.2, 80);
   }
 
+  setMasterVolume(v) {
+    if (this.master) this.master.gain.value = Math.max(0, Math.min(1, v));
+  }
+
+  batteryPickup() {
+    if (!this.ctx) return;
+    // Clic metálico de pilas cargándose en la linterna + zumbido de capacitancia
+    this.noiseBurst(0.04, 0.35, 3200, 'highpass');
+    this.tone(750, 0.08, 'sine', 0.25, 1200);
+    setTimeout(() => {
+      this.noiseBurst(0.06, 0.3, 2400, 'bandpass');
+      this.tone(1200, 0.12, 'sine', 0.28, 1600);
+    }, 60);
+  }
+
+  spark() {
+    if (!this.ctx) return;
+    // Chisporroteo eléctrico de fluorescente parpadeando
+    this.noiseBurst(0.04, 0.35, 4200, 'highpass');
+    this.tone(120, 0.05, 'sawtooth', 0.15, 60);
+    setTimeout(() => this.noiseBurst(0.03, 0.3, 3600, 'bandpass'), 25);
+  }
+
+  buzz(dur = 0.8) {
+    if (!this.ctx) return;
+    // Zumbido eléctrico de 50Hz de reactancia de tubo fluorescente
+    this.tone(50, dur, 'sawtooth', 0.12, 50);
+    this.tone(100, dur, 'sawtooth', 0.08, 100);
+  }
+
+  thunder() {
+    if (!this.ctx) return;
+    // Trueno distante: impacto sordo inicial seguido de retumbar grave resonante
+    this.noiseBurst(0.6, 0.45, 160, 'lowpass');
+    this.tone(42, 1.8, 'sine', 0.5, 20);
+    setTimeout(() => {
+      this.noiseBurst(1.8, 0.35, 120, 'lowpass');
+      this.tone(32, 2.4, 'sine', 0.35, 18);
+    }, 280);
+    setTimeout(() => {
+      this.noiseBurst(2.2, 0.2, 90, 'lowpass');
+    }, 700);
+  }
+
+  inhale() {
+    if (!this.ctx) return;
+    // Inspiración contenida
+    this.noiseBurst(0.4, 0.22, 550, 'bandpass');
+  }
+
+  gasp() {
+    if (!this.ctx) return;
+    // Exhalación/bocanada agitada al acabarse el aire
+    this.noiseBurst(0.35, 0.45, 750, 'bandpass');
+    setTimeout(() => this.noiseBurst(0.5, 0.3, 480, 'lowpass'), 80);
+  }
+
   update(dt, camera, ghostPos, chasing, tension) {
     if (!this.ctx) return;
     const l = this.ctx.listener, p = camera.position;

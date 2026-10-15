@@ -473,3 +473,72 @@ body.is-touch #subs { bottom: 6%; }
 .heart-pulse { font-size: 24px; animation: heartBeat 0.8s infinite; display: inline-block; }
 @keyframes heartBeat { 0%, 100% { transform: scale(1); } 30% { transform: scale(1.3); } }
 
+/* Minijuego de respiración en escondite */
+#hiding-breath-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 200px;
+}
+#hiding-breath-label {
+  font-size: 12px;
+  color: var(--amber);
+  letter-spacing: 1px;
+}
+.breath-bar {
+  height: 8px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.22);
+}
+.breath-bar i {
+  background: linear-gradient(90deg, #38bdf8, #818cf8);
+  transition: width 0.05s linear;
+}
+
+/* Panel de Ajustes / Opciones */
+.settings-panel {
+  margin: 18px auto;
+  padding: 14px 18px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 380px;
+}
+.opt-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: var(--bone);
+}
+.opt-row label {
+  white-space: nowrap;
+}
+.opt-row input[type="range"] {
+  flex: 1;
+  max-width: 160px;
+  accent-color: var(--blood);
+  cursor: pointer;
+}
+.btn.ghost {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.2);
+  color: var(--bone);
+}
+.btn.ghost:hover {
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(255,255,255,0.4);
+  transform: none;
+}
+.btn-sm {
+  padding: 8px 18px;
+  font-size: 13px;
+  letter-spacing: 2px;
+  margin-top: 4px;
+}
+

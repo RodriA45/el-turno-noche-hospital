@@ -149,6 +149,10 @@
       <div class="locker-slats"></div>
       <div id="hiding-hud">
         <span class="heart-pulse">💓</span>
+        <div id="hiding-breath-wrap">
+          <span id="hiding-breath-label">RESPIRACIÓN · Mantén [ESPACIO] para contener</span>
+          <div class="bar breath-bar"><i id="bar-breath"></i></div>
+        </div>
         <p id="hiding-prompt">ESCONDITE · Pulsa E para salir</p>
       </div>
     </div>
@@ -160,9 +164,22 @@
     <section id="menu" class="overlay scrollable">
       <div class="menu-box">
         <p class="eyebrow">Hospital San Anselmo · Turno noche</p>
-        <h1>EL HOTEL</h1>
+        <h1>EL TURNO NOCHE</h1>
         <p class="lead">Eres la recepcionista del turno noche en un hospital de cuatro pisos. Hay una sola regla: <b>nunca mires las cámaras del último piso.</b></p>
         <div id="chapter-list"></div>
+
+        <div class="settings-panel">
+          <div class="opt-row">
+            <label for="sens-slider">Sensibilidad del Ratón</label>
+            <input type="range" id="sens-slider" min="1" max="10" step="0.5" value="5" />
+          </div>
+          <div class="opt-row">
+            <label for="vol-slider">Volumen General</label>
+            <input type="range" id="vol-slider" min="0" max="100" value="85" />
+          </div>
+          <button id="btn-fullscreen" class="btn ghost btn-sm">Pantalla Completa</button>
+        </div>
+
         <ul class="controls desktop-only">
           <li><kbd>W A S D</kbd> mover</li>
           <li><kbd>Shift</kbd> correr</li>
@@ -186,7 +203,18 @@
     <section id="pause" class="overlay hidden">
       <div class="menu-box small">
         <h2>Pausa</h2>
+        <div class="settings-panel">
+          <div class="opt-row">
+            <label for="sens-slider-pause">Sensibilidad</label>
+            <input type="range" id="sens-slider-pause" min="1" max="10" step="0.5" value="5" />
+          </div>
+          <div class="opt-row">
+            <label for="vol-slider-pause">Volumen</label>
+            <input type="range" id="vol-slider-pause" min="0" max="100" value="85" />
+          </div>
+        </div>
         <button id="btn-resume" class="btn">Continuar</button>
+        <button id="btn-fullscreen-pause" class="btn ghost">Pantalla Completa</button>
         <button id="btn-menu" class="btn ghost">Menú de capítulos</button>
       </div>
     </section>

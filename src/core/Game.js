@@ -47,6 +47,38 @@ export class Game {
     $('btn-next').onclick = () => this.startChapter(Math.min(this.chapterIdx + 1, CHAPTERS.length - 1));
     $('note').onclick = () => this.closeNote?.();
     $('cctv-close').onclick = () => this.closeCctv?.();
+
+    // Controles de configuración (Sensibilidad y Volumen)
+    const sens1 = $('sens-slider'), sens2 = $('sens-slider-pause');
+    const updateSens = v => {
+      const s = 0.0008 + (v / 10) * 0.0036;
+      this.player?.setSensitivity(s);
+      if (sens1) sens1.value = v;
+      if (sens2) sens2.value = v;
+    };
+    if (sens1) sens1.oninput = e => updateSens(+e.target.value);
+    if (sens2) sens2.oninput = e => updateSens(+e.target.value);
+
+    const vol1 = $('vol-slider'), vol2 = $('vol-slider-pause');
+    const updateVol = v => {
+      this.audio?.setMasterVolume(v / 100);
+      if (vol1) vol1.value = v;
+      if (vol2) vol2.value = v;
+    };
+    if (vol1) vol1.oninput = e => updateVol(+e.target.value);
+    if (vol2) vol2.oninput = e => updateVol(+e.target.value);
+
+    // Pantalla completa
+    const toggleFull = () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen?.().catch(() => {});
+      } else {
+        document.exitFullscreen?.().catch(() => {});
+      }
+    };
+    if ($('btn-fullscreen')) $('btn-fullscreen').onclick = toggleFull;
+    if ($('btn-fullscreen-pause')) $('btn-fullscreen-pause').onclick = toggleFull;
+
     this.renderer.domElement.addEventListener('pointerdown', () => {
       if (this.state === 'play' && !this.input.locked && !this.input.isTouch) this.input.lock();
     });
@@ -60,7 +92,10 @@ export class Game {
 
   onKey(e) {
     if (this.skipFlashback && (e.code === 'Space' || e.code === 'KeyE' || e.code === 'Escape')) { this.skipFlashback(); return; }
-    if (this.isHiding && (e.code === 'KeyE' || e.code === 'Escape')) { this.exitHiding(); return; }
+    if (this.isHiding) {
+      if (e.code === 'KeyE' || e.code === 'Escape') { this.exitHiding(); return; }
+      if (e.code === 'Space') { e.preventDefault(); return; }
+    }
     if (this.state === 'ui') {
       if (this.choiceCb && (e.code === 'Digit1' || e.code === 'Numpad1')) this.choiceCb(0);
       if (this.choiceCb && (e.code === 'Digit2' || e.code === 'Numpad2')) this.choiceCb(1);
@@ -165,7 +200,16 @@ export class Game {
   cine(v) { this.frozen = v; }
   setFlag(k, v = true) { this.flags[k] = v; }
   remember(k, v = true) { this.story[k] = v; localStorage.setItem('hotel_story', JSON.stringify(this.story)); }
-  giveFlashlight() { this.remember('flashlight'); this.player.hasFlash = true; $('meter-battery').style.display = ''; }
+  giveFlashlight() {
+    this.remember('flashlight');
+    this.player.hasFlash = true;
+    this.player.battery = Math.max(this.player.battery, 0.95);
+    $('meter-battery').style.display = '';
+  }
+  giveBattery(amount = 0.5) {
+    this.audio?.batteryPickup();
+    this.player.addBattery(amount);
+  }
 
   lookAt(wx, wy, wz, secs = 1) {
     return new Promise((res, rej) => {
@@ -256,6 +300,7 @@ export class Game {
       targetAnomalies = ['child_waiting', 'wheelchair_moved', 'door_peek'],
       onAnomalyFound = null,
       onClimaxTrigger = null,
+      startCam = 0,
     } = opts;
 
     return new Promise((res, rej) => {
@@ -275,7 +320,7 @@ export class Game {
       const closeBtn = $('cctv-close');
 
       if (mapGrid) mapGrid.innerHTML = '';
-      let cur = 0;
+      let cur = Math.max(0, Math.min(CAMS.length - 1, startCam));
       let panX = 0;
       let targetPanX = 0;
       let lightOn = false;
@@ -290,6 +335,11 @@ export class Game {
       // Actualizar píldora de anomalías
       const updateAnomalyCount = () => {
         if (anomalyPill) {
+          if (!targetAnomalies || targetAnomalies.length === 0) {
+            anomalyPill.style.display = 'none';
+            return;
+          }
+          anomalyPill.style.display = '';
           anomalyPill.textContent = `ANOMALÍAS: ${foundAnomalies.size}/${targetAnomalies.length}`;
           if (foundAnomalies.size >= targetAnomalies.length) {
             anomalyPill.style.borderColor = '#4ade80';
@@ -525,6 +575,9 @@ export class Game {
   enterHiding(spot) {
     if (this.isHiding) return;
     this.isHiding = true;
+    this.breath = 1.0;
+    this.holdingBreath = false;
+    this.gaspCd = 0;
     this.hidingReturnPos = this.player.pos.clone();
     this.hidingReturnYaw = this.player.yaw;
     this.audio.lockerHide();
@@ -539,6 +592,7 @@ export class Game {
   exitHiding() {
     if (!this.isHiding) return;
     this.isHiding = false;
+    this.holdingBreath = false;
     this.audio.lockerExit();
     if (this.hidingReturnPos) {
       this.player.pos.copy(this.hidingReturnPos);
@@ -656,11 +710,49 @@ export class Game {
     $('state-tag').textContent = (this.isHiding ? 'OCULTA EN CASILLERO · ' : this.player.crouch ? 'AGACHADA · ' : '') + (this.player.hasFlash && !this.player.flashOn ? 'LINTERNA APAGADA' : '');
     if (this.cctvDraw) this.cctvDraw(t);
     if (this.flashbackPlayer.active) this.flashbackPlayer.render(dt);
+
     if (this.isHiding) {
+      this.gaspCd = Math.max(0, (this.gaspCd || 0) - dt);
+      const wantHold = (this.input.down('Space') || this.touchHoldingBreath) && this.gaspCd <= 0;
+      if (wantHold) {
+        if (!this.holdingBreath) {
+          this.audio.inhale();
+          this.holdingBreath = true;
+        }
+        this.breath = Math.max(0, (this.breath ?? 1) - dt * 0.17);
+        if (this.breath <= 0) {
+          this.holdingBreath = false;
+          this.gaspCd = 1.8;
+          this.audio.gasp();
+          this.shakeCam(0.35);
+        }
+      } else {
+        if (this.holdingBreath) {
+          this.holdingBreath = false;
+        }
+        this.breath = Math.min(1.0, (this.breath ?? 1) + dt * 0.32);
+      }
+
+      const barBreath = $('bar-breath');
+      if (barBreath) {
+        barBreath.style.width = (this.breath * 100) + '%';
+        barBreath.style.background = this.breath < 0.25 ? '#ef4444' : 'linear-gradient(90deg, #38bdf8, #818cf8)';
+      }
+
+      const breathLbl = $('hiding-breath-label');
+      if (breathLbl) {
+        breathLbl.textContent = this.gaspCd > 0
+          ? '¡SIN AIRE! RECUPERANDO EL ALIENTO...'
+          : this.holdingBreath
+            ? 'CONTENIENDO RESPIRACIÓN... [ESPACIO]'
+            : 'RESPIRACIÓN · Mantén [ESPACIO] para contener';
+        breathLbl.style.color = this.gaspCd > 0 ? '#ef4444' : this.holdingBreath ? '#38bdf8' : 'var(--amber)';
+      }
+
       this.hidingHeartTimer = (this.hidingHeartTimer || 0) - dt;
       if (this.hidingHeartTimer <= 0) {
-        this.audio.heartbeat(0.55);
-        this.hidingHeartTimer = 0.85;
+        this.audio.heartbeat(this.holdingBreath ? 0.35 : 0.65);
+        this.hidingHeartTimer = this.holdingBreath ? 1.05 : 0.75;
       }
     }
   }
@@ -670,10 +762,23 @@ export class Game {
     this.ambT -= dt; if (this.ambT > 0) return;
     this.ambT = 9 + Math.random() * 12 - this.ambientLevel * 2;
     const r = Math.random(), a = this.audio, p = this.player;
-    if (r < 0.35) { a.panner.positionX.value = p.pos.x + (Math.random() - 0.5) * 18; a.panner.positionZ.value = p.pos.z + (Math.random() - 0.5) * 18; for (let i = 0; i < 6; i++) setTimeout(() => a.entityStep(), i * 520); }
-    else if (r < 0.55) { this.hospital.flicker(1.8); a.thump(); }
-    else if (r < 0.7 && this.ambientLevel >= 2) { a.knock(); }
-    else if (r < 0.85 && this.ambientLevel >= 2) { a.whisper(); }
+    if (r < 0.20) {
+      // Relámpago en ventanales y retumbar de trueno distante
+      this.flash(0.32);
+      setTimeout(() => a.thunder(), 1100);
+    }
+    else if (r < 0.45) {
+      a.panner.positionX.value = p.pos.x + (Math.random() - 0.5) * 18;
+      a.panner.positionZ.value = p.pos.z + (Math.random() - 0.5) * 18;
+      for (let i = 0; i < 6; i++) setTimeout(() => a.entityStep(), i * 520);
+    }
+    else if (r < 0.65) {
+      this.hospital.flicker(1.8);
+      a.spark();
+      a.thump();
+    }
+    else if (r < 0.78 && this.ambientLevel >= 2) { a.knock(); }
+    else if (r < 0.88 && this.ambientLevel >= 2) { a.whisper(); }
     else if (this.ambientLevel >= 3) { this.hospital.blackout(2.5); a.cry(2); }
     else a.door();
   }

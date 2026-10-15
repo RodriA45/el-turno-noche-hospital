@@ -81,6 +81,24 @@ export const CHAPTERS = [
         }
       });
 
+      // Pilas de repuesto sobre el mostrador de recepción
+      game.place({
+        id: 'battery_reception',
+        floor: 1,
+        x: 3.6,
+        y: 1.14,
+        z: 7.2,
+        range: 2.6,
+        label: 'Pilas AA de repuesto',
+        model: batteryMesh,
+        spin: true,
+        async onUse(g) {
+          g.giveBattery(0.5);
+          g.removeObj('battery_reception');
+          await g.say('Encontré pilas de repuesto. Me servirán para mantener la linterna encendida.', 'Clara', { thought: true });
+        }
+      });
+
       // Monitor de seguridad en el mostrador estilo FNAF
       let cctvCompleted = false;
       game.place({
@@ -175,8 +193,8 @@ export const CHAPTERS = [
           ghost.appear(1, 16.0, 6.0, 'walk', false);
           ghost.goTo(5.2, 6.0, 1.4);
 
-          game.objective('¡VIENE HACIA AQUÍ! ¡ESCÓNDETE EN EL CASILLERO CON [E] O AGACHATE TRAS EL MOSTRADOR!');
-          await game.say('¡Viene arrastrando los pies hacia la recepción! ¡Tengo que meterme en el casillero YA!', 'Clara', { thought: true });
+          game.objective('¡VIENE HACIA AQUÍ! ¡ESCÓNDETE EN EL CASILLERO CON [E] Y CONTÉN LA RESPIRACIÓN [ESPACIO]!');
+          await game.say('¡Viene arrastrando los pies hacia la recepción! ¡Tengo que meterme en el casillero YA y contener el aliento!', 'Clara', { thought: true });
 
           // Esperar a que el jugador entre al casillero o se esconda
           let survivedHiding = false;
@@ -262,8 +280,7 @@ export const CHAPTERS = [
           const ok = await g.keypad('1984');
           if (ok) {
             cabinetUnlocked = true;
-            g.giveFlashlight();
-            audio.pickup();
+            g.giveBattery(1.0);
             await g.say('¡Código correcto! Encontré pilas nuevas de alta duración y un informe pediátrico.', 'Clara', { thought: true });
             g.removeObj('pharmacy_cabinet');
             g.setFlag('cabinet_done');
@@ -470,7 +487,6 @@ export const CHAPTERS = [
       // Cerradura del archivo clínico
       game.lockHandlers['archive'] = async (door) => {
         if (game.flags['has_archive_key']) {
-          audio.door();
           return true;
         } else {
           audio.locked();
@@ -478,6 +494,24 @@ export const CHAPTERS = [
           return false;
         }
       };
+
+      // Pilas en el archivo clínico
+      game.place({
+        id: 'battery_archive',
+        floor: 1,
+        x: 16.8,
+        y: 0.85,
+        z: 3.6,
+        range: 2.4,
+        label: 'Pilas AA selladas',
+        model: batteryMesh,
+        spin: true,
+        async onUse(g) {
+          g.giveBattery(0.6);
+          g.removeObj('battery_archive');
+          await g.say('Pilas alcalinas en el archivo. La linterna vuelve a tener carga completa.', 'Clara', { thought: true });
+        }
+      });
 
       // Expediente clasificado en el escritorio del archivo
       game.place({
@@ -571,11 +605,14 @@ export const CHAPTERS = [
       await game.fade(0, 1.2);
 
       await game.say('Al entrar a la guardia el monitor de la Cámara 4 estaba encendido...', 'Clara', { thought: true });
-      game.objective('Observa la cámara del piso 4 en el monitor');
+      game.objective('Observa la cámara CAM 05 del piso 4 en el monitor y baja el monitor con [E]');
 
-      // Interacción obligatoria con CCTV mostrando el graffiti del felpón
+      // Interacción con CCTV mostrando el graffiti del felpón en CAM 05
       game.cctvState = { cam4On: true, cam4Writing: true };
-      await game.cctv();
+      await game.cctv({
+        startCam: 4,
+        targetAnomalies: [],
+      });
 
       await game.say('¡Dios mío! En la pared del pasillo del cuarto piso hay algo escrito...', 'Clara', { thought: true });
       await game.say('Dice en letras gigantescas: "AYÚDALO"... ¡Y está escrito con mi felpón negro robado!', 'Clara');

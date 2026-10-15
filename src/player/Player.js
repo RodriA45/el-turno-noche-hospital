@@ -4,11 +4,13 @@ import { flashlightCookie } from '../world/Textures.js';
 const R = 0.3; // radio del jugador
 
 export class Player {
-  constructor(camera, scene, hotel, input) {
-    this.camera = camera; this.hotel = hotel; this.input = input;
+  constructor(camera, scene, hospital, input) {
+    this.camera = camera; this.hospital = hospital; this.input = input;
     this.pos = new THREE.Vector3(0, 1.6, 0);
     this.yaw = Math.PI / 2;
     this.pitch = 0;
+    this.targetYaw = this.yaw;
+    this.targetPitch = this.pitch;
     this.stamina = 1; this.exhausted = false;
     this.battery = 1; this.flashOn = false; this.hasFlash = false;
     this.crouch = false; this.eye = 1.6;
@@ -17,7 +19,7 @@ export class Player {
     this.noise = 1;
     this.bob = 0; this.lastStepSign = 1;
     this.onStep = null;
-    this.sens = 0.0022;
+    this.sens = +localStorage.getItem('hospital_sens') || 0.0022;
 
     // Inercia de linterna (sway)
     this.flashSwayX = 0; this.flashSwayY = 0;
@@ -43,14 +45,74 @@ export class Player {
     bounce.position.set(0.18, -0.12, 0.3);
     camera.add(bounce);
     this.bounceLight = bounce;
+
+    // Partículas volumétricas de polvo y suspensión en el haz de la linterna
+    const dustCount = 140;
+    const dustGeo = new THREE.BufferGeometry();
+    const dustPositions = new Float32Array(dustCount * 3);
+    const dustVelocities = [];
+    for (let i = 0; i < dustCount; i++) {
+      dustPositions[i * 3 + 0] = (Math.random() - 0.5) * 3.5;
+      dustPositions[i * 3 + 1] = (Math.random() - 0.5) * 2.5;
+      dustPositions[i * 3 + 2] = -0.5 - Math.random() * 7.5;
+      dustVelocities.push({
+        x: (Math.random() - 0.5) * 0.035,
+        y: (Math.random() - 0.5) * 0.025,
+        z: (Math.random() - 0.5) * 0.035,
+        phase: Math.random() * Math.PI * 2
+      });
+    }
+    dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
+
+    const dustCanvas = document.createElement('canvas');
+    dustCanvas.width = dustCanvas.height = 32;
+    const dctx = dustCanvas.getContext('2d');
+    const dgrad = dctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+    dgrad.addColorStop(0, 'rgba(255, 252, 240, 1)');
+    dgrad.addColorStop(0.35, 'rgba(235, 240, 230, 0.6)');
+    dgrad.addColorStop(1, 'rgba(180, 200, 210, 0)');
+    dctx.fillStyle = dgrad;
+    dctx.fillRect(0, 0, 32, 32);
+    const dustTex = new THREE.CanvasTexture(dustCanvas);
+
+    const dustMat = new THREE.PointsMaterial({
+      map: dustTex,
+      size: 0.08,
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      color: 0xfffcf0
+    });
+    const dustPoints = new THREE.Points(dustGeo, dustMat);
+    camera.add(dustPoints);
+    this.dustPoints = dustPoints;
+    this.dustPositions = dustPositions;
+    this.dustVelocities = dustVelocities;
+    this.dustGeo = dustGeo;
+    this.dustMat = dustMat;
+    this.dustCount = dustCount;
+  }
+
+  setSensitivity(val) {
+    this.sens = Math.max(0.0008, Math.min(0.006, val));
+    localStorage.setItem('hospital_sens', this.sens);
+  }
+
+  addBattery(amount = 0.5) {
+    this.battery = Math.min(1.0, this.battery + amount);
   }
 
   get forward() { return new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw)); }
 
-  setPos(cx, cz, yaw = this.yaw) { this.pos.set(cx * 3, 1.6, cz * 3); this.yaw = yaw; this.pitch = 0; }
+  setPos(cx, cz, yaw = this.yaw) {
+    this.pos.set(cx * 3, 1.6, cz * 3);
+    this.yaw = this.targetYaw = yaw;
+    this.pitch = this.targetPitch = 0;
+  }
 
   collides(x, z) {
-    const h = this.hotel;
+    const h = this.hospital;
     for (const [ox, oz] of [[R, R], [-R, R], [R, -R], [-R, -R]]) {
       if (h.blockedAt(x + ox, z + oz)) return true;
     }
@@ -60,16 +122,21 @@ export class Player {
   update(dt, t, frozen = false) {
     const inp = this.input;
     if (!frozen) {
-      // Limitar deltas máximos por frame para evitar tirones y rotaciones anómalas al mover el mouse rápido
-      const maxDelta = 90;
+      // Limitar deltas máximos por frame para filtrar picos espurios
+      const maxDelta = 120;
       const cdx = Math.max(-maxDelta, Math.min(maxDelta, inp.dx));
       const cdy = Math.max(-maxDelta, Math.min(maxDelta, inp.dy));
 
-      this.yaw -= cdx * this.sens;
-      // Normalizar yaw para mantener precisión numérica
-      this.yaw = ((this.yaw + Math.PI) % (Math.PI * 2) + (Math.PI * 2)) % (Math.PI * 2) - Math.PI;
+      this.targetYaw -= cdx * this.sens;
+      this.targetYaw = ((this.targetYaw + Math.PI) % (Math.PI * 2) + (Math.PI * 2)) % (Math.PI * 2) - Math.PI;
+      this.targetPitch = Math.max(-1.42, Math.min(1.42, this.targetPitch - cdy * this.sens));
 
-      this.pitch = Math.max(-1.42, Math.min(1.42, this.pitch - cdy * this.sens));
+      // Suavizado cinemático lerp para un control fluido sin saltos
+      const smoothFactor = Math.min(1, dt * 32);
+      let diffYaw = this.targetYaw - this.yaw;
+      diffYaw = Math.atan2(Math.sin(diffYaw), Math.cos(diffYaw));
+      this.yaw += diffYaw * smoothFactor;
+      this.pitch += (this.targetPitch - this.pitch) * smoothFactor;
 
       // Inercia / balanceo suave de la linterna con límites estrictos
       const targetSwayX = Math.max(-0.35, Math.min(0.35, -cdx * 0.0004));
@@ -137,6 +204,27 @@ export class Player {
     this.spot.intensity = this.baseIntensity * k;
     this.spot.castShadow = this.flashOn;
     this.bounceLight.intensity = this.flashOn ? 3.0 * k : 0;
+
+    // Actualizar motas de polvo volumétrico en el cono de luz
+    const targetDustOpacity = (this.flashOn && k > 0.05) ? 0.38 * k : 0;
+    this.dustMat.opacity += (targetDustOpacity - this.dustMat.opacity) * Math.min(1, dt * 6);
+    if (this.dustMat.opacity > 0.01) {
+      const posArr = this.dustPositions;
+      for (let i = 0; i < this.dustCount; i++) {
+        const v = this.dustVelocities[i];
+        const idx = i * 3;
+        posArr[idx + 0] += v.x * dt + Math.sin(t * 0.8 + v.phase) * 0.001;
+        posArr[idx + 1] += v.y * dt + Math.cos(t * 0.6 + v.phase) * 0.001;
+        posArr[idx + 2] += v.z * dt;
+        if (posArr[idx + 0] < -2.0) posArr[idx + 0] = 2.0;
+        if (posArr[idx + 0] > 2.0) posArr[idx + 0] = -2.0;
+        if (posArr[idx + 1] < -1.5) posArr[idx + 1] = 1.5;
+        if (posArr[idx + 1] > 1.5) posArr[idx + 1] = -1.5;
+        if (posArr[idx + 2] < -8.0) posArr[idx + 2] = -0.5;
+        if (posArr[idx + 2] > -0.5) posArr[idx + 2] = -8.0;
+      }
+      this.dustGeo.attributes.position.needsUpdate = true;
+    }
   }
 
   /** Objeto interactuable más cercano al que se mira. */
@@ -144,7 +232,7 @@ export class Player {
     const fw = this.forward;
     let best = null, bestScore = 1e9;
     const px = this.pos.x, pz = this.pos.z;
-    for (const it of this.hotel.interactables) {
+    for (const it of this.hospital.interactables) {
       if (it.enabled === false || (it.when && !it.when())) continue;
       const dx = it.x - px, dz = it.z - pz, d = Math.hypot(dx, dz);
       if (d > (it.range || 2.4)) continue;
