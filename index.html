@@ -49,6 +49,38 @@
       <div id="subs" class="hidden"><b id="subs-who"></b><span id="subs-text"></span></div>
     </main>
 
+    <!-- Barra de Control del Recorrido Automático / Auditoría Visual AAA -->
+    <aside id="tour-bar" class="hidden">
+      <div class="tour-content">
+        <div class="tour-info">
+          <div class="tour-badge">
+            <span class="tour-dot"></span>
+            <span class="tour-badge-text">RECORRIDO AUTOMÁTICO · AUDITORÍA VISUAL</span>
+            <span id="tour-step" class="tour-step-pill">1 / 25</span>
+          </div>
+          <h3 id="tour-title">Planta Baja · Mostrador de Recepción</h3>
+          <p id="tour-desc">Terminal CRT de fósforo verde con telemetría de 1984, libro de guardia y lámpara de latón</p>
+        </div>
+        <div class="tour-controls">
+          <button id="btn-tour-prev" class="btn btn-tour" title="Anterior parada [Flecha Izq / A]">
+            <svg class="tour-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+            <span>Anterior</span>
+          </button>
+          <button id="btn-tour-pause" class="btn btn-tour" title="Pausar / Reanudar [Espacio]">Pausa</button>
+          <button id="btn-tour-next" class="btn btn-tour" title="Siguiente parada [Flecha Der / D]">
+            <span>Siguiente</span>
+            <svg class="tour-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+          <button id="btn-tour-floor" class="btn btn-tour ghost" title="Saltar al siguiente piso">
+            <span>Siguiente Piso</span>
+          </button>
+          <button id="btn-tour-stop" class="btn btn-tour danger" title="Tomar control y salir [Esc]">
+            <span>Tomar Control [Esc]</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
     <div id="touch-ui" class="hidden">
       <div id="touch-look"></div>
       <div id="touch-move"></div>
@@ -262,6 +294,13 @@
         <p class="lead">Eres la recepcionista del turno noche en un hospital de cuatro pisos. Hay una sola regla: <b>nunca mires las cámaras del último piso.</b></p>
         <div id="chapter-list"></div>
 
+        <div class="tour-launch-wrap">
+          <button id="btn-auto-tour" class="btn btn-tour-launch">
+            <svg class="tour-btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polygon points="10,8 16,12 10,16" fill="currentColor"/></svg>
+            <span>RECORRIDO AUTOMÁTICO · AUDITORÍA VISUAL</span>
+          </button>
+        </div>
+
         <div class="settings-panel">
           <div class="opt-row">
             <label for="sens-slider">Sensibilidad</label>
@@ -312,6 +351,7 @@
           </div>
         </div>
         <button id="btn-resume" class="btn">Continuar</button>
+        <button id="btn-auto-tour-pause" class="btn ghost tour-pause-btn">Recorrido Automático</button>
         <button id="btn-fullscreen-pause" class="btn ghost">Pantalla Completa</button>
         <button id="btn-menu" class="btn ghost">Menú de capítulos</button>
       </div>

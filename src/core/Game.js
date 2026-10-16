@@ -7,6 +7,7 @@ import { CAMS, ANOMALIES, drawFeed, hitTestAnomaly } from '../ui/Cctv.js';
 import { CHAPTERS } from '../chapters.js';
 import { FlashbackPlayer } from '../ui/Flashback.js';
 import { ObjectExaminer } from '../ui/ObjectExaminer.js';
+import { AutoTour } from './AutoTour.js';
 
 const $ = id => document.getElementById(id);
 const CANCEL = Symbol('cancel');
@@ -30,6 +31,9 @@ export class Game {
       this.examiner = new ObjectExaminer(examinerCanvas);
     }
     this.isHiding = false; this.hidingSpot = null;
+    this.autoTour = new AutoTour(this);
+    window.game = this;
+    window.startTour = (floor = 1) => this.autoTour.start(floor);
     this.buildMenu();
     this.bindUi();
     addEventListener('keydown', e => this.onKey(e));
@@ -140,6 +144,12 @@ export class Game {
   }
 
   onKey(e) {
+    if (this.autoTour?.active) {
+      if (e.code === 'Escape') { this.autoTour.stop(); return; }
+      if (e.code === 'Space') { e.preventDefault(); this.autoTour.togglePause(); return; }
+      if (e.code === 'ArrowRight' || e.code === 'KeyD') { this.autoTour.next(); return; }
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') { this.autoTour.prev(); return; }
+    }
     if (this.skipFlashback && (e.code === 'Space' || e.code === 'KeyE' || e.code === 'Escape')) { this.skipFlashback(); return; }
     if (this.isHiding) {
       if (e.code === 'KeyE' || e.code === 'Escape') { this.exitHiding(); return; }
@@ -157,6 +167,7 @@ export class Game {
   }
 
   toMenu() {
+    this.autoTour?.stop();
     this.run++; this.state = 'menu'; this.input.unlock();
     ['hud', 'touch-ui', 'pause', 'end', 'titlecard', 'note', 'choice', 'keypad', 'cctv', 'qte', 'flashback', 'hiding', 'examiner'].forEach(i => show(i, false));
     this.flashbackPlayer.stop(); this.isHiding = false;
@@ -774,6 +785,7 @@ export class Game {
     this.ghost.update(dt, this.player, t);
     for (const a of Object.values(this.actors || {})) a.step(dt, t);
     this.ambientEvents(dt);
+    this.autoTour?.update(dt, t);
 
     // tensión y audio
     const g = this.ghost; const vis = g.mesh.visible && g.floor === this.hospital.floorNum;
