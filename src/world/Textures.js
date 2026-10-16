@@ -203,10 +203,10 @@ export function floorMaps(rx, ry) {
   }, rx, ry);
 
   const rough = paint(512, 512, (g, w, h) => {
-    // Linóleo semibrillante encerado
-    g.fillStyle = '#6a6a6a';
+    // Linóleo hospitalario con acabado satinado mate (elimina franjas especulares quemadas)
+    g.fillStyle = '#c8c8c8';
     g.fillRect(0, 0, w, h);
-    grain(g, w, h, 30);
+    grain(g, w, h, 20);
   }, rx * 2, ry * 2, false);
 
   return { map, rough };

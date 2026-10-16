@@ -112,7 +112,8 @@ export class FlashbackPlayer {
       g.fill();
     };
 
-    const iw = w * 0.08, ih = h * 0.12;
+    const iw = Math.max(34, w * 0.09);
+    const ih = Math.min(h * 0.16, iw * 1.35);
     // Suelo con reflejos de sangre / cera
     poly([[0, h], [w, h], [vx + iw, vy + ih], [vx - iw, vy + ih]], `rgba(${40 + redAlert * 30}, 12, 12, 1)`);
     // Techo
@@ -580,44 +581,57 @@ export class FlashbackPlayer {
   // -------------------------------------------------------------------------
   drawHud(g, w, h, t, letterboxH) {
     const meta = this.meta;
+    const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    const padX = Math.max(18, Math.round(w * 0.03));
+    const padTop = Math.max(letterboxH * 0.55, 24);
+    const padBottom = Math.max(letterboxH * 0.65, 28);
+
+    // Tipografía escalada con límites mínimos legibles
+    const fRec = Math.max(13, Math.round(w * 0.016));
+    const fTitle = Math.max(14, Math.round(w * 0.018));
+    const fLoc = Math.max(11, Math.round(w * 0.014));
+    const fSkip = Math.max(11, Math.round(w * 0.013));
 
     // Encabezado superior: [● REC] parpadeante y reloj VHS
-    const topY = letterboxH * 0.65;
+    const topY = padTop;
     const recOn = Math.sin(t * 4.5) > -0.2;
 
     if (recOn) {
       g.fillStyle = '#ff2b2b';
       g.beginPath();
-      g.arc(28, topY - 5, 7, 0, Math.PI * 2);
+      g.arc(padX, topY - 4, 6, 0, Math.PI * 2);
       g.fill();
-      g.font = `bold ${Math.round(w * 0.016)}px "Special Elite", monospace`;
+      g.font = `bold ${fRec}px "Special Elite", monospace`;
       g.textAlign = 'left';
-      g.fillText('REC', 42, topY);
+      g.fillText('REC', padX + 12, topY);
     }
 
     g.fillStyle = '#68e29a';
-    g.font = `bold ${Math.round(w * 0.016)}px "Special Elite", monospace`;
+    g.font = `bold ${fRec}px "Special Elite", monospace`;
     g.textAlign = 'left';
-    g.fillText('PLAY ▶  SP', 110, topY);
+    g.fillText('PLAY ▶ SP', padX + (recOn ? 65 : 0), topY);
 
     g.textAlign = 'right';
     g.fillStyle = '#ffd56b';
-    g.fillText(meta.date || 'OCT 14 1984 · 03:42:15 AM', w - 28, topY);
+    g.font = `bold ${fRec}px "Special Elite", monospace`;
+    g.fillText(meta.date || 'OCT 14 1984 · 03:42:15 AM', w - padX, topY);
 
-    // Texto de ubicación y título del archivo
+    // Texto de ubicación y título del archivo en el letterbox inferior
+    const botY = h - padBottom;
     g.textAlign = 'left';
     g.fillStyle = '#ffffff';
-    g.font = `bold ${Math.round(w * 0.017)}px "Cinzel", serif`;
-    g.fillText(meta.title || '', 28, h - letterboxH + 28);
+    g.font = `bold ${fTitle}px "Cinzel", serif`;
+    g.fillText(meta.title || '', padX, botY - 14);
 
-    g.font = `${Math.round(w * 0.014)}px "Special Elite", monospace`;
+    g.font = `${fLoc}px "Special Elite", monospace`;
     g.fillStyle = '#a0d8b8';
-    g.fillText(meta.location || '', 28, h - letterboxH + 52);
+    g.fillText(meta.location || '', padX, botY + 8);
 
     // Indicador para saltar
     g.textAlign = 'right';
-    g.fillStyle = 'rgba(255, 255, 255, 0.45)';
-    g.font = `${Math.round(w * 0.013)}px "Inter", sans-serif`;
-    g.fillText('[ESPACIO] o Tocar para omitir', w - 28, h - letterboxH + 42);
+    g.fillStyle = 'rgba(255, 255, 255, 0.65)';
+    g.font = `${fSkip}px "Inter", sans-serif`;
+    const skipLabel = isTouch ? 'Toca la pantalla para omitir' : '[ESPACIO] o Clic para omitir';
+    g.fillText(skipLabel, w - padX, botY + 8);
   }
 }

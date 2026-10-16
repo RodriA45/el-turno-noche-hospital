@@ -57,6 +57,18 @@ export const CHAPTERS = [
       silvia.hide();
       audio.door();
 
+      // Cerrar y bloquear la puerta de salida exterior
+      const exitDoor = hospital.doorAt(0, 6);
+      if (exitDoor) {
+        exitDoor.open = false;
+        exitDoor.lock = 'front';
+      }
+      game.lockHandlers['front'] = async () => {
+        game.audio.locked();
+        await game.say('Marta y Silvia cerraron la salida con llave desde afuera. No puedo salir hasta que termine mi turno a las 7:00 AM.', 'Clara', { thought: true });
+        return false;
+      };
+
       game.cine(false);
       game.objective('Lee el libro de guardia y accede a los monitores de seguridad (CCTV)');
 

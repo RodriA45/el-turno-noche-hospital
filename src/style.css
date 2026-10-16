@@ -103,9 +103,24 @@ body.is-touch .desktop-only { display: none !important; }
 #touch-ui { position: fixed; inset: 0; z-index: 5; touch-action: none; pointer-events: none; }
 #touch-look { position: absolute; inset: 0; pointer-events: auto; }
 #touch-move { position: absolute; left: 0; top: 0; bottom: 0; width: 45%; pointer-events: auto; }
+#touch-move::after {
+  content: '';
+  position: absolute;
+  left: max(26px, env(safe-area-inset-left));
+  bottom: max(26px, env(safe-area-inset-bottom));
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(255, 255, 255, 0.22);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 70%);
+  pointer-events: none;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
 #stick { position: absolute; width: 130px; height: 130px; margin: -65px 0 0 -65px; border-radius: 50%; pointer-events: none;
   border: 2px solid rgba(255,255,255,.28); background: rgba(255,255,255,.05); opacity: 0; transition: opacity .15s; }
 #stick.active { opacity: 1; }
+#stick.active ~ #touch-move::after { opacity: 0; }
 #stick.sprint { border-color: var(--amber); box-shadow: 0 0 18px rgba(224,178,74,.5); }
 #stick-knob { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; border-radius: 50%; transform: translate(-50%,-50%);
   background: rgba(255,255,255,.28); border: 2px solid rgba(255,255,255,.5); }
@@ -656,10 +671,14 @@ body.is-touch #subs { bottom: 6%; }
   }
   .cctv-map-grid {
     justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px;
   }
   .cctv-cam-node {
-    padding: 5px 8px;
-    font-size: 10px;
+    padding: 5px 6px;
+    font-size: 9.5px;
+    flex: 1 1 auto;
+    text-align: center;
   }
 }
 

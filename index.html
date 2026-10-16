@@ -58,10 +58,20 @@
       </button>
       <div id="touch-buttons">
         <button id="tb-lean-left" data-key="LeanLeft" aria-label="Asomarse Izquierda">
-          <svg class="touch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 19l-7-7 7-7"/><path d="M19 12H9"/></svg>
+          <svg class="touch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="16" y1="3" x2="16" y2="21" stroke-dasharray="2 3"/>
+            <path d="M16 7h-5a3 3 0 0 0-3 3v3"/>
+            <polyline points="10 11 6 13 10 15"/>
+            <circle cx="8" cy="18" r="1.8" fill="currentColor"/>
+          </svg>
         </button>
         <button id="tb-lean-right" data-key="LeanRight" aria-label="Asomarse Derecha">
-          <svg class="touch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/><path d="M5 12h10"/></svg>
+          <svg class="touch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="8" y1="3" x2="8" y2="21" stroke-dasharray="2 3"/>
+            <path d="M8 7h5a3 3 0 0 1 3 3v3"/>
+            <polyline points="14 11 18 13 14 15"/>
+            <circle cx="16" cy="18" r="1.8" fill="currentColor"/>
+          </svg>
         </button>
         <button id="tb-watch" data-key="Tab" aria-label="Reloj Vital">
           <svg class="touch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="7"/><path d="M12 9v3l2 2"/><path d="M10 2h4M10 22h4"/></svg>
@@ -75,7 +85,12 @@
           </svg>
         </button>
         <button id="tb-crouch" data-key="KeyC" aria-label="Agacharse">
-          <svg class="touch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 13l-7 7-7-7m7 7V4"/></svg>
+          <svg class="touch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="5.5" r="2.2" fill="currentColor" fill-opacity="0.3"/>
+            <path d="M6 13.5l3.2-4.5 4.8 1.2 3.5 5.5"/>
+            <path d="M9.2 14.2l-2.4 5.8"/>
+            <path d="M15.5 15.7l2.2 4.3"/>
+          </svg>
         </button>
         <button id="tb-act" data-key="KeyE" aria-label="Interactuar">
           <svg class="touch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

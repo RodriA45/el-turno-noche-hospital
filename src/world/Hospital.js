@@ -133,7 +133,7 @@ export class Hospital {
     const fm = floorMaps(this.cols * 1.5, this.rows * 1.5);
     const floor = new THREE.Mesh(
       new THREE.PlaneGeometry(W, H),
-      new THREE.MeshStandardMaterial({ map: fm.map, roughnessMap: fm.rough, roughness: 0.52, metalness: 0.08 })
+      new THREE.MeshStandardMaterial({ map: fm.map, roughnessMap: fm.rough, roughness: 0.82, metalness: 0.02 })
     );
     floor.rotation.x = -Math.PI / 2;
     floor.position.set(cx, 0, cz);
@@ -251,6 +251,22 @@ export class Hospital {
       const exitLight = new THREE.PointLight(0x24e068, 0.7, 4.5, 2);
       exitLight.position.set(x * S, dh + 0.18, z * S + 0.25);
       g.add(exitLight);
+
+      // Vestíbulo exterior sellado: pared y marco exterior para evitar ver el vacío infinito
+      const backWall = new THREE.Mesh(
+        new THREE.BoxGeometry(0.25, WALL_H, S * 1.3),
+        new THREE.MeshStandardMaterial({ color: 0x080c0e, roughness: 0.95 })
+      );
+      backWall.position.set(x * S - 0.75, WALL_H / 2, z * S);
+      g.add(backWall);
+
+      // Colisionador exterior de seguridad
+      this.colliders.push({
+        x1: x * S - 2.0,
+        x2: x * S - 0.1,
+        z1: z * S - S * 0.6,
+        z2: z * S + S * 0.6,
+      });
     }
 
     const d = {
