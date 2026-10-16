@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { faceTexture, clothTexture, noteTex, signTexture, paint } from './Textures.js';
+import { faceTexture, clothTexture, noteTex, signTexture, paint, xrayTexture, ecgTexture, cardboardBoxTexture, curtainTexture } from './Textures.js';
 
 const mats = {};
 function M(name) {
@@ -35,6 +35,23 @@ function M(name) {
     white: () => std({ color: 0xe6e6df, roughness: 0.5 }),
     red: () => std({ color: 0x801010, roughness: 0.7 }),
     scalpelSteel: () => std({ color: 0xe8ecf0, metalness: 0.98, roughness: 0.12 }),
+    hospitalGreen: () => std({ color: 0x82a492, roughness: 0.55 }),
+    porcelain: () => std({ color: 0xf4f4ec, roughness: 0.16, metalness: 0.05 }),
+    leather: () => std({ color: 0x221612, roughness: 0.72 }),
+    hazardYellow: () => std({ color: 0xd69e16, roughness: 0.55 }),
+    curtain: () => std({ map: curtainTexture(), roughness: 0.95 }),
+    bloodMat: () => std({ color: 0x540808, roughness: 0.35, metalness: 0.1 }),
+    cardboardMat: () => std({ map: cardboardBoxTexture(), roughness: 0.88 }),
+    xrayMat: () => {
+      const mat = new THREE.MeshBasicMaterial({ map: xrayTexture() });
+      mat.userData.isShared = true;
+      return mat;
+    },
+    ecgMat: () => {
+      const mat = new THREE.MeshBasicMaterial({ map: ecgTexture() });
+      mat.userData.isShared = true;
+      return mat;
+    },
   };
   return (mats[name] = defs[name]());
 }
@@ -56,6 +73,9 @@ export const FOOT = {
   cabinet: [1.0, 0.7, true], bench: [2.1, 0.7, true], vending: [1.05, 0.95, true], iv: [0.35, 0.35, false],
   plant: [0.6, 0.6, true], shelf: [1.8, 0.6, true], locker: [0.95, 0.6, true], chair: [0.6, 0.6, false],
   sink: [1.5, 0.65, true], crate: [0.9, 0.9, true], trash: [0.4, 0.4, false],
+  cardiacMonitor: [0.6, 0.6, true], xrayViewer: [0.75, 0.15, false], surgicalLamp: [1.2, 1.2, false],
+  surgeryTable: [1.1, 2.3, true], fireExtinguisher: [0.3, 0.3, false], waterDispenser: [0.45, 0.45, true],
+  curtainDivider: [2.4, 0.1, false],
 };
 
 // =========================================================================
@@ -451,42 +471,254 @@ export function locker() {
 
 export function chair() {
   const g = new THREE.Group();
-  box(0.48, 0.05, 0.48, 'plastic', 0, 0.46, 0, g);
-  box(0.48, 0.46, 0.05, 'plastic', 0, 0.74, -0.21, g);
-  for (const [x, z] of [[-0.21, -0.21], [0.21, -0.21], [-0.21, 0.21], [0.21, 0.21]]) {
-    box(0.028, 0.46, 0.028, 'chrome', x, 0.23, z, g);
+  // Silla de oficina giratoria ergonómica con base estrella de 5 ruedas
+  for (let a = 0; a < Math.PI * 2; a += (Math.PI * 2) / 5) {
+    const leg = box(0.24, 0.025, 0.035, 'darkMetal', Math.cos(a) * 0.12, 0.06, Math.sin(a) * 0.12, g);
+    leg.rotation.y = -a;
+    const w = cyl(0.025, 0.025, 0.025, 'rubber', Math.cos(a) * 0.23, 0.025, Math.sin(a) * 0.23, g, 8);
+    w.rotation.z = Math.PI / 2;
+  }
+  // Columna telescópica hidráulica de gas
+  cyl(0.028, 0.028, 0.38, 'chrome', 0, 0.24, 0, g, 10);
+  cyl(0.045, 0.045, 0.12, 'darkMetal', 0, 0.16, 0, g, 10);
+  // Asiento acolchado contorneado
+  box(0.48, 0.07, 0.46, 'fabric', 0, 0.46, 0.02, g);
+  // Respaldo ergonómico con soporte lumbar
+  box(0.44, 0.48, 0.06, 'fabric', 0, 0.76, -0.21, g);
+  box(0.04, 0.32, 0.04, 'darkMetal', 0, 0.52, -0.16, g); // Soporte trasero
+  // Reposabrazos curvados
+  for (const s of [-0.26, 0.26]) {
+    box(0.04, 0.22, 0.03, 'darkMetal', s, 0.58, 0, g);
+    box(0.06, 0.03, 0.26, 'plastic', s, 0.69, 0.04, g);
   }
   return g;
 }
 
 export function sink() {
   const g = new THREE.Group();
-  box(1.4, 0.12, 0.58, 'white', 0, 0.9, 0, g);
-  box(1.3, 0.8, 0.48, 'paint', 0, 0.4, 0, g);
+  // Lavabo de porcelana vitrificada con mueble bajo
+  box(1.3, 0.78, 0.52, 'hospitalGreen', 0, 0.39, 0, g);
+  box(1.4, 0.14, 0.58, 'porcelain', 0, 0.85, 0, g);
   for (const x of [-0.35, 0.35]) {
-    cyl(0.22, 0.16, 0.1, 'white', x, 0.94, 0, g);
-    cyl(0.016, 0.016, 0.22, 'chrome', x, 1.06, -0.2, g);
+    // Seno cerámico cóncavo
+    cyl(0.20, 0.14, 0.12, 'porcelain', x, 0.88, 0.04, g, 12);
+    // Grifo quirúrgico monomando de codo cromado
+    cyl(0.016, 0.016, 0.24, 'chrome', x, 1.05, -0.18, g, 8);
+    box(0.02, 0.015, 0.12, 'chrome', x, 1.16, -0.12, g);
+    // Palanca de codo para cirujanos
+    box(0.015, 0.015, 0.14, 'chrome', x, 1.12, -0.22, g).rotation.x = -0.3;
+    // Dispensador de jabón antiséptico
+    box(0.07, 0.14, 0.07, 'white', x + 0.22, 1.08, -0.20, g);
+    box(0.012, 0.012, 0.05, 'chrome', x + 0.22, 1.13, -0.16, g);
   }
-  // Espejo clínico sucio con reflejo
-  box(1.4, 0.82, 0.02, new THREE.MeshStandardMaterial({ color: 0xb5c4c3, metalness: 0.92, roughness: 0.1 }), 0, 1.62, -0.28, g);
+  // Espejo clínico con marco biselado
+  box(1.4, 0.86, 0.02, 'metal', 0, 1.62, -0.27, g);
+  const mirrorGlass = new THREE.Mesh(new THREE.PlaneGeometry(1.32, 0.78), new THREE.MeshStandardMaterial({ color: 0x98b8c2, metalness: 0.94, roughness: 0.08 }));
+  mirrorGlass.position.set(0, 1.62, -0.255);
+  g.add(mirrorGlass);
   return g;
 }
 
 export function crate() {
   const g = new THREE.Group();
-  box(0.85, 0.55, 0.85, 'cardboard', 0, 0.275, 0, g);
-  box(0.65, 0.45, 0.65, 'cardboard', 0.06, 0.76, 0, g).rotation.y = 0.32;
+  // Caja de transporte de madera reforzada
+  box(0.85, 0.55, 0.85, 'wood', 0, 0.275, 0, g);
+  // Listones perimetrales de refuerzo
+  box(0.87, 0.08, 0.87, 'darkMetal', 0, 0.52, 0, g);
+  box(0.87, 0.08, 0.87, 'darkMetal', 0, 0.04, 0, g);
+  // Caja de cartón de suministros médicos apilada arriba con textura
+  const topBox = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.44, 0.65), M('cardboardMat'));
+  topBox.position.set(0.06, 0.77, 0.02);
+  topBox.rotation.y = 0.28;
+  topBox.castShadow = topBox.receiveShadow = true;
+  g.add(topBox);
   return g;
 }
 
 export function trash() {
   const g = new THREE.Group();
-  cyl(0.2, 0.16, 0.55, 'darkMetal', 0, 0.275, 0, g, 12);
-  box(0.12, 0.03, 0.12, 'metal', 0, 0.02, 0.21, g); // Pedal de apertura
+  // Cubo de residuos hospitalarios con pedal
+  cyl(0.18, 0.16, 0.52, 'chrome', 0, 0.26, 0, g, 14);
+  // Tapa superior con bisagra
+  cyl(0.185, 0.185, 0.02, 'metal', 0, 0.53, 0, g, 14);
+  // Pedal de apertura cromado
+  box(0.08, 0.02, 0.12, 'chrome', 0, 0.02, 0.19, g);
+  // Aro de base de goma antideslizante
+  cyl(0.175, 0.175, 0.02, 'rubber', 0, 0.01, 0, g, 14);
   return g;
 }
 
-export const MODELS = { bed, gurney, wheelchair, desk: deskModel, cabinet, bench, vending, iv: ivStand, plant, shelf, locker, chair, sink, crate, trash };
+// =========================================================================
+// NUEVOS ELEMENTOS MÉDICOS Y DE QUIRÓFANO AAA
+// =========================================================================
+
+export function cardiacMonitor() {
+  const g = new THREE.Group();
+  // Carro móvil de 4 ruedas
+  for (const [x, z] of [[-0.22, -0.22], [0.22, -0.22], [-0.22, 0.22], [0.22, 0.22]]) {
+    const w = cyl(0.035, 0.035, 0.025, 'rubber', x, 0.035, z, g, 10);
+    w.rotation.z = Math.PI / 2;
+    cyl(0.012, 0.012, 0.25, 'chrome', x, 0.16, z, g, 8);
+  }
+  // Bandeja inferior para cables y accesorios
+  box(0.52, 0.03, 0.52, 'hospitalGreen', 0, 0.28, 0, g);
+  // Columnas de soporte tubulares
+  for (const x of [-0.22, 0.22]) {
+    cyl(0.016, 0.016, 0.65, 'chrome', x, 0.62, 0, g, 8);
+  }
+  // Módulo principal del monitor
+  box(0.56, 0.38, 0.42, 'paint', 0, 1.05, 0, g);
+  // Pantalla con trazado ECG verde brillante
+  const scr = new THREE.Mesh(new THREE.PlaneGeometry(0.38, 0.28), M('ecgMat'));
+  scr.position.set(0, 1.06, 0.212);
+  g.add(scr);
+  // Botonera y selector rotativo
+  box(0.08, 0.02, 0.02, 'darkMetal', -0.16, 0.90, 0.215, g);
+  cyl(0.02, 0.02, 0.02, 'darkMetal', 0.16, 0.90, 0.215, g).rotation.x = Math.PI / 2;
+  // Luz LED de pulso
+  const pulseLed = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.015, 0.015), new THREE.MeshBasicMaterial({ color: 0x44ff66 }));
+  pulseLed.position.set(0.16, 1.20, 0.215); g.add(pulseLed);
+  // Cables de paciente colgando por el lateral
+  cyl(0.006, 0.006, 0.55, 'rubber', -0.26, 0.75, 0.08, g, 6);
+  return g;
+}
+
+export function xrayViewer() {
+  const g = new THREE.Group();
+  // Marco de aluminio de perfil delgado montado en pared
+  box(0.68, 0.88, 0.06, 'chrome', 0, 1.8, 0, g);
+  // Panel acrílico retroiluminado con radiografía
+  const rad = new THREE.Mesh(new THREE.PlaneGeometry(0.58, 0.78), M('xrayMat'));
+  rad.position.set(0, 1.8, 0.032);
+  g.add(rad);
+  // Pinzas superiores de sujeción
+  box(0.12, 0.02, 0.02, 'chrome', -0.16, 2.21, 0.038, g);
+  box(0.12, 0.02, 0.02, 'chrome', 0.16, 2.21, 0.038, g);
+  // Interruptor basculante lateral
+  box(0.015, 0.04, 0.02, 'red', 0.345, 1.45, 0, g);
+  // Luz suave clínica emanada por la pantalla
+  const l = new THREE.PointLight(0xb4d8ff, 1.2, 3.2, 1.8);
+  l.position.set(0, 1.8, 0.25);
+  g.add(l);
+  return g;
+}
+
+export function surgicalLamp() {
+  const g = new THREE.Group();
+  // Anclaje a techo
+  cyl(0.18, 0.18, 0.06, 'chrome', 0, 3.26, 0, g, 14);
+  cyl(0.03, 0.03, 0.35, 'chrome', 0, 3.08, 0, g, 10);
+  // Brazo articulado horizontal y oblicuo
+  box(0.04, 0.04, 0.85, 'chrome', 0, 2.92, 0.38, g);
+  box(0.03, 0.45, 0.03, 'chrome', 0, 2.70, 0.75, g).rotation.x = 0.3;
+  // Cúpulas reflectoras gemelas con difusor
+  for (const s of [-0.35, 0.35]) {
+    const domeGroup = new THREE.Group();
+    domeGroup.position.set(s, 2.45, 0.82);
+    // Campana reflectora exterior cóncava
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2), M('chrome'));
+    dome.rotation.x = Math.PI; dome.castShadow = true; domeGroup.add(dome);
+    // Asa central esterilizable para el cirujano
+    cyl(0.015, 0.015, 0.12, 'chrome', 0, -0.06, 0, domeGroup, 8);
+    // Foco emisor
+    const bulb = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.02, 12), new THREE.MeshBasicMaterial({ color: 0xfffcf0 }));
+    bulb.position.set(0, 0.02, 0); domeGroup.add(bulb);
+    g.add(domeGroup);
+  }
+  // Haz concentrado de quirófano hacia la mesa
+  const spot = new THREE.SpotLight(0xfffaea, 28, 8, Math.PI / 6, 0.5, 1.5);
+  spot.position.set(0, 2.45, 0.82);
+  spot.target.position.set(0, 0.8, 0.82);
+  g.add(spot, spot.target);
+  return g;
+}
+
+export function surgeryTable() {
+  const g = new THREE.Group();
+  // Pedestal hidráulico central de acero inoxidable pesado
+  box(0.65, 0.12, 0.95, 'metal', 0, 0.06, 0, g);
+  cyl(0.18, 0.22, 0.65, 'chrome', 0, 0.42, 0, g, 14);
+  // Pedales de inclinación y altura
+  box(0.08, 0.03, 0.12, 'darkMetal', 0.28, 0.08, 0.15, g);
+  box(0.08, 0.03, 0.12, 'darkMetal', 0.28, 0.08, -0.15, g);
+  // Estructura articulada del plano quirúrgico
+  box(0.72, 0.08, 2.15, 'chrome', 0, 0.78, 0, g);
+  // Rieles laterales para accesorios
+  for (const s of [-0.38, 0.38]) {
+    box(0.018, 0.025, 1.9, 'chrome', s, 0.79, 0, g);
+  }
+  // Colchoneta conductora antiestática negra (4 secciones)
+  box(0.68, 0.08, 0.45, 'leather', 0, 0.85, -0.80, g);
+  box(0.68, 0.08, 0.65, 'leather', 0, 0.85, -0.22, g);
+  box(0.68, 0.08, 0.45, 'leather', 0, 0.85, 0.35, g);
+  box(0.68, 0.08, 0.55, 'leather', 0, 0.85, 0.86, g);
+  // Reposabrazos articulados bilaterales
+  for (const s of [-0.48, 0.48]) {
+    box(0.16, 0.04, 0.55, 'leather', s, 0.84, -0.2, g);
+    box(0.02, 0.12, 0.02, 'chrome', s * 0.85, 0.76, -0.2, g);
+  }
+  // Correas de sujeción de seguridad de cuero
+  box(0.70, 0.015, 0.06, 'darkMetal', 0, 0.89, -0.15, g);
+  box(0.70, 0.015, 0.06, 'darkMetal', 0, 0.89, 0.55, g);
+  return g;
+}
+
+export function fireExtinguisher() {
+  const g = new THREE.Group();
+  // Cilindro rojo presurizado colgado en pared
+  cyl(0.09, 0.09, 0.52, 'red', 0, 1.45, 0, g, 12);
+  cyl(0.085, 0.04, 0.08, 'red', 0, 1.74, 0, g, 12);
+  // Válvula de latón y manómetro
+  cyl(0.025, 0.025, 0.08, 'brass', 0, 1.80, 0, g, 8);
+  box(0.08, 0.04, 0.02, 'metal', 0, 1.82, 0, g);
+  cyl(0.018, 0.018, 0.012, 'metal', 0.035, 1.82, 0.03, g, 8);
+  // Manguera de descarga de goma
+  cyl(0.012, 0.012, 0.42, 'rubber', 0.08, 1.55, 0.05, g, 6);
+  // Soporte de anclaje a pared
+  box(0.04, 0.35, 0.02, 'darkMetal', 0, 1.50, -0.09, g);
+  return g;
+}
+
+export function waterDispenser() {
+  const g = new THREE.Group();
+  // Carcasa de pie blanca
+  box(0.38, 0.95, 0.38, 'white', 0, 0.475, 0, g);
+  // Rejilla de goteo
+  box(0.28, 0.02, 0.16, 'darkMetal', 0, 0.68, 0.14, g);
+  // Grifos de agua fría y caliente
+  box(0.03, 0.06, 0.04, 'red', -0.06, 0.74, 0.16, g);
+  box(0.03, 0.06, 0.04, 'screen', 0.06, 0.74, 0.16, g);
+  // Botellón de 20 litros translúcido azul
+  cyl(0.14, 0.15, 0.42, 'glass', 0, 1.20, 0, g, 14);
+  cyl(0.06, 0.14, 0.12, 'glass', 0, 1.01, 0, g, 12);
+  // Dispensador cilíndrico de vasos cónicos
+  cyl(0.045, 0.045, 0.45, 'glass', -0.22, 0.85, 0, g, 10);
+  cyl(0.04, 0.04, 0.25, 'white', -0.22, 0.76, 0, g, 10);
+  return g;
+}
+
+export function curtainDivider() {
+  const g = new THREE.Group();
+  // Riel de aluminio anclado al techo
+  box(2.4, 0.03, 0.03, 'chrome', 0, 3.25, 0, g);
+  for (const x of [-1.1, 0, 1.1]) {
+    cyl(0.008, 0.008, 0.25, 'chrome', x, 3.12, 0, g, 6);
+  }
+  // Malla superior de ventilación
+  box(2.35, 0.35, 0.015, 'dirtySheet', 0, 2.82, 0, g);
+  // Cortina de privacidad plisada
+  const c = new THREE.Mesh(new THREE.PlaneGeometry(2.35, 2.1), M('curtain'));
+  c.position.set(0, 1.6, 0); c.castShadow = c.receiveShadow = true;
+  g.add(c);
+  const cBack = c.clone(); cBack.rotation.y = Math.PI; g.add(cBack);
+  return g;
+}
+
+export const MODELS = {
+  bed, gurney, wheelchair, desk: deskModel, cabinet, bench, vending, iv: ivStand,
+  plant, shelf, locker, chair, sink, crate, trash,
+  cardiacMonitor, xrayViewer, surgicalLamp, surgeryTable, fireExtinguisher, waterDispenser, curtainDivider
+};
 
 // =========================================================================
 // PUERTA CON MARCO Y CRISTAL REFORZADO

@@ -499,3 +499,188 @@ export function clothTexture(base = '#cfd6d6', blood = false, dirt = 0.4) {
     grain(g, w, h, 18);
   });
 }
+
+// =========================================================================
+// TEXTURAS CLÍNICAS Y DE HORROR AAA
+// =========================================================================
+
+/** Radiografía médica de tórax retroiluminada para negatoscopios de pared */
+export function xrayTexture() {
+  return paint(256, 320, (g, w, h) => {
+    // Fondo de película radiográfica azul negruzco translúcida
+    g.fillStyle = '#0a101a';
+    g.fillRect(0, 0, w, h);
+
+    const cx = w / 2, cy = h * 0.46;
+
+    // Columna vertebral y esternón
+    g.fillStyle = 'rgba(195, 215, 235, 0.65)';
+    for (let y = h * 0.18; y < h * 0.82; y += 12) {
+      g.fillRect(cx - 8, y, 16, 8);
+    }
+
+    // Clavículas
+    g.strokeStyle = 'rgba(210, 225, 245, 0.7)';
+    g.lineWidth = 9;
+    g.beginPath();
+    g.moveTo(cx - 10, h * 0.22); g.quadraticCurveTo(cx - 50, h * 0.20, cx - 95, h * 0.25); g.stroke();
+    g.beginPath();
+    g.moveTo(cx + 10, h * 0.22); g.quadraticCurveTo(cx + 50, h * 0.20, cx + 95, h * 0.25); g.stroke();
+
+    // Costillas torácicas (arcos bilaterales)
+    g.lineWidth = 6;
+    for (let i = 0; i < 7; i++) {
+      const ry = h * 0.28 + i * 18;
+      const span = 45 + i * 8;
+      g.strokeStyle = `rgba(180, 205, 230, ${0.45 + i * 0.04})`;
+      g.beginPath();
+      g.moveTo(cx - 12, ry); g.quadraticCurveTo(cx - span * 0.8, ry - 6, cx - span, ry + 16); g.stroke();
+      g.beginPath();
+      g.moveTo(cx + 12, ry); g.quadraticCurveTo(cx + span * 0.8, ry - 6, cx + span, ry + 16); g.stroke();
+    }
+
+    // Silueta de los campos pulmonares (negros y translúcidos)
+    g.fillStyle = 'rgba(5, 8, 14, 0.45)';
+    g.beginPath();
+    g.ellipse(cx - 48, cy, 32, 60, -0.15, 0, Math.PI * 2); g.fill();
+    g.beginPath();
+    g.ellipse(cx + 48, cy, 32, 60, 0.15, 0, Math.PI * 2); g.fill();
+
+    // Silueta opaca del corazón (mediastino izquierdo)
+    g.fillStyle = 'rgba(170, 195, 220, 0.55)';
+    g.beginPath();
+    g.ellipse(cx + 18, cy + 18, 30, 42, 0.4, 0, Math.PI * 2); g.fill();
+
+    // Texto clínico en la esquina superior
+    g.fillStyle = 'rgba(230, 240, 255, 0.8)';
+    g.font = 'bold 9px monospace';
+    g.fillText('SAN ANSELMO · RAYOS X', 10, 16);
+    g.fillText('EXP: #1984-0982', 10, 28);
+    g.fillText('L', w - 18, 18);
+
+    grain(g, w, h, 12);
+  });
+}
+
+/** Pantalla de osciloscopio cardíaco (ECG) para carros de monitoreo de signos vitales */
+export function ecgTexture() {
+  return paint(256, 192, (g, w, h) => {
+    // Fondo de pantalla CRT verde oscuro
+    g.fillStyle = '#040f09';
+    g.fillRect(0, 0, w, h);
+
+    // Cuadrícula milimétrica de electrocardiógrafo
+    g.strokeStyle = 'rgba(25, 75, 45, 0.4)';
+    g.lineWidth = 1;
+    for (let x = 0; x < w; x += 16) {
+      g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke();
+    }
+    for (let y = 0; y < h; y += 16) {
+      g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke();
+    }
+
+    // Trazado de onda electrocardiográfica (P-Q-R-S-T)
+    g.strokeStyle = '#44ff77';
+    g.lineWidth = 2.2;
+    g.shadowColor = '#33ee66';
+    g.shadowBlur = 6;
+    g.beginPath();
+    g.moveTo(0, h * 0.52);
+
+    for (let cycle = 0; cycle < 3; cycle++) {
+      const x0 = cycle * 85;
+      g.lineTo(x0 + 15, h * 0.52);
+      g.lineTo(x0 + 22, h * 0.47); // Onda P
+      g.lineTo(x0 + 28, h * 0.52);
+      g.lineTo(x0 + 35, h * 0.52);
+      g.lineTo(x0 + 38, h * 0.56); // Onda Q
+      g.lineTo(x0 + 44, h * 0.18); // Complejo R alto
+      g.lineTo(x0 + 49, h * 0.72); // Onda S baja
+      g.lineTo(x0 + 54, h * 0.52);
+      g.lineTo(x0 + 64, h * 0.52);
+      g.lineTo(x0 + 72, h * 0.44); // Onda T
+      g.lineTo(x0 + 80, h * 0.52);
+      g.lineTo(x0 + 85, h * 0.52);
+    }
+    g.stroke();
+    g.shadowBlur = 0;
+
+    // Valores digitales de signos vitales
+    g.fillStyle = '#55ff88';
+    g.font = 'bold 22px monospace';
+    g.fillText('74', w - 46, 32);
+    g.font = '9px monospace';
+    g.fillText('PULSO BPM', w - 62, 45);
+
+    g.fillStyle = '#44ddff';
+    g.font = 'bold 16px monospace';
+    g.fillText('98%', w - 46, 75);
+    g.font = '9px monospace';
+    g.fillText('SpO2', w - 46, 87);
+
+    g.fillStyle = '#ffdd44';
+    g.font = 'bold 14px monospace';
+    g.fillText('120/80', w - 65, 115);
+    g.font = '9px monospace';
+    g.fillText('NIBP mmHg', w - 65, 127);
+  });
+}
+
+/** Textura de caja de cartón con cinta de embalaje y sellos médicos */
+export function cardboardBoxTexture() {
+  return paint(256, 256, (g, w, h) => {
+    g.fillStyle = '#9c7b52';
+    g.fillRect(0, 0, w, h);
+
+    // Variaciones tonales de fibra de cartón
+    grain(g, w, h, 28);
+
+    // Cinta adhesiva plástica marrón brillante en la junta
+    g.fillStyle = 'rgba(180, 140, 85, 0.85)';
+    g.fillRect(0, h * 0.42, w, 38);
+    g.fillStyle = 'rgba(255, 255, 255, 0.12)';
+    g.fillRect(0, h * 0.45, w, 4);
+
+    // Estampado de cruz médica y texto
+    g.fillStyle = '#7a1c1c';
+    g.fillRect(28, 28, 32, 10);
+    g.fillRect(39, 17, 10, 32);
+
+    g.fillStyle = '#2a1e12';
+    g.font = 'bold 10px sans-serif';
+    g.fillText('SUMINISTROS MÉDICOS', 26, 75);
+    g.font = '8px monospace';
+    g.fillText('LOTE #1984-B4 · FRÁGIL', 26, 90);
+    g.fillText('HOSPITAL SAN ANSELMO', 26, 102);
+
+    // Flechas de dirección "THIS WAY UP"
+    g.lineWidth = 2.5;
+    g.strokeStyle = '#2a1e12';
+    for (const x of [w - 40, w - 24]) {
+      g.beginPath();
+      g.moveTo(x, 48); g.lineTo(x, 24);
+      g.moveTo(x - 5, 30); g.lineTo(x, 24); g.lineTo(x + 5, 30);
+      g.stroke();
+    }
+  });
+}
+
+/** Textura de cortina divisoria clínica plisada con sombras verticales */
+export function curtainTexture() {
+  return paint(128, 256, (g, w, h) => {
+    g.fillStyle = '#9cb8a8';
+    g.fillRect(0, 0, w, h);
+
+    // Pliegues verticales profundos
+    const pleatW = 16;
+    for (let x = 0; x < w; x += pleatW) {
+      const grad = g.createLinearGradient(x, 0, x + pleatW, 0);
+      grad.addColorStop(0, 'rgba(30, 50, 40, 0.35)');
+      grad.addColorStop(0.5, 'rgba(255, 255, 255, 0.18)');
+      grad.addColorStop(1, 'rgba(20, 35, 28, 0.45)');
+      g.fillStyle = grad;
+      g.fillRect(x, 0, pleatW, h);
+    }
+    grain(g, w, h, 14);
+  });
+}

@@ -21,47 +21,332 @@ class FB {
 
 const ROOM_XS = [[1, 3], [5, 7], [9, 11], [13, 15], [17, 19], [21, 23]];
 
-function patientFloor(n) {
+// =========================================================================
+// PISO 2: PABELLÓN DE INTERNACIÓN GENERAL
+// =========================================================================
+function buildInpatientFloor(n = 2) {
   const f = new FB(27, 13);
-  f.name = `Piso ${n}`;
-  f.carve(1, 6, 25, 6);
-  let num = 1;
+  f.name = `Piso ${n} · Pabellón de Internación`;
+  f.carve(1, 6, 25, 6); // Pasillo central
+
+  // Escaleras
+  f.stair(25, 5, 'up', { floor: 3, x: 25, z: 6, yaw: Math.PI / 2 });
+  f.stair(25, 7, 'down', { floor: 1, x: 25, z: 6, yaw: Math.PI / 2 });
+  f.carve(25, 5, 25, 5); f.carve(25, 7, 25, 7);
+
+  // 12 Habitaciones de internación con ambientación individualizada
+  let roomIdx = 1;
   for (const side of ['n', 's']) {
     for (const [a, b] of ROOM_XS) {
       const z1 = side === 'n' ? 1 : 8, z2 = side === 'n' ? 4 : 11, dz = side === 'n' ? 5 : 7;
       f.carve(a, z1, b, z2);
-      const dx = a + 1, label = `Habitación ${n}${String(num++).padStart(2, '0')}`;
+      const dx = a + 1;
+      const numStr = String(roomIdx).padStart(2, '0');
+      const roomNum = `${n}${numStr}`;
+      const label = `Habitación ${roomNum}`;
       f.door(dx, dz, { label });
-      f.decal(dx + 1, 6, side === 'n' ? 'n' : 's', `${n}${String(num - 1).padStart(2, '0')}`, { w: 0.5, h: 0.25, y: 1.9, size: 60 });
-      // Mobiliario hospitalario completo dentro de cada habitación
-      const cz = side === 'n' ? z1 + 1.2 : z2 - 1.2;
-      f.deco(num % 3 === 0 ? 'gurney' : 'bed', a + 1.1, cz, 0);
-      f.deco('cabinet', a + 0.4, cz, 0); // mesa de noche
-      f.deco('iv', a + 2.2, cz + (side === 'n' ? 0.3 : -0.3), 0);
-      f.deco('chair', b - 0.5, side === 'n' ? z2 - 0.6 : z1 + 0.6, side === 'n' ? 180 : 0);
-      if (num % 2 === 0) f.deco('shelf', a + 1.8, side === 'n' ? z1 + 0.3 : z2 - 0.3, 0);
-      if (num % 3 === 1) f.deco('trash', a + 0.4, side === 'n' ? z2 - 0.5 : z1 + 0.5, 0);
+      f.decal(dx + 1, 6, side === 'n' ? 'n' : 's', roomNum, { w: 0.5, h: 0.25, y: 1.9, size: 60 });
+
+      const midZ = side === 'n' ? 2.4 : 9.6;
+      const wallZ = side === 'n' ? 1.4 : 10.6;
+      const doorSideZ = side === 'n' ? 3.6 : 8.4;
+      const headRot = side === 'n' ? 0 : 180;
+
+      switch (roomIdx) {
+        case 1: // Habitación 201: Internación estándar recuperándose
+          f.deco('bed', a + 1.2, wallZ, headRot);
+          f.deco('cabinet', a + 0.4, wallZ, headRot);
+          f.deco('iv', a + 2.1, wallZ, 0);
+          f.deco('chair', b - 0.5, doorSideZ, side === 'n' ? 180 : 0);
+          f.deco('trash', a + 0.5, doorSideZ, 0);
+          break;
+
+        case 2: // Habitación 202: Habitación doble con cortina divisoria
+          f.deco('curtainDivider', a + 1.5, midZ, 90);
+          f.deco('bed', a + 0.8, wallZ, headRot);
+          f.deco('bed', a + 2.2, wallZ, headRot);
+          f.deco('cabinet', a + 0.4, wallZ, headRot);
+          f.deco('iv', a + 2.5, wallZ, 0);
+          break;
+
+        case 3: // Habitación 203: Recuperación pediátrica
+          f.deco('bed', a + 1.2, wallZ, headRot);
+          f.deco('cabinet', a + 0.4, wallZ, headRot);
+          f.deco('bench', b - 0.5, midZ, 90);
+          f.deco('trash', a + 0.5, doorSideZ, 0);
+          break;
+
+        case 4: // Habitación 204: La habitación anómala de las cámaras CCTV
+          f.deco('bed', a + 1.2, wallZ, headRot);
+          f.deco('wheelchair', a + 1.5, midZ + 0.2, 45); // Silla movida sola
+          f.deco('cardiacMonitor', a + 2.4, wallZ, headRot);
+          f.deco('cabinet', a + 0.4, wallZ, headRot);
+          f.deco('iv', a + 0.4, midZ, 0);
+          break;
+
+        case 5: // Habitación 205: Almacén de lencería y apósitos estériles
+          f.deco('shelf', a + 1.5, wallZ, headRot);
+          f.deco('shelf', a + 1.5, doorSideZ, headRot === 0 ? 180 : 0);
+          f.deco('cabinet', b - 0.5, midZ, 90);
+          f.deco('sink', a + 0.6, midZ, 270);
+          break;
+
+        case 6: // Habitación 206: Despacho médico de guardia con negatoscopio
+          f.deco('desk', a + 1.5, midZ, headRot, { len: 2.0, small: true });
+          f.deco('chair', a + 1.5, wallZ, headRot);
+          f.deco('chair', a + 1.5, doorSideZ, headRot === 0 ? 180 : 0);
+          f.deco('xrayViewer', a + 0.5, wallZ, headRot);
+          f.deco('cabinet', b - 0.5, midZ, 90);
+          break;
+
+        case 7: // Habitación 207: Terapia semi-intensiva con monitor cardíaco
+          f.deco('bed', a + 1.2, wallZ, headRot);
+          f.deco('cardiacMonitor', a + 2.3, wallZ, headRot);
+          f.deco('iv', a + 2.3, midZ, 0);
+          f.deco('cabinet', a + 0.4, wallZ, headRot);
+          f.deco('chair', b - 0.5, doorSideZ, 0);
+          break;
+
+        case 8: // Habitación 208: Habitación con silla de ruedas estacionada
+          f.deco('bed', a + 1.2, wallZ, headRot);
+          f.deco('cabinet', a + 0.4, wallZ, headRot);
+          f.deco('wheelchair', b - 0.6, doorSideZ, 30);
+          f.deco('trash', a + 0.5, doorSideZ, 0);
+          break;
+
+        case 9: // Habitación 209: Habitación de aislamiento
+          f.deco('curtainDivider', a + 1.5, midZ, 90);
+          f.deco('bed', a + 1.2, wallZ, headRot);
+          f.deco('iv', a + 0.4, wallZ, 0);
+          f.deco('iv', a + 2.3, wallZ, 0);
+          f.deco('cabinet', a + 0.4, midZ, headRot);
+          break;
+
+        case 10: // Habitación 210: Habitación de estancia prolongada
+          f.deco('bed', a + 1.2, wallZ, headRot);
+          f.deco('cabinet', a + 0.4, wallZ, headRot);
+          f.deco('bench', b - 0.5, midZ, 90);
+          f.deco('shelf', a + 0.5, doorSideZ, headRot === 0 ? 180 : 0);
+          break;
+
+        case 11: // Habitación 211: Estación de medicación y curaciones
+          f.deco('shelf', a + 1.5, wallZ, headRot);
+          f.deco('cabinet', a + 0.4, midZ, 270);
+          f.deco('sink', b - 0.5, midZ, 90);
+          f.deco('trash', a + 0.5, doorSideZ, 0);
+          break;
+
+        case 12: // Habitación 212: Depósito de camillas de traslado
+          f.deco('gurney', a + 1.0, midZ, 0);
+          f.deco('wheelchair', b - 0.6, wallZ, 20);
+          f.deco('shelf', b - 0.5, midZ, 90);
+          f.deco('trash', a + 0.5, doorSideZ, 0);
+          break;
+      }
+      roomIdx++;
     }
   }
-  f.carve(25, 5, 25, 5); f.carve(25, 7, 25, 7);
 
-  // Pasillo central: camillas, carros médicos, taquillas pegadas a la pared y señalética
+  // Pasillo central del Piso 2: Estación de enfermería, camillas, extintores
+  // Estación de Enfermería en el corredor
+  f.deco('desk', 13.5, 6.7, 180, { len: 2.2, small: true });
+  f.deco('chair', 13.5, 7.3, 0);
+  f.deco('waterDispenser', 14.8, 6.7, 180);
+
+  // Equipamiento en pasillo
   f.deco('gurney', 6.8, 5.4, 0);
   f.deco('iv', 7.6, 5.4, 0);
   f.deco('wheelchair', 10.4, 6.6, 40);
-  f.deco('locker', 14.5, 5.3, 0, { hiding: true });
-  f.deco('locker', 15.5, 5.3, 0, { hiding: true });
+  f.deco('locker', 16.5, 5.3, 0, { hiding: true });
+  f.deco('locker', 17.5, 5.3, 0, { hiding: true });
+  f.deco('fireExtinguisher', 4.5, 5.2, 0);
+  f.deco('fireExtinguisher', 20.5, 5.2, 0);
   f.deco('bench', 18.2, 6.7, 180);
-  f.deco('gurney', 22.4, 5.4, 0);
   f.deco('trash', 24.2, 6.6, 0);
   f.deco('plant', 24.5, 5.4, 0);
 
   // Carteles de pasillo
-  f.decal(14.5, 6, 'n', `PABELLÓN ${n} · INTERNACIÓN`, { w: 2.2, h: 0.4, y: 2.3, size: 70, fg: '#e8e0cc', bg: '#103828' });
-  f.decal(24, 6, 'e', n === 4 ? 'PISO 4 · CLAUSURADO' : `PISO ${n}`, { w: 1.4, h: 0.5, y: 2.3, size: 120, fg: '#e8e0cc', bg: '#0f3a2a' });
+  f.decal(14.5, 6, 'n', 'PABELLÓN 2 · INTERNACIÓN GENERAL', { w: 2.4, h: 0.4, y: 2.3, size: 70, fg: '#e8e0cc', bg: '#103828' });
+  f.decal(24, 6, 'e', 'PISO 2', { w: 1.4, h: 0.5, y: 2.3, size: 120, fg: '#e8e0cc', bg: '#0f3a2a' });
+
+  [4, 10, 15, 20, 24].forEach((x, i) => f.light(x, 6, 24, 0xdfeee2, { unstable: i % 2 === 1 }));
+  f.ambient = 1.7; f.fog = 0.065;
   return f;
 }
 
+// =========================================================================
+// PISO 3: QUIRÓFANO Y TERAPIA INTENSIVA (UCI)
+// =========================================================================
+function buildSurgicalFloor() {
+  const f = new FB(27, 13);
+  f.name = 'Piso 3 · Quirófano y Cuidados Intensivos';
+  f.carve(1, 6, 25, 6);
+
+  f.stair(25, 5, 'up', { floor: 4, x: 25, z: 6, yaw: Math.PI / 2 });
+  f.stair(25, 7, 'down', { floor: 2, x: 25, z: 6, yaw: Math.PI / 2 });
+  f.carve(25, 5, 25, 5); f.carve(25, 7, 25, 7);
+
+  // Salas Norte (301-306)
+  // 301-302: Zona de lavado y preparación quirúrgica
+  for (const [a, b] of [[1, 3], [5, 7]]) {
+    const dx = a + 1;
+    f.carve(a, 1, b, 4);
+    f.door(dx, 5, { label: a === 1 ? 'Lavado Quirúrgico' : 'Esterilización' });
+    f.decal(dx + 1, 6, 'n', `30${Math.floor(a / 4) + 1}`, { w: 0.5, h: 0.25, y: 1.9, size: 60 });
+    f.deco('sink', a + 1.2, 1.4, 0);
+    f.deco('cabinet', b - 0.5, 2.4, 90);
+    f.deco('trash', a + 0.5, 3.6, 0);
+  }
+
+  // 303-304: EL GRAN QUIRÓFANO PRINCIPAL (Operating Theatre)
+  // Doble habitación unificada para dar escala de sala de cirugía AAA
+  f.carve(9, 1, 15, 4);
+  f.door(10, 5, { label: 'Quirófano 1' });
+  f.door(14, 5, { label: 'Quirófano 1 · Acceso Instrumental' });
+  f.decal(11, 6, 'n', 'QUIRÓFANO 1', { w: 1.6, h: 0.35, y: 2.2, size: 65, fg: '#fff', bg: '#1b3a4b' });
+
+  // Mesa de operaciones quirúrgica central
+  f.deco('surgeryTable', 12.0, 2.5, 90);
+  // Lámpara cialítica suspendida encima
+  f.deco('surgicalLamp', 12.0, 2.5, 90);
+  // Monitor cardíaco con trazado ECG verde
+  f.deco('cardiacMonitor', 10.4, 1.6, 180);
+  // Negatoscopio de rayos X en la pared
+  f.deco('xrayViewer', 13.8, 1.3, 0);
+  // Estantería de acero con instrumental
+  f.deco('shelf', 14.5, 2.5, 90);
+  // Lavabo quirúrgico de apoyo
+  f.deco('sink', 9.5, 2.5, 270);
+  // Cubo de residuos biológicos
+  f.deco('trash', 10.4, 3.4, 0);
+
+  // 305-306: Reanimación post-operatoria
+  for (const [a, b] of [[17, 19], [21, 23]]) {
+    const dx = a + 1;
+    f.carve(a, 1, b, 4);
+    f.door(dx, 5, { label: `Reanimación 30${Math.floor(a / 4) + 1}` });
+    f.decal(dx + 1, 6, 'n', `30${Math.floor(a / 4) + 1}`, { w: 0.5, h: 0.25, y: 1.9, size: 60 });
+    f.deco('bed', a + 1.2, 1.4, 0);
+    f.deco('cardiacMonitor', a + 2.3, 1.4, 0);
+    f.deco('iv', a + 0.4, 1.4, 0);
+    f.deco('cabinet', b - 0.5, 2.4, 90);
+  }
+
+  // Salas Sur (307-312)
+  // 307-308: Terapia Intensiva (UCI)
+  for (const [a, b] of [[1, 3], [5, 7]]) {
+    const dx = a + 1;
+    f.carve(a, 8, b, 11);
+    f.door(dx, 7, { label: `UCI ${a === 1 ? 'A' : 'B'}` });
+    f.decal(dx + 1, 6, 's', `UCI-${a === 1 ? 'A' : 'B'}`, { w: 0.6, h: 0.25, y: 1.9, size: 55 });
+    f.deco('bed', a + 1.2, 10.6, 180);
+    f.deco('cardiacMonitor', a + 2.3, 10.6, 180);
+    f.deco('iv', a + 0.4, 10.6, 0);
+    f.deco('curtainDivider', a + 1.5, 9.6, 90);
+  }
+
+  // 309-310: Despacho de jefatura de cirugía y reportes
+  f.carve(9, 8, 11, 11); f.door(10, 7, { label: 'Jefatura de Cirugía' });
+  f.decal(11, 6, 's', 'JEFATURA', { w: 1.1, h: 0.25, y: 1.9, size: 50 });
+  f.deco('desk', 10.0, 9.6, 180, { len: 2.0, small: true });
+  f.deco('chair', 10.0, 10.4, 0);
+  f.deco('cabinet', 10.8, 10.6, 180);
+  f.deco('xrayViewer', 10.0, 10.9, 180);
+
+  f.carve(13, 8, 15, 11); f.door(14, 7, { label: 'Suministros Estériles' });
+  f.deco('shelf', 14.0, 10.6, 180);
+  f.deco('shelf', 14.0, 8.6, 0);
+  f.deco('crate', 14.8, 9.6, 30);
+
+  // 311: Sala de Autopsias / Morgue Clínica (Escenario de terror de los flashbacks)
+  f.carve(17, 8, 19, 11); f.door(18, 7, { label: 'Sala de Autopsias', lock: 'autopsy' });
+  f.decal(19, 6, 's', 'AUTOPSIAS · MORGUE', { w: 1.6, h: 0.35, y: 2.2, size: 55, fg: '#fff', bg: '#421616' });
+  f.deco('gurney', 18.0, 9.6, 90); // Camilla con mortaja
+  f.deco('shelf', 18.8, 10.6, 180);
+  f.deco('sink', 17.4, 10.6, 180);
+  f.deco('trash', 17.4, 8.6, 0);
+
+  // 312: Depósito de reactivos y muestras biológicas
+  f.carve(21, 8, 23, 11); f.door(22, 7, { label: 'Depósito Biológico' });
+  f.deco('cabinet', 22.0, 10.6, 180);
+  f.deco('shelf', 22.0, 8.6, 0);
+  f.deco('trash', 22.8, 9.6, 0);
+
+  // Pasillo del Piso 3
+  f.deco('gurney', 5.5, 5.4, 0);
+  f.deco('wheelchair', 8.5, 6.6, 25);
+  f.deco('locker', 16.5, 5.3, 0, { hiding: true });
+  f.deco('locker', 17.5, 5.3, 0, { hiding: true });
+  f.deco('waterDispenser', 12.0, 6.7, 180);
+  f.deco('fireExtinguisher', 7.5, 5.2, 0);
+  f.deco('fireExtinguisher', 19.5, 5.2, 0);
+
+  f.decal(14.5, 6, 'n', 'PABELLÓN 3 · QUIRÓFANO Y TERAPIA INTENSIVA', { w: 2.6, h: 0.4, y: 2.3, size: 70, fg: '#e8e0cc', bg: '#1c2e42' });
+  f.decal(24, 6, 'e', 'PISO 3', { w: 1.4, h: 0.5, y: 2.3, size: 120, fg: '#e8e0cc', bg: '#0f3a2a' });
+
+  [4, 10, 15, 20, 24].forEach((x, i) => f.light(x, 6, 22, 0xc8e6f0, { unstable: i % 2 === 1 }));
+  f.ambient = 1.4; f.fog = 0.070;
+  return f;
+}
+
+// =========================================================================
+// PISO 4: ÁREA RESTattributeNGIDA Y CLAUSURADA TRAS LA TRAGEDIA DE 1984
+// =========================================================================
+function buildForbiddenFloor() {
+  const f = new FB(27, 13);
+  f.name = 'Piso 4 · Área clausurada (1984)';
+  f.carve(6, 6, 25, 6);
+
+  // Celda prohibida del gemelo tras la puerta sellada de hierro
+  f.carve(1, 4, 4, 8);
+  f.door(5, 6, { label: 'Puerta prohibida', lock: 'forbidden' });
+
+  // Habitaciones clausuradas del Piso 4 (401-408)
+  [[7, 9], [11, 13], [15, 17], [19, 21]].forEach(([a, b], i) => {
+    f.carve(a, 1, b, 4); f.door(a + 1, 5, { label: `Habitación 40${i + 1}` });
+    f.carve(a, 8, b, 11); f.door(a + 1, 7, { label: `Habitación 40${i + 5}` });
+
+    // Habitaciones caóticas: camas volcadas, taquillas abiertas, sillas rotas
+    f.deco(i % 2 ? 'gurney' : 'bed', a + 1.1, 1.9, i * 45);
+    f.deco('cabinet', a + 0.4, 1.9, 0);
+    f.deco('wheelchair', a + 1.8, 10.1, 30 + i * 40);
+    if (i === 1) f.deco('crate', b - 0.5, 8.8, 20);
+    if (i === 2) f.deco('locker', a + 1.2, 3.6, 0, { hiding: true });
+    if (i === 3) f.deco('cardiacMonitor', a + 0.6, 9.6, 75);
+  });
+
+  f.carve(25, 5, 25, 5); f.carve(25, 7, 25, 7);
+  f.stair(25, 7, 'down', { floor: 3, x: 25, z: 6, yaw: Math.PI / 2 });
+
+  // Pasillo del piso 4: sillas volcadas, camillas rotas, casilleros de escondite
+  f.deco('wheelchair', 8.2, 6.4, 75);
+  f.deco('gurney', 12.0, 5.4, 15);
+  f.deco('locker', 14.5, 5.3, 0, { hiding: true });
+  f.deco('crate', 17.5, 6.6, 25);
+  f.deco('gurney', 21.0, 5.4, -20);
+  f.deco('trash', 23.5, 6.6, 0);
+
+  // Celda prohibida del hermano (atmósfera de horror puro)
+  f.deco('bed', 2.2, 5.2, 0); // Cama de contención con correas
+  f.deco('chair', 3.6, 7.4, 40);
+  f.deco('crate', 1.4, 7.6, 10);
+  f.deco('locker', 1.8, 4.4, 0, { hiding: true });
+  f.deco('iv', 3.4, 4.8, 0);
+
+  // Mensajes de sangre y expedientes
+  f.decal(14, 6, 'n', 'AYÚDALO', { w: 2.4, h: 0.9, y: 1.7, size: 130, fg: '#0a0a0a', bg: null, name: 'help', font: 'bold {s}px "Special Elite", monospace', hidden: true });
+  f.decal(24, 6, 'e', 'PISO 4 · RESTRINGIDO', { w: 1.8, h: 0.4, y: 2.4, size: 80, fg: '#d5c49a', bg: '#3a1d1d' });
+  f.decal(6.0, 6, 'w', 'ZONA DE CUARENTENA · 1984', { w: 2.2, h: 0.5, y: 2.5, size: 65, fg: '#fff', bg: '#5a1212' });
+
+  f.light(16, 6, 3, 0xff4030, { unstable: true });
+  f.light(2.5, 6, 5, 0xbfd0ff, { unstable: true });
+  f.ambient = 0.55; f.fog = 0.085;
+  return f;
+}
+
+// =========================================================================
+// ENTRADA PRINCIPAL: CONSTRUCTOR DE PISOS 1 A 4
+// =========================================================================
 export function buildFloor(n) {
   if (n === 1) {
     const f = new FB(27, 13);
@@ -70,27 +355,28 @@ export function buildFloor(n) {
     f.carve(9, 6, 25, 6);              // pasillo central
     // Salas norte
     f.carve(10, 1, 13, 4); f.door(11, 5, { label: 'Baños' });
-    f.carve(15, 1, 18, 4); f.door(16, 5, { label: 'Archivo', lock: 'archive' });
-    f.carve(20, 1, 23, 4); f.door(21, 5, { label: 'Seguridad', lock: 'security' });
+    f.carve(15, 1, 18, 4); f.door(16, 5, { label: 'Archivo Clínico', lock: 'archive' });
+    f.carve(20, 1, 23, 4); f.door(21, 5, { label: 'Seguridad' });
     // Salas sur
     f.carve(10, 8, 13, 11); f.door(11, 7, { label: 'Consultorio 1' });
-    f.carve(15, 8, 18, 11); f.door(16, 7, { label: 'Almacén' });
+    f.carve(15, 8, 18, 11); f.door(16, 7, { label: 'Almacén General' });
     f.carve(20, 8, 23, 11); f.door(21, 7, { label: 'Farmacia' });
     f.carve(25, 5, 25, 5);
     f.g[6][0] = 'X'; f.doors['0,6'] = { label: 'Entrada principal', lock: 'front', exit: true };
     f.stair(25, 5, 'up', { floor: 2, x: 25, z: 6, yaw: Math.PI / 2 });
 
-    // Recepción y Mostrador
+    // Mostrador de recepción hiper detallado estilo AAA
     f.deco('desk', 3.6, 6, 90, { len: 8.2 });
+    f.deco('chair', 4.8, 5.8, 270); // Silla ergonómica de Clara
 
-    // Casilleros metálicos adosados a la pared este de recepción (detrás del mostrador)
+    // Tras el mostrador (pared este de recepción)
     f.deco('locker', 7.8, 3.2, 270, { hiding: true });
     f.deco('locker', 7.8, 4.2, 270, { hiding: true });
     f.deco('shelf', 7.8, 5.4, 270);
     f.deco('cabinet', 7.8, 6.8, 270);
-    f.deco('chair', 4.8, 5.8, 270); // silla de Clara
+    f.deco('waterDispenser', 7.6, 8.2, 270);
 
-    // Sala de espera: filas de asientos contra las paredes oeste y norte
+    // Sala de espera: filas de asientos y elementos confort
     f.deco('bench', 1.6, 2.2, 0);
     f.deco('bench', 1.6, 3.8, 0);
     f.deco('bench', 1.6, 8.2, 0);
@@ -98,14 +384,15 @@ export function buildFloor(n) {
     f.deco('bench', 4.5, 1.4, 90);
     f.deco('bench', 4.5, 10.6, 90);
 
-    // Dispensador de agua y accesorios en las esquinas
+    // Esquinas de recepción
     f.deco('vending', 7.6, 1.4, 180);
     f.deco('plant', 1.4, 1.4, 0);
     f.deco('plant', 1.4, 10.6, 0);
     f.deco('plant', 7.8, 10.6, 0);
     f.deco('wheelchair', 6.8, 10.4, 20);
-    f.deco('iv', 7.4, 8.4, 0);
+    f.deco('iv', 7.4, 8.8, 0);
     f.deco('trash', 2.6, 1.4, 0);
+    f.deco('fireExtinguisher', 8.8, 5.8, 90);
 
     // Carteles y señalética de recepción
     f.decal(5.0, 6, 'e', 'HOSPITAL SAN ANSELMO', { w: 2.6, h: 0.5, y: 2.55, size: 90, fg: '#e8e0cc', bg: '#1d3a3a' });
@@ -113,7 +400,7 @@ export function buildFloor(n) {
     f.decal(4.0, 1.1, 's', 'NORMAS DE LA INSTITUCIÓN · 1984', { w: 2.0, h: 0.5, y: 1.9, size: 55, fg: '#222', bg: '#e8e2d0' });
     f.decal(7.8, 8.6, 'w', 'GUARDIA MÉDICA NOCTURNA', { w: 1.6, h: 0.35, y: 2.0, size: 50, fg: '#fff', bg: '#1c2d25' });
 
-    // Pasillo central: camillas, sillas de ruedas, armarios y extintores
+    // Pasillo central de planta baja
     f.deco('gurney', 10.2, 5.4, 0);
     f.deco('iv', 11.0, 5.4, 0);
     f.deco('wheelchair', 13.5, 6.6, 40);
@@ -123,46 +410,71 @@ export function buildFloor(n) {
     f.deco('trash', 14.0, 6.6, 0);
     f.deco('plant', 9.5, 5.4, 0);
     f.deco('plant', 24.5, 6.6, 0);
+    f.deco('fireExtinguisher', 17.0, 5.2, 0);
 
-    // Letreros de pasillo planta baja
+    // Letreros de pasillo
     f.decal(11, 5, 's', 'BAÑOS', { w: 0.9, h: 0.28, y: 2.2, size: 45, fg: '#fff', bg: '#1b3328' });
     f.decal(16, 5, 's', 'ARCHIVO CLÍNICO', { w: 1.5, h: 0.3, y: 2.2, size: 45, fg: '#fff', bg: '#3a1b1b' });
     f.decal(21, 5, 's', 'SEGURIDAD', { w: 1.2, h: 0.3, y: 2.2, size: 45, fg: '#fff', bg: '#1c2e42' });
     f.decal(11, 7, 'n', 'CONSULTORIO 1', { w: 1.4, h: 0.3, y: 2.2, size: 45, fg: '#fff', bg: '#1b3328' });
-    f.decal(16, 7, 'n', 'ALMACÉN', { w: 1.1, h: 0.3, y: 2.2, size: 45, fg: '#fff', bg: '#1b3328' });
+    f.decal(16, 7, 'n', 'ALMACÉN GENERAL', { w: 1.5, h: 0.3, y: 2.2, size: 45, fg: '#fff', bg: '#1b3328' });
     f.decal(21, 7, 'n', 'FARMACIA', { w: 1.2, h: 0.3, y: 2.2, size: 45, fg: '#fff', bg: '#1b3328' });
     f.decal(24.8, 6, 'e', 'ESCALERAS ↑', { w: 1.3, h: 0.4, y: 2.5, size: 100, fg: '#e8e0cc', bg: '#0f3a2a' });
 
-    // Archivo Clínico
-    f.deco('cabinet', 15.4, 1.3, 0); f.deco('cabinet', 16.6, 1.3, 0); f.deco('cabinet', 17.8, 1.3, 0);
-    f.deco('shelf', 15.4, 3.8, 180); f.deco('shelf', 17.6, 3.8, 180);
-    f.deco('desk', 16.8, 2.4, 0, { len: 2.2, small: true }); f.deco('chair', 16.8, 3.1, 180);
+    // 1. Baños
+    f.deco('sink', 10.8, 1.4, 0);
+    f.deco('sink', 12.4, 1.4, 0);
+    f.deco('trash', 10.8, 3.6, 0);
+    f.deco('shelf', 12.6, 3.6, 0);
 
-    // Seguridad
-    f.deco('desk', 21.5, 1.4, 0, { len: 2.6, small: true }); f.deco('chair', 21.5, 2.2, 180);
-    f.deco('locker', 22.8, 1.4, 90, { hiding: true }); f.deco('locker', 22.8, 2.4, 90, { hiding: true });
-    f.deco('shelf', 20.4, 3.8, 180); f.deco('trash', 20.4, 1.4, 0);
+    // 2. Archivo Clínico
+    f.deco('cabinet', 15.4, 1.3, 0);
+    f.deco('cabinet', 16.6, 1.3, 0);
+    f.deco('cabinet', 17.8, 1.3, 0);
+    f.deco('shelf', 15.4, 3.8, 180);
+    f.deco('shelf', 17.6, 3.8, 180);
+    f.deco('desk', 16.8, 2.4, 0, { len: 2.0, small: true });
+    f.deco('chair', 16.8, 3.1, 180);
 
-    // Consultorio 1
-    f.deco('bed', 12.2, 10.4, 0); f.deco('iv', 11.2, 10.2, 0);
-    f.deco('desk', 11.2, 8.5, 0, { len: 2.0, small: true }); f.deco('chair', 11.2, 9.2, 180);
-    f.deco('cabinet', 12.6, 8.5, 0);
+    // 3. Seguridad
+    f.deco('desk', 21.5, 1.5, 0, { len: 2.2, small: true });
+    f.deco('chair', 21.5, 2.2, 180);
+    f.deco('cardiacMonitor', 22.4, 1.5, 270);
+    f.deco('locker', 22.8, 3.4, 90, { hiding: true });
+    f.deco('shelf', 20.4, 3.6, 180);
+    f.deco('waterDispenser', 20.4, 1.4, 0);
+    f.deco('trash', 20.4, 2.5, 0);
 
-    // Almacén
-    f.deco('shelf', 15.5, 8.5, 0); f.deco('shelf', 17.4, 8.5, 0);
-    f.deco('crate', 15.5, 10.4, 15); f.deco('crate', 16.5, 10.5, 45);
+    // 4. Consultorio 1
+    f.deco('bed', 12.2, 10.2, 0);
+    f.deco('iv', 11.3, 10.2, 0);
+    f.deco('xrayViewer', 12.2, 10.9, 180);
+    f.deco('desk', 11.2, 8.6, 0, { len: 2.0, small: true });
+    f.deco('chair', 11.2, 9.2, 180);
+    f.deco('chair', 12.2, 8.6, 0);
+    f.deco('cabinet', 12.6, 8.6, 0);
+    f.deco('sink', 10.5, 9.8, 90);
+
+    // 5. Almacén General
+    f.deco('shelf', 15.5, 8.6, 0);
+    f.deco('shelf', 17.4, 8.6, 0);
+    f.deco('crate', 15.5, 10.4, 15);
+    f.deco('crate', 16.5, 10.5, 45);
+    f.deco('gurney', 17.4, 9.4, 90);
     f.deco('wheelchair', 17.6, 10.4, 210);
+    f.deco('trash', 15.5, 9.4, 0);
 
-    // Farmacia
-    f.deco('shelf', 20.5, 8.5, 0); f.deco('shelf', 22.2, 8.5, 0);
-    f.deco('cabinet', 21.5, 10.6, 180); f.deco('shelf', 20.4, 10.6, 180);
-    f.deco('sink', 22.6, 10.6, 180);
+    // 6. Farmacia
+    f.deco('cabinet', 22.4, 8.5, 0); // Armario de medicamentos con cerradura digital alineado a la puerta
+    f.deco('shelf', 20.4, 9.0, 90);
+    f.deco('shelf', 20.4, 10.2, 90);
+    f.deco('desk', 22.8, 10.0, 270, { len: 2.0, small: true });
+    f.deco('chair', 22.2, 10.0, 90);
+    f.deco('sink', 21.2, 10.6, 180);
+    f.deco('trash', 20.5, 10.6, 180);
+    f.deco('waterDispenser', 22.6, 10.6, 180);
 
-    // Baños
-    f.deco('sink', 10.6, 1.4, 0); f.deco('sink', 12.4, 1.4, 0);
-    f.deco('trash', 10.6, 3.6, 0); f.deco('shelf', 12.6, 3.6, 0);
-
-    // Luces de recepción y dependencias
+    // Iluminación
     f.light(3.6, 5.0, 36, 0xfff4e0); f.light(3.6, 7.0, 36, 0xfff4e0);
     f.light(1.8, 6.0, 26, 0xdfeee2); f.light(6, 8.8, 22);
     f.light(12, 6, 24); f.light(17, 6, 24, 0xdfeee2, { unstable: true }); f.light(22, 6, 24);
@@ -170,46 +482,8 @@ export function buildFloor(n) {
     f.ambient = 2.4; f.fog = 0.050;
     return f;
   }
-  if (n === 2 || n === 3) {
-    const f = patientFloor(n);
-    f.stair(25, 5, 'up', { floor: n + 1, x: 25, z: 6, yaw: Math.PI / 2 });
-    f.stair(25, 7, 'down', { floor: n - 1, x: 25, z: 6, yaw: Math.PI / 2 });
-    [4, 10, 15, 20, 24].forEach((x, i) => f.light(x, 6, 24, 0xdfeee2, { unstable: i % 2 === 1 }));
-    f.ambient = n === 2 ? 1.7 : 1.4; f.fog = 0.065;
-    return f;
-  }
-  // Piso 4: oscuro, clausurado, caótico
-  const f = new FB(27, 13);
-  f.name = 'Piso 4 · Área restringida';
-  f.carve(6, 6, 25, 6);
-  f.carve(1, 4, 4, 8);                                  // celda detrás de la puerta prohibida
-  f.door(5, 6, { label: 'Puerta prohibida', lock: 'forbidden' });
-  [[7, 9], [11, 13], [15, 17], [19, 21]].forEach(([a, b], i) => {
-    f.carve(a, 1, b, 4); f.door(a + 1, 5, { label: `Habitación 40${i + 1}` });
-    f.carve(a, 8, b, 11); f.door(a + 1, 7, { label: `Habitación 40${i + 5}` });
-    f.deco(i % 2 ? 'gurney' : 'bed', a + 1.0, 1.9, 0);
-    f.deco('cabinet', a + 0.4, 1.9, 0);
-    f.deco('wheelchair', a + 1.8, 10.1, 30 + i * 40);
-    if (i === 1) f.deco('crate', b - 0.5, 8.8, 20);
-    if (i === 2) f.deco('locker', a + 1.2, 3.6, 0, { hiding: true });
-  });
-  f.carve(25, 5, 25, 5); f.carve(25, 7, 25, 7);
-  f.stair(25, 7, 'down', { floor: 3, x: 25, z: 6, yaw: Math.PI / 2 });
-
-  // Pasillo del piso 4: sillas volcadas, camillas rotas, casilleros de escondite
-  f.deco('wheelchair', 8.2, 6.4, 75);
-  f.deco('gurney', 12.0, 5.4, 0);
-  f.deco('locker', 14.5, 5.3, 0, { hiding: true });
-  f.deco('crate', 17.5, 6.6, 25);
-  f.deco('gurney', 21.0, 5.4, 0);
-
-  // Celda del hermano
-  f.deco('bed', 2.2, 5.2, 0); f.deco('chair', 3.6, 7.4, 40); f.deco('crate', 1.4, 7.6, 10);
-  f.deco('locker', 1.8, 4.4, 0, { hiding: true });
-  f.decal(14, 6, 'n', 'AYÚDALO', { w: 2.4, h: 0.9, y: 1.7, size: 130, fg: '#0a0a0a', bg: null, name: 'help', font: 'bold {s}px "Special Elite", monospace', hidden: true });
-  f.decal(24, 6, 'e', 'PISO 4 · RESTRINGIDO', { w: 1.8, h: 0.4, y: 2.4, size: 80, fg: '#d5c49a', bg: '#3a1d1d' });
-  f.light(16, 6, 3, 0xff4030, { unstable: true });
-  f.light(2.5, 6, 5, 0xbfd0ff, { unstable: true });
-  f.ambient = 0.55; f.fog = 0.085;
-  return f;
+  if (n === 2) return buildInpatientFloor(2);
+  if (n === 3) return buildSurgicalFloor();
+  if (n === 4) return buildForbiddenFloor();
+  return buildInpatientFloor(n);
 }
