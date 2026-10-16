@@ -128,9 +128,9 @@ export function bed(dirty = true) {
 // =========================================================================
 // CAMILLA DE URGENCIAS REALISTA
 // =========================================================================
-export function gurney() {
+export function gurney({ corpse = false } = {}) {
   const g = new THREE.Group();
-  // Chasis tijera plegable en X
+  // Chasis tijera plegable en X de tubos de acero
   for (const s of [-0.34, 0.34]) {
     const x1 = box(0.03, 0.68, 0.03, 'metal', s, 0.42, 0, g); x1.rotation.x = 0.45;
     const x2 = box(0.03, 0.68, 0.03, 'metal', s, 0.42, 0, g); x2.rotation.x = -0.45;
@@ -142,18 +142,34 @@ export function gurney() {
 
   // Bandeja de acero inoxidable
   box(0.76, 0.05, 2.05, 'metal', 0, 0.78, 0, g);
-  box(0.72, 0.09, 2.0, 'sheet', 0, 0.85, 0, g);
+  // Colchoneta clínica
+  box(0.72, 0.09, 2.0, corpse ? 'dirtySheet' : 'sheet', 0, 0.85, 0, g);
 
-  // Silueta inquietante de cuerpo amortajado bajo la sábana
-  const body = new THREE.Group();
-  box(0.44, 0.22, 0.78, 'sheet', 0, 1.0, 0.18, body);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.14, 14, 12), M('sheet'));
-  head.position.set(0, 0.98, -0.58);
-  head.scale.set(0.9, 1.1, 1.0);
-  head.castShadow = true;
-  body.add(head);
-  box(0.38, 0.19, 0.58, 'sheet', 0, 0.94, 0.82, body);
-  g.add(body);
+  // Barandillas laterales cromadas de protección
+  for (const s of [-0.38, 0.38]) {
+    box(0.02, 0.02, 1.4, 'chrome', s, 0.98, 0, g);
+    for (let r = -0.6; r <= 0.6; r += 0.3) {
+      box(0.016, 0.14, 0.016, 'chrome', s, 0.91, r, g);
+    }
+  }
+
+  // Almohada clínica
+  const pillow = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 0.32), M(corpse ? 'dirtySheet' : 'sheet'));
+  pillow.position.set(0, 0.92, -0.75);
+  g.add(pillow);
+
+  // Silueta de cuerpo amortajado bajo la sábana SOLO SI corpse = true
+  if (corpse) {
+    const body = new THREE.Group();
+    box(0.44, 0.22, 0.78, 'dirtySheet', 0, 1.0, 0.18, body);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.14, 14, 12), M('dirtySheet'));
+    head.position.set(0, 0.98, -0.58);
+    head.scale.set(0.9, 1.1, 1.0);
+    head.castShadow = true;
+    body.add(head);
+    box(0.38, 0.19, 0.58, 'dirtySheet', 0, 0.94, 0.82, body);
+    g.add(body);
+  }
 
   return g;
 }
@@ -496,25 +512,32 @@ export function chair() {
 
 export function sink() {
   const g = new THREE.Group();
-  // Lavabo de porcelana vitrificada con mueble bajo
-  box(1.3, 0.78, 0.52, 'hospitalGreen', 0, 0.39, 0, g);
-  box(1.4, 0.14, 0.58, 'porcelain', 0, 0.85, 0, g);
+  // Mueble bajo esmaltado clínico verde hospitalario
+  box(1.3, 0.74, 0.52, 'hospitalGreen', 0, 0.37, 0, g);
+  // Encimera de porcelana vitrificada
+  box(1.38, 0.08, 0.56, 'porcelain', 0, 0.78, 0, g);
+  // Peto protector cerámico trasero contra salpicaduras
+  box(1.38, 0.18, 0.04, 'porcelain', 0, 0.91, -0.26, g);
+
   for (const x of [-0.35, 0.35]) {
-    // Seno cerámico cóncavo
-    cyl(0.20, 0.14, 0.12, 'porcelain', x, 0.88, 0.04, g, 12);
+    // Seno cerámico de lavado (reborde y cuenco)
+    cyl(0.22, 0.22, 0.03, 'porcelain', x, 0.83, 0.04, g, 14);
+    cyl(0.18, 0.12, 0.10, 'white', x, 0.81, 0.04, g, 12);
+    // Válvula de desagüe cromada
+    cyl(0.03, 0.03, 0.015, 'chrome', x, 0.76, 0.04, g, 8);
     // Grifo quirúrgico monomando de codo cromado
-    cyl(0.016, 0.016, 0.24, 'chrome', x, 1.05, -0.18, g, 8);
-    box(0.02, 0.015, 0.12, 'chrome', x, 1.16, -0.12, g);
-    // Palanca de codo para cirujanos
-    box(0.015, 0.015, 0.14, 'chrome', x, 1.12, -0.22, g).rotation.x = -0.3;
-    // Dispensador de jabón antiséptico
-    box(0.07, 0.14, 0.07, 'white', x + 0.22, 1.08, -0.20, g);
-    box(0.012, 0.012, 0.05, 'chrome', x + 0.22, 1.13, -0.16, g);
+    cyl(0.016, 0.016, 0.26, 'chrome', x, 0.99, -0.16, g, 8);
+    box(0.02, 0.018, 0.14, 'chrome', x, 1.12, -0.10, g);
+    // Palanca de accionamiento con el codo para cirujanos
+    box(0.015, 0.015, 0.16, 'chrome', x, 1.08, -0.20, g).rotation.x = -0.3;
+    // Dispensador de antiséptico mural
+    box(0.08, 0.15, 0.07, 'white', x + 0.22, 1.06, -0.22, g);
+    box(0.012, 0.012, 0.05, 'chrome', x + 0.22, 1.11, -0.18, g);
   }
-  // Espejo clínico con marco biselado
-  box(1.4, 0.86, 0.02, 'metal', 0, 1.62, -0.27, g);
-  const mirrorGlass = new THREE.Mesh(new THREE.PlaneGeometry(1.32, 0.78), new THREE.MeshStandardMaterial({ color: 0x98b8c2, metalness: 0.94, roughness: 0.08 }));
-  mirrorGlass.position.set(0, 1.62, -0.255);
+  // Espejo clínico biselado
+  box(1.32, 0.82, 0.02, 'darkMetal', 0, 1.50, -0.27, g);
+  const mirrorGlass = new THREE.Mesh(new THREE.PlaneGeometry(1.26, 0.76), new THREE.MeshStandardMaterial({ color: 0x98b8c2, metalness: 0.94, roughness: 0.08 }));
+  mirrorGlass.position.set(0, 1.50, -0.258);
   g.add(mirrorGlass);
   return g;
 }

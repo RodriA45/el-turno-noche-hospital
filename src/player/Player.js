@@ -250,9 +250,9 @@ export class Player {
     glassMesh.userData.isPlayerAttachment = true;
     this.armGroup.add(glassMesh);
 
-    // Orientación reposada natural del brazo izquierdo fuera de cámara
-    this.armGroup.position.set(0.24, -0.42, -0.38);
-    this.armGroup.rotation.set(0.55, -0.35, 0.45);
+    // Orientación reposada natural del brazo izquierdo fuera de cámara (lado inferior izquierdo)
+    this.armGroup.position.set(-0.24, -0.42, -0.38);
+    this.armGroup.rotation.set(0.55, 0.35, -0.45);
     this.camera.add(this.armGroup);
 
     this.watchRaised = false;
@@ -468,11 +468,11 @@ export class Player {
     const targetProgress = this.watchRaised ? 1.0 : 0.0;
     this.watchProgress += (targetProgress - this.watchProgress) * Math.min(1, dt * 10);
 
-    const idlePos = new THREE.Vector3(0.24, -0.42, -0.38);
+    const idlePos = new THREE.Vector3(-0.24, -0.42, -0.38);
     const raisedPos = new THREE.Vector3(-0.13, -0.16, -0.32);
     const curArmPos = new THREE.Vector3().lerpVectors(idlePos, raisedPos, this.watchProgress);
 
-    const idleRot = new THREE.Euler(0.55, -0.35, 0.45);
+    const idleRot = new THREE.Euler(0.55, 0.35, -0.45);
     const raisedRot = new THREE.Euler(-0.18, 0.48, -0.25);
     const curRotX = THREE.MathUtils.lerp(idleRot.x, raisedRot.x, this.watchProgress);
     const curRotY = THREE.MathUtils.lerp(idleRot.y, raisedRot.y, this.watchProgress);
