@@ -51,23 +51,24 @@ export function flashlightCookie() {
 
     const cx = w / 2, cy = h / 2;
 
-    // Halo exterior suave
-    const outerGrad = g.createRadialGradient(cx, cy, 30, cx, cy, w * 0.46);
-    outerGrad.addColorStop(0, 'rgba(255, 252, 240, 0.95)');
-    outerGrad.addColorStop(0.35, 'rgba(240, 242, 235, 0.7)');
-    outerGrad.addColorStop(0.7, 'rgba(180, 195, 205, 0.3)');
-    outerGrad.addColorStop(0.92, 'rgba(90, 110, 120, 0.08)');
+    // Halo exterior suave y cálido
+    const outerGrad = g.createRadialGradient(cx, cy, 20, cx, cy, w * 0.48);
+    outerGrad.addColorStop(0, 'rgba(255, 250, 235, 0.75)');
+    outerGrad.addColorStop(0.35, 'rgba(235, 238, 228, 0.45)');
+    outerGrad.addColorStop(0.7, 'rgba(170, 185, 195, 0.18)');
+    outerGrad.addColorStop(0.95, 'rgba(80, 100, 110, 0.04)');
     outerGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
     g.fillStyle = outerGrad;
-    g.beginPath(); g.arc(cx, cy, w * 0.46, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(cx, cy, w * 0.48, 0, Math.PI * 2); g.fill();
 
-    // Hotspot central brillante
-    const hotGrad = g.createRadialGradient(cx, cy, 0, cx, cy, w * 0.16);
-    hotGrad.addColorStop(0, '#ffffff');
-    hotGrad.addColorStop(0.4, 'rgba(255, 255, 245, 0.95)');
-    hotGrad.addColorStop(1, 'rgba(255, 255, 245, 0)');
+    // Hotspot central con transición suave (evita quemados especulares en suelo)
+    const hotGrad = g.createRadialGradient(cx, cy, 0, cx, cy, w * 0.32);
+    hotGrad.addColorStop(0, 'rgba(255, 252, 235, 0.75)');
+    hotGrad.addColorStop(0.25, 'rgba(255, 248, 225, 0.50)');
+    hotGrad.addColorStop(0.6, 'rgba(240, 235, 210, 0.18)');
+    hotGrad.addColorStop(1, 'rgba(200, 200, 190, 0)');
     g.fillStyle = hotGrad;
-    g.beginPath(); g.arc(cx, cy, w * 0.16, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(cx, cy, w * 0.32, 0, Math.PI * 2); g.fill();
 
     // Anillos concéntricos de lente de Fresnel
     g.lineWidth = 1.5;

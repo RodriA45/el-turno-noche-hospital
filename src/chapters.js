@@ -78,7 +78,11 @@ export const CHAPTERS = [
             'Libro de Guardia · Hospital San Anselmo',
             'Últimas anotaciones:\n\n- 08/Oct: Ruido de pasos arrastrándose en el cielo raso sobre el pasillo norte. No hay pacientes en esa ala.\n\n- 11/Oct: La recepcionista Andrea reporta interferencias en los monitores y olor a humedad estancada.\n\n- 12/Oct: [PÁGINA MANCHADA] "Alguien me robó el marcador del escritorio. Sé que alguien entra a la recepción mientras bajo la vista".\n\n- REPORTE DE HOY: Se reportaron 3 anomalías visuales en las cámaras de PB, Piso 1 y Piso 2. Verificar antes de cerrar la primera hora.'
           );
-          await g.say('El reporte indica que debo verificar 3 anomalías en las cámaras de seguridad...', 'Clara', { thought: true });
+          if (!cctvCompleted) {
+            await g.say('El reporte indica que debo verificar 3 anomalías en las cámaras de seguridad...', 'Clara', { thought: true });
+          } else {
+            await g.say('Las anotaciones del turno... Andrea tenía razón, hay una presencia en el hospital.', 'Clara', { thought: true });
+          }
         }
       });
 
@@ -116,7 +120,7 @@ export const CHAPTERS = [
             return;
           }
 
-          g.objective('Localiza las 3 anomalías en las cámaras del hospital (Usa Espacio para iluminar)');
+          g.objective(g.input.isTouch ? 'Localiza las 3 anomalías en las cámaras (Toca "Iluminar Sector")' : 'Localiza las 3 anomalías en las cámaras del hospital (Usa Espacio para iluminar)');
 
           // Abrir la tableta de vigilancia estilo FNAF
           const cctvResult = await g.cctv({
@@ -182,7 +186,7 @@ export const CHAPTERS = [
                 desc: 'Una sólida linterna de patrulla fabricada en aluminio anodizado y óptica estriada. Pulsa [F] para encender el haz de luz durante la guardia.',
                 model: createDetailedFlashlight
               });
-              await g2.say('¡La encontré! Es metálica y pesada. Pulsa F para encenderla.', 'Clara', { thought: true });
+              await g2.say(g2.input.isTouch ? '¡La encontré! Es metálica y pesada. Toca el botón de linterna para encenderla.' : '¡La encontré! Es metálica y pesada. Pulsa F para encenderla.', 'Clara', { thought: true });
             }
           });
 
@@ -200,8 +204,8 @@ export const CHAPTERS = [
           ghost.appear(1, 16.0, 6.0, 'stand', false);
           ghost.goTo(7.5, 6.0, 1.3);
 
-          game.objective('¡VIENE HACIA AQUÍ! ¡ESCÓNDETE EN EL CASILLERO CON [E] Y CONTÉN LA RESPIRACIÓN [ESPACIO]!');
-          await game.say('¡Viene arrastrando los pies hacia la recepción! ¡Tengo que meterme en el casillero YA y contener el aliento!', 'Clara', { thought: true });
+          game.objective(game.input.isTouch ? '¡VIENE HACIA AQUÍ! ¡ESCÓNDETE EN EL CASILLERO Y TOCA LA PANTALLA PARA CONTENER EL ALIENTO!' : '¡VIENE HACIA AQUÍ! ¡ESCÓNDETE EN EL CASILLERO CON [E] Y CONTÉN LA RESPIRACIÓN [ESPACIO]!');
+          await game.say(game.input.isTouch ? '¡Viene arrastrando los pies hacia la recepción! ¡Tengo que meterme en el casillero YA y contener el aliento tocando la pantalla!' : '¡Viene arrastrando los pies hacia la recepción! ¡Tengo que meterme en el casillero YA y contener el aliento!', 'Clara', { thought: true });
 
           // Período de acecho: evaluar si Clara se esconde y contiene la respiración
           let spotted = false;
@@ -229,7 +233,7 @@ export const CHAPTERS = [
 
             if (game.isHiding) {
               await game.say('¡ME ESCUCHÓ RESPIRAR! ¡ESTÁ FORZANDO LA PUERTA DEL CASILLERO!', 'Clara');
-              const qteOk = await game.qte('Space', '¡SUJETA LA PUERTA CON FUERZA! [ESPACIO]', 1800);
+              const qteOk = await game.qte('Space', game.input.isTouch ? '¡SUJETA LA PUERTA CON FUERZA! [TOCA AQUÍ]' : '¡SUJETA LA PUERTA CON FUERZA! [ESPACIO]', 1800);
               if (qteOk) {
                 audio.slam();
                 audio.ding();
@@ -242,7 +246,7 @@ export const CHAPTERS = [
               }
             } else {
               await game.say('¡ME VIO! ¡NO ALCANCÉ A METERME EN EL CASILLERO!', 'Clara');
-              const qteDodge = await game.qte('KeyA', '¡ESQUIVA A LA IZQUIERDA DETRÁS DEL MOSTRADOR! [A]', 1700);
+              const qteDodge = await game.qte('KeyA', game.input.isTouch ? '¡ESQUIVA A LA IZQUIERDA! [TOCA AQUÍ]' : '¡ESQUIVA A LA IZQUIERDA DETRÁS DEL MOSTRADOR! [A]', 1700);
               if (qteDodge) {
                 audio.slam();
                 audio.ding();

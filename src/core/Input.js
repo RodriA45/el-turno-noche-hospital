@@ -99,6 +99,14 @@ export class Input {
     });
     $('btn-pause').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); this.unlock(); });
 
+    const dismissRotate = $('btn-dismiss-rotate');
+    if (dismissRotate) {
+      dismissRotate.addEventListener('click', e => {
+        e.preventDefault(); e.stopPropagation();
+        document.body.classList.add('allow-portrait');
+      });
+    }
+
     // Evitar zoom, scroll y menú contextual
     document.addEventListener('contextmenu', e => e.preventDefault());
     document.addEventListener('gesturestart', e => e.preventDefault());

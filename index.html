@@ -67,21 +67,32 @@
           <svg class="touch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="7"/><path d="M12 9v3l2 2"/><path d="M10 2h4M10 22h4"/></svg>
         </button>
         <button id="tb-flash" data-key="KeyF" aria-label="Linterna">
-          <svg class="touch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6l-3-3H9L6 6v3l3 3v9h6v-9l3-3V6z"/></svg>
+          <svg class="touch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8 3h8l2 5H6l2-5z" fill="currentColor" fill-opacity="0.25"/>
+            <rect x="8" y="8" width="8" height="13" rx="2"/>
+            <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+            <path d="M4 2l2 2m14-2l-2 2" stroke-linecap="round"/>
+          </svg>
         </button>
         <button id="tb-crouch" data-key="KeyC" aria-label="Agacharse">
           <svg class="touch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 13l-7 7-7-7m7 7V4"/></svg>
         </button>
         <button id="tb-act" data-key="KeyE" aria-label="Interactuar">
-          <svg class="touch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg class="touch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0v5"/>
+            <path d="M11 7.5a1.5 1.5 0 0 1 3 0v4"/>
+            <path d="M14 9a1.5 1.5 0 0 1 3 0v3.5"/>
+            <path d="M17 11.5a1.5 1.5 0 0 1 3 0v3.5a6 6 0 0 1-6 6h-2a6 6 0 0 1-5.4-3.4l-1.6-3.2a1.5 1.5 0 0 1 2.7-1.4l1.3 2.5V5.5a1.5 1.5 0 0 1 3 0V13"/>
+          </svg>
         </button>
       </div>
     </div>
 
-    <div id="rotate-warning" class="hidden">
+    <div id="rotate-warning">
       <div>
         <svg class="rotate-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M12 18h.01"/><path d="M1 9l3-3 3 3"/><path d="M4 6v8a5 5 0 0 0 5 5"/></svg>
         <p>Gira tu dispositivo a posición horizontal<br />para comenzar el turno</p>
+        <button id="btn-dismiss-rotate" class="btn btn-sm ghost" style="margin-top: 14px; font-size: 11px;">Continuar en vertical</button>
       </div>
     </div>
 
@@ -102,11 +113,11 @@
           <div class="examiner-actions">
             <button id="examiner-flip" class="btn btn-examiner">
               <svg class="examiner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-              <span>Voltear [F]</span>
+              <span>Voltear <span class="desktop-only">[F]</span></span>
             </button>
             <button id="examiner-close" class="btn btn-examiner primary">
               <svg class="examiner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>
-              <span>Guardar / Salir [E]</span>
+              <span>Guardar / Salir <span class="desktop-only">[E]</span></span>
             </button>
           </div>
           <p class="examiner-hint desktop-only">Arrastra con el ratón para rotar 360° · Rueda para zoom · [F] Voltear</p>
@@ -188,13 +199,13 @@
               <span class="btn-icon">
                 <svg class="cctv-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6m-4 4h2M12 2a7 7 0 0 0-7 7c0 2.5 1.5 4.5 3 6h8c1.5-1.5 3-3.5 3-6a7 7 0 0 0-7-7z"/></svg>
               </span>
-              <span class="btn-text">ILUMINAR SECTOR [ESPACIO]</span>
+              <span class="btn-text">ILUMINAR SECTOR <span class="desktop-only">[ESPACIO]</span></span>
             </button>
             <button id="cctv-close" class="cctv-btn ghost">
               <span class="btn-icon">
                 <svg class="cctv-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 9l-7 7-7-7"/></svg>
               </span>
-              <span class="btn-text">BAJAR MONITOR [E]</span>
+              <span class="btn-text">BAJAR MONITOR <span class="desktop-only">[E]</span></span>
             </button>
           </div>
 

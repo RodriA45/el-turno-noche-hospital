@@ -50,21 +50,21 @@ export class Player {
 
     scene.add(camera);
 
-    // Linterna principal con haz óptico (cookie con anillos de difracción Fresnel y hotspot)
+    // Linterna principal con haz óptico (cookie con anillos de difracción Fresnel y hotspot orgánico)
     const cookie = flashlightCookie();
-    const spot = new THREE.SpotLight(0xfff5e6, 85, 34, Math.PI / 4.2, 0.75, 1.25);
+    const spot = new THREE.SpotLight(0xfff2dc, 48, 34, Math.PI / 3.8, 0.85, 1.35);
     spot.map = cookie;
     spot.castShadow = true;
     spot.shadow.mapSize.set(1024, 1024);
     spot.shadow.bias = -0.0005;
     spot.shadow.camera.near = 0.2;
-    spot.position.set(0.18, -0.14, 0.05);
-    spot.target.position.set(0, 0, -6);
+    spot.position.set(0.18, -0.16, 0.05);
+    spot.target.position.set(0, -0.05, -6);
     spot.userData.isPlayerAttachment = true;
     spot.target.userData.isPlayerAttachment = true;
     camera.add(spot, spot.target);
     this.spot = spot;
-    this.baseIntensity = 85;
+    this.baseIntensity = 48;
 
     // Luz difusa de rebote en el suelo y paredes cercanas (bounce light)
     const bounce = new THREE.PointLight(0xffeedd, 0, 4.5, 2.0);

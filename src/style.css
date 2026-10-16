@@ -611,11 +611,35 @@ body.is-touch #subs { bottom: 6%; }
   }
   .cctv-top-bar {
     font-size: 11px;
-    gap: 6px;
+    gap: 4px 8px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
   }
-  .cctv-info-left, .cctv-info-right {
-    gap: 8px;
+  .cctv-info-left {
+    gap: 6px;
     font-size: 11px;
+    max-width: 58%;
+    overflow: hidden;
+  }
+  #cctv-cam-title {
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .cctv-anomaly-pill {
+    font-size: 10px;
+    padding: 2px 7px;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+  .cctv-info-right {
+    gap: 6px;
+    font-size: 10.5px;
+  }
+  .cctv-signal {
+    display: none !important;
   }
   .cctv-bottom-bar {
     flex-direction: column;
@@ -645,7 +669,7 @@ body.is-touch #subs { bottom: 6%; }
 }
 
 @media (orientation: portrait) and (max-width: 900px) {
-  body.is-touch #rotate-warning:not(.hidden) {
+  body.is-touch:not(.allow-portrait) #rotate-warning {
     display: grid !important;
     position: fixed;
     inset: 0;
@@ -657,6 +681,23 @@ body.is-touch #subs { bottom: 6%; }
     padding: 24px;
     font-family: 'Cinzel', serif;
     letter-spacing: 2px;
+  }
+  body.is-touch #subs {
+    bottom: calc(max(14px, env(safe-area-inset-bottom)) + 145px) !important;
+    width: min(520px, 92vw) !important;
+    max-width: 92vw !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+  }
+}
+
+@media (orientation: landscape) {
+  body.is-touch #subs {
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    bottom: max(12px, calc(env(safe-area-inset-bottom) + 6px)) !important;
+    max-width: calc(100vw - 360px) !important;
+    width: fit-content !important;
   }
 }
 
