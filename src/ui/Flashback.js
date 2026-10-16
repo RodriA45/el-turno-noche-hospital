@@ -99,91 +99,290 @@ export class FlashbackPlayer {
   // -------------------------------------------------------------------------
   // ESCENA 1: EL INCIDENTE DE ANDREA EN EL PISO 4 (1984)
   // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // ESCENA 1: EL INCIDENTE DE ANDREA EN EL PISO 4 (1984) - ILUSTRACIÓN CINEMÁTICA AAA
+  // -------------------------------------------------------------------------
   drawAndreaScene(g, w, h, t) {
-    const vx = w / 2, vy = h * 0.48;
-    const redAlert = (Math.sin(t * 5) + 1) * 0.5;
+    const vx = w * 0.52, vy = h * 0.44;
+    const flicker = Math.sin(t * 14) * Math.cos(t * 7) > 0.3 ? 0.35 : 1.0;
+    const redAlert = (Math.sin(t * 4.2) + 1) * 0.5 * flicker;
 
-    // Pasillo hospitalario en perspectiva bajo luz de emergencia roja
-    const poly = (pts, fill) => {
+    // Fondo base del pasillo
+    g.fillStyle = '#050203';
+    g.fillRect(0, 0, w, h);
+
+    // 1. Techo en perspectiva con paneles acústicos y tubos oxidados
+    const ceilGrad = g.createLinearGradient(0, 0, 0, vy);
+    ceilGrad.addColorStop(0, '#0a0808');
+    ceilGrad.addColorStop(1, '#020101');
+    g.beginPath();
+    g.moveTo(0, 0); g.lineTo(w, 0); g.lineTo(vx + w * 0.12, vy - h * 0.14); g.lineTo(vx - w * 0.12, vy - h * 0.14);
+    g.closePath();
+    g.fillStyle = ceilGrad;
+    g.fill();
+
+    // Lámpara de emergencia parpadeante colgando del techo
+    const lampX = vx - w * 0.02, lampY = vy - h * 0.18;
+    g.strokeStyle = '#181414';
+    g.lineWidth = 2;
+    g.beginPath(); g.moveTo(lampX, 0); g.lineTo(lampX, lampY); g.stroke();
+    // Campana de luz roja
+    g.fillStyle = `rgba(${180 + redAlert * 75}, 20, 20, ${0.75 + redAlert * 0.25})`;
+    g.beginPath(); g.arc(lampX, lampY + 4, 8, 0, Math.PI * 2); g.fill();
+
+    // 2. Paredes laterales en perspectiva con zócalo verde hospitalario sucio
+    const wallLeft = g.createLinearGradient(0, h * 0.5, vx - w * 0.12, vy);
+    wallLeft.addColorStop(0, `rgba(${32 + redAlert * 40}, 10, 12, 1)`);
+    wallLeft.addColorStop(0.6, '#0f0c0d');
+    wallLeft.addColorStop(1, '#020102');
+    g.beginPath();
+    g.moveTo(0, 0); g.lineTo(vx - w * 0.12, vy - h * 0.14); g.lineTo(vx - w * 0.12, vy + h * 0.14); g.lineTo(0, h);
+    g.closePath();
+    g.fillStyle = wallLeft;
+    g.fill();
+
+    const wallRight = g.createLinearGradient(w, h * 0.5, vx + w * 0.12, vy);
+    wallRight.addColorStop(0, `rgba(${28 + redAlert * 35}, 8, 10, 1)`);
+    wallRight.addColorStop(0.6, '#0d0a0b');
+    wallRight.addColorStop(1, '#020102');
+    g.beginPath();
+    g.moveTo(w, 0); g.lineTo(vx + w * 0.12, vy - h * 0.14); g.lineTo(vx + w * 0.12, vy + h * 0.14); g.lineTo(w, h);
+    g.closePath();
+    g.fillStyle = wallRight;
+    g.fill();
+
+    // Zócalos y molduras en las paredes
+    g.strokeStyle = `rgba(${60 + redAlert * 50}, 18, 20, 0.65)`;
+    g.lineWidth = 3;
+    g.beginPath(); g.moveTo(0, h * 0.62); g.lineTo(vx - w * 0.12, vy + h * 0.05); g.stroke();
+    g.beginPath(); g.moveTo(w, h * 0.62); g.lineTo(vx + w * 0.12, vy + h * 0.05); g.stroke();
+
+    // 3. Suelo de baldosas en perspectiva con reflejos húmedos
+    const floorGrad = g.createLinearGradient(0, vy + h * 0.14, 0, h);
+    floorGrad.addColorStop(0, '#040203');
+    floorGrad.addColorStop(0.5, `rgba(${25 + redAlert * 30}, 8, 10, 1)`);
+    floorGrad.addColorStop(1, `rgba(${45 + redAlert * 45}, 10, 12, 1)`);
+    g.beginPath();
+    g.moveTo(0, h); g.lineTo(w, h); g.lineTo(vx + w * 0.12, vy + h * 0.14); g.lineTo(vx - w * 0.12, vy + h * 0.14);
+    g.closePath();
+    g.fillStyle = floorGrad;
+    g.fill();
+
+    // Baldosas en damero proyectadas en perspectiva
+    g.strokeStyle = `rgba(120, 30, 30, ${0.12 + redAlert * 0.18})`;
+    g.lineWidth = 1.2;
+    for (let i = -6; i <= 6; i++) {
+      const bottomX = w * 0.5 + i * (w * 0.14);
       g.beginPath();
-      pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
-      g.closePath();
-      g.fillStyle = fill;
-      g.fill();
-    };
-
-    const iw = Math.max(34, w * 0.09);
-    const ih = Math.min(h * 0.16, iw * 1.35);
-    // Suelo con reflejos de sangre / cera
-    poly([[0, h], [w, h], [vx + iw, vy + ih], [vx - iw, vy + ih]], `rgba(${40 + redAlert * 30}, 12, 12, 1)`);
-    // Techo
-    poly([[0, 0], [w, 0], [vx + iw, vy - ih], [vx - iw, vy - ih]], '#08080a');
-    // Paredes
-    poly([[0, 0], [vx - iw, vy - ih], [vx - iw, vy + ih], [0, h]], `rgba(${30 + redAlert * 20}, 10, 10, 1)`);
-    poly([[w, 0], [vx + iw, vy - ih], [vx + iw, vy + ih], [w, h]], `rgba(${30 + redAlert * 20}, 10, 10, 1)`);
-    // Fondo del pasillo oscuro
-    poly([[vx - iw, vy - ih], [vx + iw, vy - ih], [vx + iw, vy + ih], [vx - iw, vy + ih]], '#000000');
-
-    // Puertas clausuradas con tablas
-    for (let i = 0; i < 4; i++) {
-      const z = (i + 1) / 5;
-      const dw = 14 + (1 - z) * 45;
-      const dh = 30 + (1 - z) * 160;
-      const px = vx - iw - (vx - iw) * (1 - z);
-      g.fillStyle = '#100606';
-      g.fillRect(px, vy + ih * z - dh * 0.35, dw * 0.12, dh);
+      g.moveTo(bottomX, h);
+      g.lineTo(vx + i * (w * 0.018), vy + h * 0.14);
+      g.stroke();
+    }
+    for (let r = 1; r <= 8; r++) {
+      const k = Math.pow(r / 8, 2.2);
+      const rowY = (vy + h * 0.14) + k * (h - (vy + h * 0.14));
+      const rowW = (w * 0.24) + k * (w * 0.76);
+      g.beginPath();
+      g.moveTo(vx - rowW / 2, rowY);
+      g.lineTo(vx + rowW / 2, rowY);
+      g.stroke();
     }
 
-    // Silueta de la enfermera Andrea en primer plano cayendo de espaldas
-    const andreaX = w * 0.34 + Math.sin(t * 1.5) * 4;
-    const andreaY = h * 0.78;
-    g.fillStyle = '#08090a';
-    // Cuerpo
+    // 4. Puertas clausuradas con tablas de madera y sellos policiales a los costados
+    for (const [side, x0, sign] of [['left', 0, 1], ['right', w, -1]]) {
+      for (let d = 0; d < 3; d++) {
+        const factor = (d + 1) / 4;
+        const dw = (1 - factor) * (w * 0.08) + 12;
+        const dh = (1 - factor) * (h * 0.44) + 40;
+        const dx = side === 'left'
+          ? (vx - w * 0.12) * factor
+          : w - (w - (vx + w * 0.12)) * factor;
+        const dy = vy + h * 0.14 * factor - dh * 0.65;
+
+        // Marco de la puerta sellada
+        g.fillStyle = '#060304';
+        g.fillRect(dx - dw / 2, dy, dw, dh);
+        // Tablas cruzadas
+        g.strokeStyle = '#2c1e14';
+        g.lineWidth = Math.max(2, dw * 0.12);
+        g.beginPath();
+        g.moveTo(dx - dw / 2, dy + 6); g.lineTo(dx + dw / 2, dy + dh - 6);
+        g.moveTo(dx - dw / 2, dy + dh - 6); g.lineTo(dx + dw / 2, dy + 6);
+        g.stroke();
+      }
+    }
+
+    // 5. Linterna caída en el suelo en primer plano con cono de luz volumétrica
+    const torchX = w * 0.28, torchY = h * 0.86;
+    // Haz de luz volumétrico que corta la oscuridad hacia el fondo
+    const beamGrad = g.createRadialGradient(torchX, torchY, 10, vx + 10, vy + 10, w * 0.55);
+    beamGrad.addColorStop(0, 'rgba(255, 250, 220, 0.65)');
+    beamGrad.addColorStop(0.35, 'rgba(240, 230, 180, 0.22)');
+    beamGrad.addColorStop(0.7, 'rgba(180, 160, 120, 0.06)');
+    beamGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
     g.beginPath();
-    g.ellipse(andreaX, andreaY - 60, 24, 38, -0.3, 0, Math.PI * 2);
+    g.moveTo(torchX, torchY);
+    g.lineTo(vx - w * 0.16, vy - h * 0.08);
+    g.lineTo(vx + w * 0.22, vy + h * 0.22);
+    g.closePath();
+    g.fillStyle = beamGrad;
     g.fill();
-    // Cabeza con cofia de enfermera
+
+    // Cuerpo metálico de la linterna y halo
+    g.fillStyle = '#9c8e6b';
+    g.fillRect(torchX - 16, torchY - 5, 22, 10);
+    g.fillStyle = '#fffae0';
+    g.fillRect(torchX + 6, torchY - 6, 6, 12);
+
+    // Llaves de hospital arrojadas en el suelo con reflejos dorados
+    g.strokeStyle = '#c49a38';
+    g.lineWidth = 2.5;
+    g.beginPath(); g.arc(torchX - 35, torchY + 12, 7, 0, Math.PI * 2); g.stroke();
+    for (let k = 0; k < 3; k++) {
+      const ang = k * 0.7 - 0.4;
+      g.beginPath();
+      g.moveTo(torchX - 35 + Math.cos(ang) * 7, torchY + 12 + Math.sin(ang) * 7);
+      g.lineTo(torchX - 35 + Math.cos(ang) * 22, torchY + 12 + Math.sin(ang) * 22);
+      g.stroke();
+    }
+
+    // 6. Silueta amenazante de la enfermera Andrea arrastrándose / cayendo de espaldas en pánico
+    const ax = w * 0.38 + Math.sin(t * 1.2) * 3;
+    const ay = h * 0.76;
+    g.fillStyle = '#060506';
+
+    // Falda y piernas caídas hacia el frente
     g.beginPath();
-    g.arc(andreaX + 8, andreaY - 110, 16, 0, Math.PI * 2);
+    g.moveTo(ax - 28, ay);
+    g.lineTo(ax - 70, ay + 38);
+    g.lineTo(ax - 30, ay + 55);
+    g.lineTo(ax + 20, ay + 42);
+    g.lineTo(ax + 18, ay - 10);
+    g.closePath();
     g.fill();
-    g.fillStyle = '#dcd8cc';
-    g.fillRect(andreaX + 2, andreaY - 128, 16, 7); // cofia blanca
-    // Brazos alzados pidiendo auxilio
-    g.strokeStyle = '#08090a';
-    g.lineWidth = 10;
+
+    // Torso inclinado hacia atrás en terror
     g.beginPath();
-    g.moveTo(andreaX - 10, andreaY - 80);
-    g.lineTo(andreaX - 45, andreaY - 125);
+    g.ellipse(ax - 6, ay - 42, 22, 34, -0.45, 0, Math.PI * 2);
+    g.fill();
+
+    // Brazo izquierdo apoyado en el piso para sostenerse
+    g.lineWidth = 9;
+    g.strokeStyle = '#060506';
+    g.beginPath();
+    g.moveTo(ax - 18, ay - 35);
+    g.lineTo(ax - 48, ay - 10);
+    g.lineTo(ax - 58, ay + 15);
     g.stroke();
-    // Llaves caídas en el suelo
-    g.fillStyle = '#c5a044';
-    g.fillRect(andreaX - 60, andreaY + 10, 8, 4);
 
-    // Silueta espectral del hermano gemelo al final del pasillo
-    const ghostDist = Math.min(1, t / 4);
-    const gx = vx + (Math.random() - 0.5) * 3;
-    const gy = vy + 20 + ghostDist * 30;
-    const gs = 0.5 + ghostDist * 0.4;
-    g.fillStyle = '#020202';
+    // Brazo derecho alzado protegiéndose el rostro con la mano abierta
     g.beginPath();
-    g.ellipse(gx, gy - 60 * gs, 14 * gs, 35 * gs, 0, 0, Math.PI * 2);
-    g.fill();
-    g.beginPath();
-    g.arc(gx, gy - 105 * gs, 12 * gs, 0, Math.PI * 2);
-    g.fill();
-
-    // Ojos del espectro parpadeantes
-    if (Math.sin(t * 18) > -0.4) {
-      g.fillStyle = '#ffffff';
-      g.fillRect(gx - 4 * gs, gy - 108 * gs, 3 * gs, 3 * gs);
-      g.fillRect(gx + 2 * gs, gy - 108 * gs, 3 * gs, 3 * gs);
+    g.moveTo(ax + 8, ay - 48);
+    g.lineTo(ax + 32, ay - 85);
+    g.lineTo(ax + 50, ay - 105);
+    g.stroke();
+    // Dedos tensos de la mano
+    g.lineWidth = 3.5;
+    for (let f = -2; f <= 2; f++) {
+      g.beginPath();
+      g.moveTo(ax + 50, ay - 105);
+      g.lineTo(ax + 58 + f * 5, ay - 118 - Math.abs(f) * 2);
+      g.stroke();
     }
 
-    // Cartel sangriento en la pared: NUNCA MIRES
-    if (t > 1.2) {
-      g.fillStyle = `rgba(180, 20, 20, ${Math.min(0.85, (t - 1.2) * 0.8)})`;
-      g.font = `bold ${Math.round(w * 0.038)}px "Special Elite", monospace`;
-      g.fillText('NUNCA SUBAS AL PISO 4', w * 0.48, h * 0.32);
+    // Cabeza de perfil aterrorizada
+    g.fillStyle = '#060506';
+    g.beginPath();
+    g.arc(ax - 10, ay - 88, 17, 0, Math.PI * 2);
+    g.fill();
+    // Moño de cabello recogido hacia atrás
+    g.beginPath();
+    g.arc(ax - 28, ay - 86, 9, 0, Math.PI * 2);
+    g.fill();
+
+    // Cofia clínica blanca de enfermera de los años 80 iluminada por el haz
+    g.fillStyle = '#e4dfd0';
+    g.beginPath();
+    g.moveTo(ax - 18, ay - 102);
+    g.lineTo(ax + 4, ay - 106);
+    g.lineTo(ax + 6, ay - 96);
+    g.lineTo(ax - 14, ay - 93);
+    g.closePath();
+    g.fill();
+    // Cruz roja sutil en la cofia
+    g.fillStyle = '#aa1c1c';
+    g.fillRect(ax - 6, ay - 102, 6, 2);
+    g.fillRect(ax - 4, ay - 104, 2, 6);
+
+    // 7. La presencia espectral (El Ente del Piso 4) emergiendo al fondo del pasillo
+    const dist = Math.min(1, t / 3.8);
+    const gx = vx + (Math.sin(t * 1.5) * 4);
+    const gy = vy + h * 0.12 - (dist * 12);
+    const scale = 0.75 + dist * 0.35;
+
+    // Niebla oscura y zarcillos que reptan desde la puerta 4
+    g.fillStyle = 'rgba(0, 0, 0, 0.92)';
+    g.beginPath();
+    g.ellipse(gx, gy + 14, 38 * scale, 14 * scale, 0, 0, Math.PI * 2);
+    g.fill();
+
+    // Silueta alta y distorsionada del hermano gemelo
+    g.beginPath();
+    // Cuerpo espectral andrajoso
+    g.moveTo(gx - 18 * scale, gy + 10);
+    g.lineTo(gx - 22 * scale, gy - 65 * scale);
+    g.lineTo(gx - 12 * scale, gy - 95 * scale);
+    g.lineTo(gx + 12 * scale, gy - 95 * scale);
+    g.lineTo(gx + 22 * scale, gy - 65 * scale);
+    g.lineTo(gx + 18 * scale, gy + 10);
+    g.closePath();
+    g.fill();
+
+    // Brazos anormalmente largos que cuelgan con garras
+    g.lineWidth = 6 * scale;
+    g.strokeStyle = '#000000';
+    g.beginPath();
+    g.moveTo(gx - 18 * scale, gy - 60 * scale);
+    g.lineTo(gx - 32 * scale, gy - 20 * scale);
+    g.lineTo(gx - 36 * scale, gy + 8 * scale);
+    g.moveTo(gx + 18 * scale, gy - 60 * scale);
+    g.lineTo(gx + 32 * scale, gy - 20 * scale);
+    g.lineTo(gx + 36 * scale, gy + 8 * scale);
+    g.stroke();
+
+    // Cabeza encorvada
+    g.beginPath();
+    g.arc(gx, gy - 110 * scale, 14 * scale, 0, Math.PI * 2);
+    g.fill();
+
+    // Ojos bioluminiscentes espectrales sutiles y aterradores
+    if (Math.sin(t * 12) > -0.6) {
+      const eyeGlint = g.createRadialGradient(gx - 4 * scale, gy - 110 * scale, 1, gx - 4 * scale, gy - 110 * scale, 6 * scale);
+      eyeGlint.addColorStop(0, '#ffffff');
+      eyeGlint.addColorStop(0.4, 'rgba(180, 230, 255, 0.85)');
+      eyeGlint.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = eyeGlint;
+      g.beginPath(); g.arc(gx - 4 * scale, gy - 110 * scale, 5 * scale, 0, Math.PI * 2); g.fill();
+
+      const eyeGlintR = g.createRadialGradient(gx + 4 * scale, gy - 110 * scale, 1, gx + 4 * scale, gy - 110 * scale, 6 * scale);
+      eyeGlintR.addColorStop(0, '#ffffff');
+      eyeGlintR.addColorStop(0.4, 'rgba(180, 230, 255, 0.85)');
+      eyeGlintR.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = eyeGlintR;
+      g.beginPath(); g.arc(gx + 4 * scale, gy - 110 * scale, 5 * scale, 0, Math.PI * 2); g.fill();
+    }
+
+    // 8. Mensaje ominoso ensangrentado sobre el muro superior
+    if (t > 0.8) {
+      const textAlpha = Math.min(0.9, (t - 0.8) * 0.9);
+      g.fillStyle = `rgba(${175 + redAlert * 45}, 16, 16, ${textAlpha})`;
+      g.font = `900 ${Math.round(w * 0.042)}px "Special Elite", monospace`;
+      g.textAlign = 'center';
+      g.shadowColor = 'rgba(0, 0, 0, 0.95)';
+      g.shadowBlur = 14;
+      g.fillText('NUNCA SUBAS AL PISO 4', w * 0.5, h * 0.28);
+      g.shadowBlur = 0;
+      g.textAlign = 'left';
     }
   }
 

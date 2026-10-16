@@ -213,8 +213,9 @@ export class Hospital {
   addDoor(g, x, z, info, open) {
     const spanX = this.isWall(x - 1, z) && this.isWall(x + 1, z);
     const isExit = !!info.exit;
-    const dh = WALL_H - 0.3, dw = S - 0.2;
-    const leaf = doorLeaf(isExit ? this.exitMat : this.doorMat, dw, dh, 0.1, isExit);
+    // Altura arquitectónica estándar de puerta de hospital (2.4m)
+    const dh = 2.4, dw = S - 0.2;
+    const leaf = doorLeaf(isExit ? this.exitMat : this.doorMat, dw, dh, 0.08, isExit);
     const pivot = new THREE.Group();
     pivot.add(leaf);
 
@@ -228,15 +229,37 @@ export class Hospital {
     }
     g.add(pivot);
 
-    // Marco de puerta
-    const frameMat = new THREE.MeshStandardMaterial({ color: 0x48453c, roughness: 0.8 });
-    const lintel = new THREE.Mesh(new THREE.BoxGeometry(S, WALL_H - dh + 0.05, S), frameMat);
-    lintel.position.set(x * S, WALL_H - (WALL_H - dh) / 2 + 0.025, z * S);
+    // Dintel superior de pared institucional con la misma textura que los muros circundantes
+    const lintelH = WALL_H - dh;
+    const lintel = new THREE.Mesh(
+      new THREE.BoxGeometry(spanX ? S : S, lintelH, spanX ? S : S),
+      this.wallMat
+    );
+    lintel.position.set(x * S, dh + lintelH / 2, z * S);
+    lintel.castShadow = lintel.receiveShadow = true;
     g.add(lintel);
 
+    // Marco arquitectónico de acero esmaltado hospitalario
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0x32302a, roughness: 0.65, metalness: 0.3 });
+    // Cabezal superior del marco
+    const frameHeader = new THREE.Mesh(
+      new THREE.BoxGeometry(spanX ? dw + 0.14 : 0.18, 0.08, spanX ? 0.18 : dw + 0.14),
+      frameMat
+    );
+    frameHeader.position.set(x * S, dh - 0.04, z * S);
+    g.add(frameHeader);
+
+    // Jambas laterales esbeltas del marco
     for (const s of [-1, 1]) {
-      const jamb = new THREE.Mesh(new THREE.BoxGeometry(spanX ? 0.1 : S, dh, spanX ? S : 0.1), frameMat);
-      jamb.position.set(x * S + (spanX ? s * (S / 2 - 0.05) : 0), dh / 2, z * S + (spanX ? 0 : s * (S / 2 - 0.05)));
+      const jamb = new THREE.Mesh(
+        new THREE.BoxGeometry(spanX ? 0.08 : 0.18, dh, spanX ? 0.18 : 0.08),
+        frameMat
+      );
+      jamb.position.set(
+        x * S + (spanX ? s * (dw / 2 + 0.04) : 0),
+        dh / 2,
+        z * S + (spanX ? 0 : s * (dw / 2 + 0.04))
+      );
       g.add(jamb);
     }
 

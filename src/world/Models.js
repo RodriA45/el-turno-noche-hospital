@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { faceTexture, clothTexture, noteTex, signTexture, paint, xrayTexture, ecgTexture, cardboardBoxTexture, curtainTexture } from './Textures.js';
+import { faceTexture, clothTexture, noteTex, signTexture, paint, xrayTexture, ecgTexture, cardboardBoxTexture, curtainTexture, crtScreenTexture } from './Textures.js';
 
 const mats = {};
 function M(name) {
@@ -14,16 +14,24 @@ function M(name) {
     chrome: () => std({ color: 0xd8dde2, metalness: 0.95, roughness: 0.15 }),
     darkMetal: () => std({ color: 0x24272a, metalness: 0.75, roughness: 0.45 }),
     brass: () => std({ color: 0xb5923b, metalness: 0.85, roughness: 0.35 }),
-    paint: () => std({ color: 0xc8c6b8, roughness: 0.65 }),
-    sheet: () => std({ color: 0xd2ccb8, roughness: 0.95 }),
-    dirtySheet: () => std({ color: 0xb4a885, roughness: 0.95 }),
+    paint: () => std({ color: 0xa4a294, roughness: 0.80 }),
+    casingMat: () => std({ color: 0x969284, roughness: 0.75 }),
+    keyboardMat: () => std({ color: 0x827e72, roughness: 0.85 }),
+    sheet: () => std({ color: 0xc4bead, roughness: 0.95 }),
+    dirtySheet: () => std({ color: 0xaba080, roughness: 0.95 }),
     wood: () => std({ color: 0x483220, roughness: 0.65 }),
     lightWood: () => std({ color: 0x826442, roughness: 0.6 }),
     plastic: () => std({ color: 0x3b4e56, roughness: 0.45 }),
     rubber: () => std({ color: 0x141414, roughness: 0.92 }),
     glass: () => std({ color: 0xa8c5cc, roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.35 }),
     screen: () => {
-      const mat = new THREE.MeshBasicMaterial({ color: 0x5ee2a0 });
+      const mat = new THREE.MeshStandardMaterial({
+        map: crtScreenTexture(),
+        roughness: 0.28,
+        metalness: 0.08,
+        emissive: new THREE.Color(0x1a4528),
+        emissiveIntensity: 0.55,
+      });
       mat.userData.isShared = true;
       return mat;
     },
@@ -32,23 +40,35 @@ function M(name) {
     leaf: () => std({ color: 0x384a28, roughness: 0.9 }),
     soil: () => std({ color: 0x241810, roughness: 1 }),
     cardboard: () => std({ color: 0x856942, roughness: 0.9 }),
-    white: () => std({ color: 0xe6e6df, roughness: 0.5 }),
+    white: () => std({ color: 0xc8c6bd, roughness: 0.65 }),
     red: () => std({ color: 0x801010, roughness: 0.7 }),
     scalpelSteel: () => std({ color: 0xe8ecf0, metalness: 0.98, roughness: 0.12 }),
-    hospitalGreen: () => std({ color: 0x82a492, roughness: 0.55 }),
-    porcelain: () => std({ color: 0xf4f4ec, roughness: 0.16, metalness: 0.05 }),
+    hospitalGreen: () => std({ color: 0x769584, roughness: 0.62 }),
+    porcelain: () => std({ color: 0xdedece, roughness: 0.28, metalness: 0.03 }),
     leather: () => std({ color: 0x221612, roughness: 0.72 }),
     hazardYellow: () => std({ color: 0xd69e16, roughness: 0.55 }),
     curtain: () => std({ map: curtainTexture(), roughness: 0.95 }),
     bloodMat: () => std({ color: 0x540808, roughness: 0.35, metalness: 0.1 }),
     cardboardMat: () => std({ map: cardboardBoxTexture(), roughness: 0.88 }),
     xrayMat: () => {
-      const mat = new THREE.MeshBasicMaterial({ map: xrayTexture() });
+      const mat = new THREE.MeshStandardMaterial({
+        map: xrayTexture(),
+        roughness: 0.25,
+        metalness: 0.05,
+        emissive: new THREE.Color(0x48647a),
+        emissiveIntensity: 0.50,
+      });
       mat.userData.isShared = true;
       return mat;
     },
     ecgMat: () => {
-      const mat = new THREE.MeshBasicMaterial({ map: ecgTexture() });
+      const mat = new THREE.MeshStandardMaterial({
+        map: ecgTexture(),
+        roughness: 0.25,
+        metalness: 0.05,
+        emissive: new THREE.Color(0x184824),
+        emissiveIntensity: 0.55,
+      });
       mat.userData.isShared = true;
       return mat;
     },
@@ -268,14 +288,14 @@ export function deskModel({ len = 2.4, small = false } = {}) {
     // Mostrador frontal elevado para visitantes con borde biselado
     box(len + 0.12, 0.05, 0.28, 'lightWood', 0, h + 0.08, -0.56, g);
 
-    // Lámpara de escritorio articulada de latón con luz cálida
+    // Lámpara de escritorio articulada de latón con luz cálida sutil
     const lamp = new THREE.Group();
     lamp.position.set(0.65, h + 0.07, 0.2);
     cyl(0.09, 0.09, 0.02, 'brass', 0, 0.01, 0, lamp);
     cyl(0.012, 0.012, 0.35, 'brass', 0, 0.18, 0, lamp);
     const shade = cyl(0.08, 0.14, 0.12, 'brass', 0, 0.38, 0.05, lamp);
     shade.rotation.x = 0.4;
-    const bulb = new THREE.PointLight(0xffe2aa, 4.5, 4.2, 1.8);
+    const bulb = new THREE.PointLight(0xffdfb0, 1.1, 2.6, 2.0);
     bulb.position.set(0, 0.35, 0.08);
     lamp.add(bulb);
     g.add(lamp);
@@ -288,17 +308,17 @@ export function deskModel({ len = 2.4, small = false } = {}) {
     const zz = small ? 0.05 : 0.15;
     const yy = h + 0.07;
 
-    // Carcasa beige de monitor CRT de los años 80/90 con bisel curvado
+    // Carcasa beige mate de monitor CRT de los años 80 con bisel curvado
     const crt = new THREE.Group();
     crt.position.set(x, yy, zz);
 
-    box(0.52, 0.44, 0.42, 'paint', 0, 0.22, 0, crt);
+    box(0.52, 0.44, 0.42, 'casingMat', 0, 0.22, 0, crt);
     // Ranuras traseras de ventilación
     for (let sl = 0.05; sl < 0.38; sl += 0.06) {
       box(0.38, 0.015, 0.02, 'darkMetal', 0, sl, -0.21, crt);
     }
 
-    // Pantalla de fósforo verde con curva convexa
+    // Pantalla de fósforo verde con curva convexa y telemetría activa
     const scrGeo = new THREE.PlaneGeometry(0.42, 0.33, 4, 4);
     const scr = new THREE.Mesh(scrGeo, i === 1 && !small ? M('screenOff') : M('screen'));
     scr.position.set(0, 0.23, 0.211);
@@ -306,20 +326,20 @@ export function deskModel({ len = 2.4, small = false } = {}) {
 
     // Botones frontales del monitor y LED indicador
     box(0.04, 0.02, 0.02, 'darkMetal', 0.16, 0.04, 0.215, crt);
-    const led = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.015, 0.015), new THREE.MeshBasicMaterial({ color: 0x44ff66 }));
+    const led = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.015, 0.015), new THREE.MeshStandardMaterial({ color: 0x228833, emissive: 0x116622, emissiveIntensity: 0.6 }));
     led.position.set(0.12, 0.04, 0.216); crt.add(led);
 
     // Base giratoria del monitor
-    box(0.24, 0.04, 0.24, 'paint', 0, 0.02, 0, crt);
+    box(0.24, 0.04, 0.24, 'casingMat', 0, 0.02, 0, crt);
 
-    // Teclado con teclas individuales y cable
+    // Teclado vintage con teclas individuales y acabado mate
     const kb = new THREE.Group();
     kb.position.set(0, 0, 0.36);
-    box(0.44, 0.028, 0.16, 'paint', 0, 0.014, 0, kb);
-    // Bloques de teclas
+    box(0.44, 0.028, 0.16, 'keyboardMat', 0, 0.014, 0, kb);
+    // Bloques de teclas oscuras
     box(0.38, 0.015, 0.12, 'darkMetal', 0, 0.03, 0, kb);
     // Barra espaciadora
-    box(0.14, 0.02, 0.02, 'paint', 0, 0.032, 0.05, kb);
+    box(0.14, 0.02, 0.02, 'keyboardMat', 0, 0.032, 0.05, kb);
     crt.add(kb);
 
     g.add(crt);
@@ -841,27 +861,46 @@ export function person(o = {}) {
     skirt.scale.z = 0.75;
   }
 
-  // Cuello anatómico
-  mk(new THREE.CylinderGeometry(0.06, 0.07, 0.14, 10), skinMat, 0, 1.62, 0);
+  // Cuello anatómico y cuello de chaqueta / casaca médica en V
+  mk(new THREE.CylinderGeometry(0.055, 0.065, 0.12, 10), skinMat, 0, 1.63, 0);
+  const collar = mk(new THREE.CylinderGeometry(0.08, 0.11, 0.08, 12), clothMat, 0, 1.55, 0);
+  collar.scale.set(1.0, 1.0, 0.85);
 
-  // Brazos articulados con hombreras, antebrazos y manos con dedos modelados
+  // Solapas de uniforme clínico / chaqueta en el pecho
+  if (!gown) {
+    const lapelL = mk(new THREE.BoxGeometry(0.04, 0.14, 0.015), clothMat, -0.06, 1.48, 0.14);
+    lapelL.rotation.z = -0.22;
+    const lapelR = mk(new THREE.BoxGeometry(0.04, 0.14, 0.015), clothMat, 0.06, 1.48, 0.14);
+    lapelR.rotation.z = 0.22;
+  }
+
+  // Brazos articulados con antebrazo, ligera flexión en el codo y manos modeladas
   const arms = [];
   for (const s of [-1, 1]) {
     const pivot = new THREE.Group();
-    pivot.position.set(s * 0.25, 1.48, 0);
+    pivot.position.set(s * 0.24, 1.46, 0);
     body.add(pivot);
 
-    // Hombro y brazo
-    mk(new THREE.CapsuleGeometry(0.06, 0.52, 6, 10), clothMat, 0, -0.3, 0, pivot);
+    // Hombro y brazo superior con leve caída y postura relajada hacia adelante
+    const upperArm = mk(new THREE.CapsuleGeometry(0.055, 0.26, 6, 8), clothMat, 0, -0.15, 0, pivot);
+    upperArm.rotation.x = 0.10;
+
+    // Antebrazo articulado con flexión natural hacia el frente
+    const forearmGroup = new THREE.Group();
+    forearmGroup.position.set(0, -0.30, 0.035);
+    forearmGroup.rotation.x = ghost ? 0.35 : 0.22;
+    pivot.add(forearmGroup);
+
+    mk(new THREE.CapsuleGeometry(0.048, 0.24, 6, 8), clothMat, 0, -0.12, 0, forearmGroup);
 
     // Mano esculpida
     const handGroup = new THREE.Group();
-    handGroup.position.set(0, -0.64, 0);
-    mk(new THREE.BoxGeometry(0.07, 0.09, 0.035), skinMat, 0, 0, 0, handGroup);
+    handGroup.position.set(0, -0.28, 0);
+    mk(new THREE.BoxGeometry(0.062, 0.08, 0.03), skinMat, 0, 0, 0, handGroup);
     // Pulgar
-    const thumb = mk(new THREE.BoxGeometry(0.025, 0.04, 0.025), skinMat, s * 0.042, 0.01, 0.015, handGroup);
-    thumb.rotation.z = -s * 0.4;
-    pivot.add(handGroup);
+    const thumb = mk(new THREE.BoxGeometry(0.02, 0.035, 0.02), skinMat, s * 0.036, 0.01, 0.012, handGroup);
+    thumb.rotation.z = -s * 0.35;
+    forearmGroup.add(handGroup);
 
     // Si tiene bisturí en la mano derecha
     if (scalpel && s === 1) {
@@ -872,7 +911,6 @@ export function person(o = {}) {
       box(0.02, 0.16, 0.008, 'brass', 0, -0.04, 0, knife);
       // Hoja de bisturí afilada y ensangrentada
       const blade = box(0.018, 0.14, 0.004, 'scalpelSteel', 0, 0.1, 0, knife);
-      // Filo biselado
       knife.scale.set(1, 1, 1);
       handGroup.add(knife);
     }
@@ -910,7 +948,7 @@ export function person(o = {}) {
   const nose = mk(new THREE.ConeGeometry(0.018, 0.05, 4), skinMat, 0, -0.01, 0.126, head);
   nose.rotation.x = -Math.PI / 2;
 
-  // Cabello con peinado tridimensional
+  // Cabello con peinado tridimensional y flequillo natural
   const hairMat = new THREE.MeshStandardMaterial({
     color: hair,
     roughness: 0.88,
@@ -923,6 +961,11 @@ export function person(o = {}) {
   hairCap.rotation.x = -0.14;
   head.add(hairCap);
 
+  // Mechones de flequillo y patillas que enmarcan el rostro
+  mk(new THREE.BoxGeometry(0.14, 0.035, 0.04), hairMat, 0, 0.08, 0.09, head);
+  mk(new THREE.BoxGeometry(0.025, 0.11, 0.03), hairMat, -0.095, 0.02, 0.065, head);
+  mk(new THREE.BoxGeometry(0.025, 0.11, 0.03), hairMat, 0.095, 0.02, 0.065, head);
+
   if (longHair || hairStyle === 'long') {
     // Melena que cae por la espalda
     mk(new THREE.CapsuleGeometry(0.11, 0.38, 4, 10), hairMat, 0, -0.16, -0.08, head);
@@ -934,6 +977,14 @@ export function person(o = {}) {
   if (hairStyle === 'bun') {
     // Rodete de enfermera recogido detrás
     const bun = mk(new THREE.SphereGeometry(0.065, 12, 10), hairMat, 0, 0.06, -0.12, head);
+    // Cofia clínica blanca clásica de enfermera con cruz roja
+    const nCap = new THREE.Group();
+    nCap.position.set(0, 0.14, 0.01);
+    box(0.11, 0.035, 0.06, 'white', 0, 0, 0, nCap);
+    box(0.08, 0.02, 0.035, 'white', 0, 0.022, -0.01, nCap);
+    box(0.018, 0.007, 0.002, 'red', 0, 0.004, 0.032, nCap);
+    box(0.007, 0.018, 0.002, 'red', 0, 0.004, 0.032, nCap);
+    head.add(nCap);
   }
 
   if (hairStyle === 'wild') {

@@ -90,14 +90,14 @@ export class PostProcess {
     this.renderPass = new RenderPass(scene, camera);
     this.composer.addPass(this.renderPass);
 
-    // 2. Unreal Bloom Pass sutil (resplandor en fluorescentes, ojos del ente y hotspot)
+    // 2. Unreal Bloom Pass sutil (resplandor controlado en fluorescentes, ojos del ente y hotspot)
     if (!lowEnd) {
       try {
         this.bloomPass = new UnrealBloomPass(
           size,
-          isMobile ? 0.22 : 0.35, // intensidad
-          0.45,                   // radio
-          0.82                    // umbral (solo luces muy brillantes)
+          isMobile ? 0.12 : 0.18, // intensidad sutil cinematográfica
+          0.35,                   // radio concentrado
+          1.18                    // umbral HDR (solo luces y emisivos reales superan 1.0)
         );
         this.composer.addPass(this.bloomPass);
       } catch (e) {

@@ -122,8 +122,19 @@ export class Game {
     });
     this.input.onLockChange = locked => {
       if (this.state === 'ui') return;
-      if (locked) { if (this.state === 'paused') { this.state = 'play'; show('pause', false); show('touch-ui', this.input.isTouch); } }
-      else if (this.state === 'play') { this.state = 'paused'; show('pause', true); show('touch-ui', false); }
+      if (locked) {
+        if (this.state === 'paused') {
+          this.state = 'play';
+          show('pause', false);
+          show('touch-ui', this.input.isTouch);
+          if (this.isHiding) show('hiding', true);
+        }
+      } else if (this.state === 'play') {
+        this.state = 'paused';
+        show('pause', true);
+        show('touch-ui', false);
+        if (this.isHiding) show('hiding', false);
+      }
     };
     document.addEventListener('visibilitychange', () => { if (document.hidden && this.state === 'play') this.input.unlock(); });
   }

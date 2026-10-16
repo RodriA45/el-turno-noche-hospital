@@ -684,3 +684,88 @@ export function curtainTexture() {
     grain(g, w, h, 14);
   });
 }
+
+/** Textura retro de pantalla de tubo CRT de fósforo verde con scanlines y telemetría de 1984 */
+export function crtScreenTexture() {
+  return paint(512, 384, (g, w, h) => {
+    // Fondo oscuro de fósforo P31
+    const bgGrad = g.createRadialGradient(w / 2, h / 2, 40, w / 2, h / 2, w * 0.65);
+    bgGrad.addColorStop(0, '#0c2214');
+    bgGrad.addColorStop(0.7, '#07150c');
+    bgGrad.addColorStop(1, '#020603');
+    g.fillStyle = bgGrad;
+    g.fillRect(0, 0, w, h);
+
+    // Cuadrícula y telemetría de vigilancia CCTV
+    g.strokeStyle = 'rgba(40, 160, 80, 0.18)';
+    g.lineWidth = 1;
+    for (let x = 20; x < w; x += 40) {
+      g.beginPath(); g.moveTo(x, 20); g.lineTo(x, h - 20); g.stroke();
+    }
+    for (let y = 20; y < h; y += 35) {
+      g.beginPath(); g.moveTo(20, y); g.lineTo(w - 20, y); g.stroke();
+    }
+
+    // Cabecera del sistema
+    g.fillStyle = '#4ee488';
+    g.font = 'bold 16px monospace';
+    g.fillText('▶ SAN ANSELMO - CCTV MONITOR 01', 28, 38);
+    g.font = '12px monospace';
+    g.fillStyle = '#38b868';
+    g.fillText('OCT 14 1984 · 03:42:15 AM · MODO REC [●]', 28, 58);
+
+    // Separador
+    g.strokeStyle = '#38b868';
+    g.lineWidth = 1.5;
+    g.beginPath(); g.moveTo(28, 68); g.lineTo(w - 28, 68); g.stroke();
+
+    // Estado de canales de vigilancia
+    g.font = '13px monospace';
+    g.fillStyle = '#4ee488';
+    g.fillText('CAM 01: ACCESO PRINCIPAL      [ACTIVA]', 36, 105);
+    g.fillText('CAM 02: MOSTRADOR RECEPCIÓN   [ACTIVA]', 36, 132);
+    g.fillText('CAM 03: PASILLO PLANTA BAJA   [ACTIVA]', 36, 159);
+    g.fillText('CAM 04: HABITACIÓN 204        [SEÑAL DÉBIL]', 36, 186);
+
+    // Alerta roja / fósforo parpadeante para el piso 4
+    g.fillStyle = '#ff6b6b';
+    g.fillText('CAM 05: ACCESO PISO 4         [SISTEMA DESCONECTADO]', 36, 218);
+    g.fillStyle = '#2fb060';
+    g.fillText('AVISO: CLAUSURA POLICIAL EXP #84-C EN VIGOR', 36, 242);
+
+    // Gráfico de onda de telemetría en la parte inferior
+    g.strokeStyle = '#52f592';
+    g.lineWidth = 1.8;
+    g.beginPath();
+    for (let x = 36; x < w - 36; x += 4) {
+      const y = 305 + Math.sin(x * 0.08) * 12 + Math.cos(x * 0.03) * 6;
+      if (x === 36) g.moveTo(x, y); else g.lineTo(x, y);
+    }
+    g.stroke();
+
+    // Pie de estado
+    g.fillStyle = '#2db865';
+    g.font = '11px monospace';
+    g.fillText('> SISTEMA OPERATIVO HOSPITALARIO v2.4 · CLARA PÉREZ (GUARDIA)', 36, 345);
+
+    // Scanlines horizontales tipo tubo CRT de 1984
+    g.fillStyle = 'rgba(0, 0, 0, 0.28)';
+    for (let y = 0; y < h; y += 3) {
+      g.fillRect(0, y, w, 1.2);
+    }
+
+    // Reflejo de cristal curvado / viñeta de fósforo en bordes
+    const glassRef = g.createLinearGradient(0, 0, w, h);
+    glassRef.addColorStop(0, 'rgba(100, 255, 160, 0.12)');
+    glassRef.addColorStop(0.3, 'rgba(255, 255, 255, 0.02)');
+    glassRef.addColorStop(1, 'rgba(0, 0, 0, 0.45)');
+    g.fillStyle = glassRef;
+    g.fillRect(0, 0, w, h);
+
+    // Marco exterior redondeado CRT
+    g.strokeStyle = '#020503';
+    g.lineWidth = 14;
+    g.strokeRect(0, 0, w, h);
+  });
+}
+

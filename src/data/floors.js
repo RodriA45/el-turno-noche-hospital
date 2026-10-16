@@ -87,9 +87,9 @@ function buildInpatientFloor(n = 2) {
 
         case 5: // Habitación 205: Almacén de lencería y apósitos estériles
           f.deco('shelf', a + 1.5, cabZ, headRot);
-          f.deco('shelf', a + 1.5, doorSideZ, headRot === 0 ? 180 : 0);
+          f.deco('shelf', a + 0.38, midZ, 270);
           f.deco('cabinet', b - 0.38, midZ, 90);
-          f.deco('sink', a + 0.62, midZ, 270);
+          f.deco('sink', a + 0.62, cabZ + (side === 'n' ? 1.0 : -1.0), headRot);
           break;
 
         case 6: // Habitación 206: Despacho médico de guardia con negatoscopio
@@ -104,14 +104,14 @@ function buildInpatientFloor(n = 2) {
           f.deco('cardiacMonitor', a + 2.3, cabZ, headRot);
           f.deco('iv', a + 2.3, midZ, 0);
           f.deco('cabinet', a + 0.4, cabZ, headRot);
-          f.deco('chair', b - 0.5, doorSideZ, 0);
+          f.deco('chair', b - 0.5, midZ, 90);
           break;
 
         case 8: // Habitación 208: Habitación con silla de ruedas estacionada
           f.deco('bed', a + 1.2, bedZ, headRot);
           f.deco('cabinet', a + 0.4, cabZ, headRot);
-          f.deco('wheelchair', b - 0.6, doorSideZ, 30);
-          f.deco('trash', a + 0.5, doorSideZ, 0);
+          f.deco('wheelchair', b - 0.6, midZ, 30);
+          f.deco('trash', a + 0.5, cabZ + 0.8, 0);
           break;
 
         case 9: // Habitación 209: Habitación de aislamiento
@@ -126,21 +126,21 @@ function buildInpatientFloor(n = 2) {
           f.deco('bed', a + 1.2, bedZ, headRot);
           f.deco('cabinet', a + 0.4, cabZ, headRot);
           f.deco('bench', b - 0.38, midZ, 90);
-          f.deco('shelf', a + 0.5, doorSideZ, headRot === 0 ? 180 : 0);
+          f.deco('shelf', a + 0.38, midZ, 270);
           break;
 
         case 11: // Habitación 211: Estación de medicación y curaciones
           f.deco('shelf', a + 1.5, cabZ, headRot);
           f.deco('cabinet', a + 0.38, midZ, 90);
           f.deco('sink', b - 0.62, midZ, 270);
-          f.deco('trash', a + 0.5, doorSideZ, 0);
+          f.deco('trash', a + 0.5, cabZ + 0.8, 0);
           break;
 
         case 12: // Habitación 212: Depósito de camillas de traslado
           f.deco('gurney', a + 1.0, midZ, 0);
           f.deco('wheelchair', b - 0.6, cabZ, 20);
           f.deco('shelf', b - 0.38, midZ, 90);
-          f.deco('trash', a + 0.5, doorSideZ, 0);
+          f.deco('trash', a + 0.5, cabZ + 0.8, 0);
           break;
       }
       roomIdx++;
@@ -169,8 +169,8 @@ function buildInpatientFloor(n = 2) {
   f.decal(14.5, 6, 'n', 'PABELLÓN 2 · INTERNACIÓN GENERAL', { w: 2.4, h: 0.4, y: 2.3, size: 70, fg: '#e8e0cc', bg: '#103828' });
   f.decal(24, 6, 'e', 'PISO 2', { w: 1.4, h: 0.5, y: 2.3, size: 120, fg: '#e8e0cc', bg: '#0f3a2a' });
 
-  [4, 10, 15, 20, 24].forEach((x, i) => f.light(x, 6, 24, 0xdfeee2, { unstable: i % 2 === 1 }));
-  f.ambient = 1.7; f.fog = 0.065;
+  [4, 10, 15, 20, 24].forEach((x, i) => f.light(x, 6, 15, 0xdfeee2, { unstable: i % 2 === 1 }));
+  f.ambient = 0.55; f.fog = 0.055;
   return f;
 }
 
@@ -284,8 +284,8 @@ function buildSurgicalFloor() {
   f.decal(14.5, 6, 'n', 'PABELLÓN 3 · QUIRÓFANO Y TERAPIA INTENSIVA', { w: 2.6, h: 0.4, y: 2.3, size: 70, fg: '#e8e0cc', bg: '#1c2e42' });
   f.decal(24, 6, 'e', 'PISO 3', { w: 1.4, h: 0.5, y: 2.3, size: 120, fg: '#e8e0cc', bg: '#0f3a2a' });
 
-  [4, 10, 15, 20, 24].forEach((x, i) => f.light(x, 6, 22, 0xc8e6f0, { unstable: i % 2 === 1 }));
-  f.ambient = 1.4; f.fog = 0.070;
+  [4, 10, 15, 20, 24].forEach((x, i) => f.light(x, 6, 14, 0xc8e6f0, { unstable: i % 2 === 1 }));
+  f.ambient = 0.45; f.fog = 0.060;
   return f;
 }
 
@@ -369,18 +369,19 @@ export function buildFloor(n) {
     f.deco('desk', 3.6, 6, 90, { len: 8.2 });
     f.deco('chair', 4.8, 5.8, 270); // Silla ergonómica de Clara
 
-    // Tras el mostrador (pared este de recepción)
-    f.deco('locker', 7.8, 3.2, 270, { hiding: true });
-    f.deco('locker', 7.8, 4.2, 270, { hiding: true });
-    f.deco('shelf', 7.8, 5.4, 270);
-    f.deco('cabinet', 7.8, 6.8, 270);
-    f.deco('waterDispenser', 7.6, 8.2, 270);
+    // Tras el mostrador (pared este de recepción, dejando despejado el acceso al pasillo z=5 a z=7)
+    f.deco('locker', 7.8, 2.5, 270, { hiding: true });
+    f.deco('locker', 7.8, 3.5, 270, { hiding: true });
+    f.deco('cabinet', 7.8, 8.5, 270);
+    f.deco('waterDispenser', 7.6, 9.8, 270);
 
     // Sala de espera: filas de asientos y elementos confort
     f.deco('bench', 1.6, 2.2, 0);
     f.deco('bench', 1.6, 3.8, 0);
     f.deco('bench', 1.6, 8.2, 0);
     f.deco('bench', 1.6, 9.8, 0);
+    f.deco('bench', 3.2, 3.2, 0);
+    f.deco('bench', 3.2, 8.8, 180);
     f.deco('bench', 4.5, 1.4, 90);
     f.deco('bench', 4.5, 10.6, 90);
 
@@ -427,22 +428,22 @@ export function buildFloor(n) {
     f.deco('trash', 10.2, 0.60, 0);
     f.deco('shelf', 13.38, 2.5, 270);
 
-    // 2. Archivo Clínico (Pared norte z = 0.5, sur z = 4.5)
+    // 2. Archivo Clínico (Pared norte z = 0.5, sur z = 4.5, puerta en x=16 z=5 despejada)
     f.deco('cabinet', 15.4, 0.62, 0);
     f.deco('cabinet', 16.6, 0.62, 0);
     f.deco('cabinet', 17.8, 0.62, 0);
-    f.deco('shelf', 15.4, 4.38, 180);
-    f.deco('shelf', 17.6, 4.38, 180);
+    f.deco('shelf', 15.38, 2.2, 270);
+    f.deco('shelf', 17.62, 2.2, 90);
     f.deco('desk', 16.5, 2.2, 0, { len: 2.0, small: true });
     f.deco('chair', 16.5, 2.8, 180);
 
-    // 3. Seguridad (Pared norte z = 0.5, este x = 23.5)
+    // 3. Seguridad (Pared norte z = 0.5, este x = 23.5, puerta en x=21 z=5 despejada)
     f.deco('desk', 21.5, 0.72, 0, { len: 2.2, small: true });
     f.deco('chair', 21.5, 1.35, 180);
     f.deco('cardiacMonitor', 22.6, 0.72, 270);
     f.deco('waterDispenser', 20.2, 0.65, 0);
     f.deco('locker', 23.38, 2.5, 270, { hiding: true });
-    f.deco('shelf', 21.5, 4.38, 180);
+    f.deco('shelf', 22.62, 3.2, 90);
     f.deco('trash', 20.2, 1.8, 0);
 
     // 4. Consultorio 1 (Pared sur z = 11.5)
@@ -455,9 +456,9 @@ export function buildFloor(n) {
     f.deco('chair', 12.2, 8.2, 0);
     f.deco('cabinet', 13.38, 9.5, 270);
 
-    // 5. Almacén General (Pared norte z = 7.5, sur z = 11.5)
-    f.deco('shelf', 15.5, 7.62, 0);
-    f.deco('shelf', 17.4, 7.62, 0);
+    // 5. Almacén General (Pared norte z = 7.5, sur z = 11.5, puerta en x=16 z=7 despejada)
+    f.deco('shelf', 15.38, 9.5, 270);
+    f.deco('shelf', 17.62, 9.5, 90);
     f.deco('crate', 15.5, 11.2, 15);
     f.deco('crate', 16.5, 11.2, 45);
     f.deco('gurney', 17.5, 11.10, 180);
@@ -465,7 +466,7 @@ export function buildFloor(n) {
     f.deco('trash', 18.38, 9.5, 270);
 
     // 6. Farmacia (Pared norte z = 7.5, sur z = 11.5, oeste x = 19.5, este x = 23.5)
-    f.deco('cabinet', 22.4, 7.62, 0); // Armario de medicamentos con cerradura digital
+    f.deco('cabinet', 22.4, 7.62, 0);
     f.deco('shelf', 19.62, 9.0, 90);
     f.deco('shelf', 19.62, 10.2, 90);
     f.deco('desk', 23.35, 10.0, 90, { len: 2.0, small: true });
@@ -474,12 +475,12 @@ export function buildFloor(n) {
     f.deco('waterDispenser', 23.35, 8.0, 90);
     f.deco('trash', 20.2, 11.38, 180);
 
-    // Iluminación
-    f.light(3.6, 5.0, 36, 0xfff4e0); f.light(3.6, 7.0, 36, 0xfff4e0);
-    f.light(1.8, 6.0, 26, 0xdfeee2); f.light(6, 8.8, 22);
-    f.light(12, 6, 24); f.light(17, 6, 24, 0xdfeee2, { unstable: true }); f.light(22, 6, 24);
-    f.light(16.5, 2.5, 14, 0xffe6b8); f.light(21.5, 2.5, 14, 0xffe6b8);
-    f.ambient = 2.4; f.fog = 0.050;
+    // Iluminación equilibrada y cinematográfica
+    f.light(3.6, 5.0, 16, 0xffeedd); f.light(3.6, 7.0, 16, 0xffeedd);
+    f.light(1.8, 6.0, 14, 0xdfeee2); f.light(6, 8.8, 12);
+    f.light(12, 6, 15); f.light(17, 6, 15, 0xdfeee2, { unstable: true }); f.light(22, 6, 15);
+    f.light(16.5, 2.5, 10, 0xffe6b8); f.light(21.5, 2.5, 10, 0xffe6b8);
+    f.ambient = 0.65; f.fog = 0.045;
     return f;
   }
   if (n === 2) return buildInpatientFloor(2);
