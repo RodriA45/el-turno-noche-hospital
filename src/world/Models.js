@@ -1,92 +1,18 @@
 import * as THREE from 'three';
-import { faceTexture, clothTexture, noteTex, signTexture, paint, xrayTexture, ecgTexture, cardboardBoxTexture, curtainTexture, crtScreenTexture } from './Textures.js';
+import { Builder, leafGeometry, rng } from './Builder.js';
+import { M } from './Materials.js';
+import { faceTexture, clothTexture, noteTex, paint } from './Textures.js';
 
-const mats = {};
-function M(name) {
-  if (mats[name]) return mats[name];
-  const std = (o) => {
-    const mat = new THREE.MeshStandardMaterial(o);
-    mat.userData.isShared = true;
-    return mat;
-  };
-  const defs = {
-    metal: () => std({ color: 0x9fa4a8, metalness: 0.88, roughness: 0.32 }),
-    chrome: () => std({ color: 0xd8dde2, metalness: 0.95, roughness: 0.15 }),
-    darkMetal: () => std({ color: 0x24272a, metalness: 0.75, roughness: 0.45 }),
-    brass: () => std({ color: 0xb5923b, metalness: 0.85, roughness: 0.35 }),
-    paint: () => std({ color: 0xa4a294, roughness: 0.80 }),
-    casingMat: () => std({ color: 0x969284, roughness: 0.75 }),
-    keyboardMat: () => std({ color: 0x827e72, roughness: 0.85 }),
-    sheet: () => std({ color: 0xc4bead, roughness: 0.95 }),
-    dirtySheet: () => std({ color: 0xaba080, roughness: 0.95 }),
-    wood: () => std({ color: 0x483220, roughness: 0.65 }),
-    lightWood: () => std({ color: 0x826442, roughness: 0.6 }),
-    plastic: () => std({ color: 0x3b4e56, roughness: 0.45 }),
-    rubber: () => std({ color: 0x141414, roughness: 0.92 }),
-    glass: () => std({ color: 0xa8c5cc, roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.35 }),
-    screen: () => {
-      const mat = new THREE.MeshStandardMaterial({
-        map: crtScreenTexture(),
-        roughness: 0.28,
-        metalness: 0.08,
-        emissive: new THREE.Color(0x1a4528),
-        emissiveIntensity: 0.55,
-      });
-      mat.userData.isShared = true;
-      return mat;
-    },
-    screenOff: () => std({ color: 0x050707, roughness: 0.15, metalness: 0.2 }),
-    fabric: () => std({ color: 0x36454d, roughness: 0.95 }),
-    leaf: () => std({ color: 0x384a28, roughness: 0.9 }),
-    soil: () => std({ color: 0x241810, roughness: 1 }),
-    cardboard: () => std({ color: 0x856942, roughness: 0.9 }),
-    white: () => std({ color: 0xc8c6bd, roughness: 0.65 }),
-    red: () => std({ color: 0x801010, roughness: 0.7 }),
-    scalpelSteel: () => std({ color: 0xe8ecf0, metalness: 0.98, roughness: 0.12 }),
-    hospitalGreen: () => std({ color: 0x769584, roughness: 0.62 }),
-    porcelain: () => std({ color: 0xdedece, roughness: 0.28, metalness: 0.03 }),
-    leather: () => std({ color: 0x221612, roughness: 0.72 }),
-    hazardYellow: () => std({ color: 0xd69e16, roughness: 0.55 }),
-    curtain: () => std({ map: curtainTexture(), roughness: 0.95 }),
-    bloodMat: () => std({ color: 0x540808, roughness: 0.35, metalness: 0.1 }),
-    cardboardMat: () => std({ map: cardboardBoxTexture(), roughness: 0.88 }),
-    xrayMat: () => {
-      const mat = new THREE.MeshStandardMaterial({
-        map: xrayTexture(),
-        roughness: 0.25,
-        metalness: 0.05,
-        emissive: new THREE.Color(0x48647a),
-        emissiveIntensity: 0.50,
-      });
-      mat.userData.isShared = true;
-      return mat;
-    },
-    ecgMat: () => {
-      const mat = new THREE.MeshStandardMaterial({
-        map: ecgTexture(),
-        roughness: 0.25,
-        metalness: 0.05,
-        emissive: new THREE.Color(0x184824),
-        emissiveIntensity: 0.55,
-      });
-      mat.userData.isShared = true;
-      return mat;
-    },
-  };
-  return (mats[name] = defs[name]());
-}
+// =============================================================================
+// MODELOS 3D DEL HOSPITAL
+// Todos los props se construyen con Builder: la geometría se fusiona por
+// material (3-8 draw calls por prop en vez de 60+), con biseles reales, tubos,
+// superficies de revolución y curvas. Convención: origen en el suelo, "frente"
+// del mueble hacia +Z, los objetos de pared tienen su espalda en z ≈ -0.05.
+// =============================================================================
 
-const box = (w, h, d, mat, x = 0, y = 0, z = 0, g = null) => {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), typeof mat === 'string' ? M(mat) : mat);
-  m.position.set(x, y, z); m.castShadow = m.receiveShadow = true;
-  if (g) g.add(m); return m;
-};
-
-const cyl = (r1, r2, h, mat, x = 0, y = 0, z = 0, g = null, seg = 14) => {
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(r1, r2, h, seg), typeof mat === 'string' ? M(mat) : mat);
-  m.position.set(x, y, z); m.castShadow = m.receiveShadow = true;
-  if (g) g.add(m); return m;
-};
+const B = () => new Builder(M);
+const PI = Math.PI;
 
 export const FOOT = {
   bed: [1.2, 2.3, true], gurney: [0.9, 2.2, true], wheelchair: [0.8, 1.0, true], desk: [2.5, 1.1, true],
@@ -98,704 +24,781 @@ export const FOOT = {
   curtainDivider: [2.4, 0.1, false],
 };
 
+/** Ruedita giratoria (horquilla + rueda) alrededor de un eje X. */
+function caster(b, x, z, r = 0.05, y = r) {
+  b.cyl(r, r, r * 0.8, 'rubber', x, y, z, { rz: PI / 2, seg: 14 });
+  b.cyl(r * 0.45, r * 0.45, r * 0.9, 'chrome', x, y, z, { rz: PI / 2, seg: 8 });
+  b.box(r * 0.2, r * 1.2, r * 1.5, 'metal', x, y + r * 0.9, z);
+}
+
 // =========================================================================
-// CAMA DE HOSPITAL REALISTA
+// CAMA DE HOSPITAL
 // =========================================================================
 export function bed(dirty = true) {
-  const g = new THREE.Group();
-  // Patas de acero cromado con ruedas giratorias
-  for (const [x, z] of [[-0.52, -1.02], [0.52, -1.02], [-0.52, 1.02], [0.52, 1.02]]) {
-    cyl(0.024, 0.024, 0.55, 'chrome', x, 0.32, z, g, 10);
-    const w = cyl(0.055, 0.055, 0.04, 'rubber', x, 0.055, z, g, 12);
-    w.rotation.z = Math.PI / 2;
-    // Pedal de freno de rueda
-    box(0.03, 0.015, 0.06, 'metal', x, 0.07, z + 0.03, g);
+  const b = B();
+  const sheet = dirty ? 'dirtySheet' : 'sheet';
+  // Patas y ruedas
+  for (const x of [-0.5, 0.5]) for (const z of [-1.0, 1.0]) {
+    b.tube([x, 0.12, z], [x, 0.52, z], 0.022, 'chrome');
+    caster(b, x, z, 0.055);
   }
-
-  // Bastidor de acero
-  box(1.08, 0.06, 2.12, 'chrome', 0, 0.58, 0, g);
-
-  // Barandillas laterales de protección abatibles
-  for (const s of [-0.55, 0.55]) {
-    box(0.02, 0.02, 1.3, 'chrome', s, 0.92, 0.1, g);
-    box(0.02, 0.02, 1.3, 'chrome', s, 0.78, 0.1, g);
-    for (let r = -0.55; r <= 0.65; r += 0.3) {
-      box(0.016, 0.16, 0.016, 'chrome', s, 0.85, r + 0.1, g);
-    }
+  // Bastidor
+  b.box(1.04, 0.05, 2.06, 'metal', 0, 0.55, 0, { r: 0.015 });
+  b.box(0.9, 0.04, 1.9, 'darkMetal', 0, 0.585, 0);
+  b.tube([-0.5, 0.52, -1.0], [-0.5, 0.52, 1.0], 0.02, 'chrome');
+  b.tube([0.5, 0.52, -1.0], [0.5, 0.52, 1.0], 0.02, 'chrome');
+  // Colchón de vinilo
+  b.box(0.98, 0.15, 2.0, 'mattress', 0, 0.685, 0, { r: 0.045, rs: 3 });
+  // Sábana tendida (cubre 2/3, con un pliegue doblado)
+  b.box(1.0, 0.045, 1.38, sheet, 0, 0.78, 0.30, { r: 0.02, rs: 2 });
+  b.box(1.02, 0.07, 0.30, sheet, 0, 0.80, -0.42, { r: 0.03, rs: 2 });
+  // Almohada abultada
+  b.box(0.58, 0.12, 0.38, sheet, 0, 0.82, -0.76, { r: 0.05, rs: 3, rx: 0.07 });
+  // Cabecero y piecero (paneles esmaltados con marco cromado)
+  for (const [z, h] of [[-1.04, 0.56], [1.04, 0.42]]) {
+    const top = 0.56 + h;
+    b.box(1.04, h - 0.1, 0.035, 'enamel', 0, 0.56 + (h - 0.1) / 2 + 0.05, z, { r: 0.012 });
+    b.tube([-0.52, 0.5, z], [-0.52, top, z], 0.022, 'chrome');
+    b.tube([0.52, 0.5, z], [0.52, top, z], 0.022, 'chrome');
+    b.tube([-0.52, top, z], [0.52, top, z], 0.02, 'chrome');
   }
-
-  // Cabecero y piecero tubulares redondeados
-  box(1.08, 0.56, 0.04, 'chrome', 0, 0.86, -1.04, g);
-  box(1.08, 0.44, 0.04, 'chrome', 0, 0.80, 1.04, g);
-
-  // Colchón clínico con hondonada
-  box(1.02, 0.18, 2.04, dirty ? 'dirtySheet' : 'sheet', 0, 0.7, 0, g);
-
-  // Almohada mullida con pliegues
-  const pillow = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.11, 0.36), M('sheet'));
-  pillow.position.set(0, 0.83, -0.74);
-  pillow.rotation.x = 0.08;
-  pillow.castShadow = true;
-  g.add(pillow);
-
-  // Sábana doblada realista
-  const blanket = box(1.04, 0.08, 1.35, dirty ? 'dirtySheet' : 'sheet', 0, 0.81, 0.32, g);
-  blanket.rotation.x = 0.02;
-
-  return g;
+  // Barandillas laterales abatibles
+  for (const s of [-1, 1]) {
+    const x = s * 0.55;
+    b.tube([x, 0.95, -0.55], [x, 0.95, 0.65], 0.016, 'chrome');
+    b.tube([x, 0.80, -0.55], [x, 0.80, 0.65], 0.016, 'chrome');
+    for (const z of [-0.55, -0.15, 0.25, 0.65]) b.tube([x, 0.70, z], [x, 0.95, z], 0.014, 'chrome');
+  }
+  // Manivela del pie
+  b.tube([0.0, 0.5, 1.07], [0.0, 0.5, 1.2], 0.012, 'chrome');
+  b.box(0.1, 0.02, 0.02, 'chrome', 0, 0.5, 1.2);
+  return b.build();
 }
 
 // =========================================================================
-// CAMILLA DE URGENCIAS REALISTA
+// CAMILLA DE URGENCIAS
 // =========================================================================
 export function gurney({ corpse = false } = {}) {
-  const g = new THREE.Group();
-  // Chasis tijera plegable en X de tubos de acero
-  for (const s of [-0.34, 0.34]) {
-    const x1 = box(0.03, 0.68, 0.03, 'metal', s, 0.42, 0, g); x1.rotation.x = 0.45;
-    const x2 = box(0.03, 0.68, 0.03, 'metal', s, 0.42, 0, g); x2.rotation.x = -0.45;
-    for (const z of [-0.85, 0.85]) {
-      const w = cyl(0.065, 0.065, 0.045, 'rubber', s, 0.065, z, g, 12);
-      w.rotation.z = Math.PI / 2;
-    }
+  const b = B();
+  const sheet = corpse ? 'dirtySheet' : 'sheet';
+  // Chasis en X (tijera) + base inferior + ruedas
+  for (const s of [-0.3, 0.3]) {
+    b.tube([s, 0.14, -0.62], [s, 0.74, 0.62], 0.018, 'metal');
+    b.tube([s, 0.14, 0.62], [s, 0.74, -0.62], 0.018, 'metal');
+    b.tube([s, 0.12, -0.8], [s, 0.12, 0.8], 0.02, 'metal');
+    caster(b, s, -0.8, 0.06); caster(b, s, 0.8, 0.06);
   }
-
-  // Bandeja de acero inoxidable
-  box(0.76, 0.05, 2.05, 'metal', 0, 0.78, 0, g);
-  // Colchoneta clínica
-  box(0.72, 0.09, 2.0, corpse ? 'dirtySheet' : 'sheet', 0, 0.85, 0, g);
-
-  // Barandillas laterales cromadas de protección
-  for (const s of [-0.38, 0.38]) {
-    box(0.02, 0.02, 1.4, 'chrome', s, 0.98, 0, g);
-    for (let r = -0.6; r <= 0.6; r += 0.3) {
-      box(0.016, 0.14, 0.016, 'chrome', s, 0.91, r, g);
-    }
+  b.tube([-0.3, 0.12, -0.8], [0.3, 0.12, -0.8], 0.016, 'metal');
+  b.tube([-0.3, 0.12, 0.8], [0.3, 0.12, 0.8], 0.016, 'metal');
+  b.box(0.7, 0.04, 2.0, 'metal', 0, 0.76, 0, { r: 0.012 });
+  // Colchoneta
+  b.box(0.68, 0.08, 1.96, 'mattress', 0, 0.82, 0, { r: 0.03, rs: 3 });
+  b.box(0.66, 0.04, 1.35, sheet, 0, 0.885, 0.3, { r: 0.015 });
+  b.box(0.5, 0.09, 0.32, sheet, 0, 0.9, -0.72, { r: 0.04, rs: 3 });
+  // Barandillas
+  for (const s of [-1, 1]) {
+    const x = s * 0.37;
+    b.tube([x, 0.97, -0.65], [x, 0.97, 0.65], 0.014, 'chrome');
+    b.tube([x, 0.87, -0.65], [x, 0.87, 0.65], 0.012, 'chrome');
+    for (const z of [-0.65, 0, 0.65]) b.tube([x, 0.86, z], [x, 0.97, z], 0.012, 'chrome');
   }
-
-  // Almohada clínica
-  const pillow = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 0.32), M(corpse ? 'dirtySheet' : 'sheet'));
-  pillow.position.set(0, 0.92, -0.75);
-  g.add(pillow);
-
-  // Silueta de cuerpo amortajado bajo la sábana SOLO SI corpse = true
+  // Correas
+  b.box(0.76, 0.012, 0.07, 'vinyl', 0, 0.9, 0.2, { r: 0.004 });
+  b.box(0.76, 0.012, 0.07, 'vinyl', 0, 0.9, 0.62, { r: 0.004 });
   if (corpse) {
-    const body = new THREE.Group();
-    box(0.44, 0.22, 0.78, 'dirtySheet', 0, 1.0, 0.18, body);
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.14, 14, 12), M('dirtySheet'));
-    head.position.set(0, 0.98, -0.58);
-    head.scale.set(0.9, 1.1, 1.0);
-    head.castShadow = true;
-    body.add(head);
-    box(0.38, 0.19, 0.58, 'dirtySheet', 0, 0.94, 0.82, body);
-    g.add(body);
+    // Cuerpo amortajado bajo la sábana
+    b.capsule(0.19, 0.5, sheet, 0, 1.0, 0.22, { rx: PI / 2, sx: 1.0, sy: 1, sz: 0.55 });
+    b.sphere(0.115, sheet, 0, 1.0, -0.5, { sx: 0.9, sy: 0.95, sz: 1.1 });
+    b.capsule(0.12, 0.45, sheet, 0, 0.97, 0.82, { rx: PI / 2, sz: 0.55 });
+    b.box(0.5, 0.04, 0.7, sheet, 0, 0.97, 0.45, { r: 0.015 });
   }
-
-  return g;
+  return b.build();
 }
 
 // =========================================================================
-// SILLA DE RUEDAS DETALLADA
+// SILLA DE RUEDAS
 // =========================================================================
 export function wheelchair() {
-  const g = new THREE.Group();
-  // Asiento y respaldo de vinilo negro con costuras
-  box(0.54, 0.06, 0.52, 'fabric', 0, 0.52, 0, g);
-  box(0.54, 0.58, 0.06, 'fabric', 0, 0.83, -0.25, g);
-
-  // Asas traseras de empuje con empuñaduras de goma
-  for (const s of [-0.24, 0.24]) {
-    cyl(0.016, 0.016, 0.35, 'chrome', s, 1.12, -0.27, g, 8);
-    const grip = cyl(0.022, 0.022, 0.11, 'rubber', s, 1.25, -0.27, g, 10);
-    grip.rotation.x = Math.PI / 2;
-  }
-
-  // Ruedas grandes traseras con llanta y radios cromados
+  const b = B();
+  // Asiento y respaldo de vinilo
+  b.box(0.5, 0.05, 0.46, 'vinyl', 0, 0.5, 0.0, { r: 0.02 });
+  b.box(0.5, 0.42, 0.05, 'vinyl', 0, 0.78, -0.25, { r: 0.02, rx: -0.08 });
+  // Chasis tubular
   for (const s of [-1, 1]) {
-    const wheelGroup = new THREE.Group();
-    wheelGroup.position.set(s * 0.32, 0.34, -0.06);
-
-    const tire = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.022, 10, 32), M('rubber'));
-    tire.rotation.y = Math.PI / 2; tire.castShadow = true; wheelGroup.add(tire);
-
-    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.012, 8, 28), M('chrome'));
-    rim.rotation.y = Math.PI / 2; wheelGroup.add(rim);
-
-    // Radios de rueda
-    for (let a = 0; a < Math.PI; a += Math.PI / 6) {
-      const spoke = box(0.006, 0.62, 0.006, 'chrome', 0, 0, 0, wheelGroup);
-      spoke.rotation.x = a;
+    const x = s * 0.26;
+    b.tube([x, 0.48, -0.22], [x, 0.48, 0.25], 0.014, 'chrome');
+    b.tube([x, 0.48, 0.25], [x, 0.18, 0.36], 0.014, 'chrome');          // soporte delantero
+    b.tube([x, 0.48, -0.24], [x, 1.02, -0.3], 0.014, 'chrome');         // montante del respaldo
+    b.tube([x, 1.02, -0.3], [x, 1.02, -0.42], 0.014, 'chrome');         // asa
+    b.cyl(0.021, 0.021, 0.12, 'rubber', x, 1.02, -0.44, { rx: PI / 2 });
+    // Apoyabrazos
+    b.box(0.05, 0.035, 0.34, 'rubber', x * 1.02, 0.72, 0.0, { r: 0.012 });
+    b.tube([x, 0.5, -0.12], [x, 0.71, -0.12], 0.011, 'chrome');
+    b.tube([x, 0.5, 0.13], [x, 0.71, 0.13], 0.011, 'chrome');
+    // Rueda trasera grande con aro propulsor y radios
+    const wx = s * 0.33, wy = 0.3, wz = -0.1;
+    b.torus(0.29, 0.016, 'rubber', wx, wy, wz, { ry: PI / 2, seg: 36, tseg: 8 });
+    b.torus(0.255, 0.006, 'chrome', wx + s * 0.04, wy, wz, { ry: PI / 2, seg: 32, tseg: 6 });
+    for (let k = 0; k < 8; k++) {
+      const a = (k / 8) * PI * 2;
+      b.tube([wx, wy, wz], [wx, wy + Math.sin(a) * 0.28, wz + Math.cos(a) * 0.28], 0.0035, 'chrome', 4);
     }
-
-    const hub = cyl(0.035, 0.035, 0.05, 'chrome', 0, 0, 0, wheelGroup, 10);
-    hub.rotation.z = Math.PI / 2;
-    g.add(wheelGroup);
-
-    // Reposabrazos acolchados
-    box(0.06, 0.04, 0.42, 'rubber', s * 0.28, 0.68, 0.02, g);
-    box(0.02, 0.18, 0.02, 'chrome', s * 0.28, 0.58, -0.15, g);
-    box(0.02, 0.18, 0.02, 'chrome', s * 0.28, 0.58, 0.18, g);
-
-    // Ruedas delanteras giratorias
-    const fork = cyl(0.014, 0.014, 0.22, 'chrome', s * 0.22, 0.18, 0.38, g, 8);
-    const sw = cyl(0.07, 0.07, 0.04, 'rubber', s * 0.22, 0.07, 0.38, g, 12);
-    sw.rotation.z = Math.PI / 2;
-
-    // Reposapiés metálicos
-    box(0.14, 0.02, 0.16, 'darkMetal', s * 0.16, 0.14, 0.52, g);
-    box(0.02, 0.32, 0.02, 'chrome', s * 0.22, 0.28, 0.44, g).rotation.x = -0.55;
+    b.cyl(0.03, 0.03, 0.06, 'chrome', wx, wy, wz, { rz: PI / 2, seg: 10 });
+    b.tube([x, 0.46, -0.1], [wx - s * 0.02, wy, wz], 0.012, 'metal');
+    // Rueda delantera giratoria
+    b.tube([x, 0.26, 0.36], [x, 0.14, 0.4], 0.011, 'chrome');
+    b.cyl(0.06, 0.06, 0.035, 'rubber', s * 0.25, 0.06, 0.4, { rz: PI / 2, seg: 14 });
+    // Reposapiés
+    b.tube([x, 0.2, 0.36], [x * 0.75, 0.13, 0.55], 0.012, 'chrome');
+    b.box(0.13, 0.02, 0.15, 'darkMetal', x * 0.7, 0.12, 0.58, { r: 0.008, ry: s * 0.15 });
   }
-
-  return g;
+  b.tube([-0.26, 0.2, 0.3], [0.26, 0.2, 0.3], 0.012, 'chrome');
+  return b.build();
 }
 
 // =========================================================================
-// MOSTRADOR DE RECEPCIÓN ULTRA DETALLADO CON CRT, TELÉFONO Y EXPEDIENTES
+// MOSTRADOR DE RECEPCIÓN / ESCRITORIO
 // =========================================================================
-export function deskModel({ len = 2.4, small = false } = {}) {
-  const g = new THREE.Group();
-  const h = small ? 0.76 : 1.12;
+function crtMonitor(b, x, y, z, on = true, rot = 0) {
+  const o = { ry: rot };
+  const c = Math.cos(rot), s = Math.sin(rot);
+  const P = (px, py, pz) => [x + px * c + pz * s, y + py, z - px * s + pz * c];
+  // Base
+  b.cyl(0.11, 0.13, 0.03, 'casingMat', ...P(0, 0.015, 0), { seg: 20, ry: rot });
+  // Bisel frontal y carcasa trasera troncopiramidal
+  b.box(0.5, 0.42, 0.1, 'casingMat', ...P(0, 0.26, 0.12), { r: 0.025, ry: rot });
+  b.box(0.42, 0.36, 0.14, 'casingMat', ...P(0, 0.27, 0.0), { r: 0.03, ry: rot });
+  b.box(0.3, 0.26, 0.11, 'casingMat', ...P(0, 0.27, -0.11), { r: 0.03, ry: rot });
+  // Pantalla (levemente adelantada)
+  b.plane(0.4, 0.32, on ? 'screen' : 'screenOff', ...P(0, 0.265, 0.172), { ry: rot });
+  // Marco interior oscuro
+  b.box(0.42, 0.34, 0.01, 'darkMetal', ...P(0, 0.265, 0.168), { ry: rot });
+  // Botón + LED
+  b.box(0.035, 0.015, 0.012, 'darkMetal', ...P(0.17, 0.07, 0.172), { ry: rot });
+  b.box(0.012, 0.012, 0.01, on ? 'ledGreen' : 'ledRed', ...P(0.13, 0.07, 0.172), { ry: rot });
+  // Ranuras de ventilación
+  for (let i = 0; i < 5; i++) b.box(0.2, 0.01, 0.01, 'darkMetal', ...P(0, 0.2 + i * 0.03, -0.166), { ry: rot, rx: 0 });
+  // Teclado
+  b.box(0.44, 0.025, 0.16, 'keyboardMat', ...P(0, 0.0125, 0.36), { r: 0.008, ry: rot });
+  b.box(0.4, 0.014, 0.12, 'keyCap', ...P(0, 0.03, 0.355), { ry: rot, rx: -0.06 });
+  b.box(0.14, 0.012, 0.025, 'keyboardMat', ...P(0, 0.04, 0.4), { ry: rot });
+}
 
-  // Cuerpo del mueble de madera de nogal barnizada con zócalo
-  box(len, h, 0.88, 'wood', 0, h / 2, 0, g);
-  // Molduras decorativas horizontales
-  box(len + 0.02, 0.03, 0.90, 'darkMetal', 0, h * 0.5, 0, g);
-  // Encimera principal de madera pulida con esquinas biseladas
-  box(len + 0.14, 0.07, 1.02, 'lightWood', 0, h + 0.035, 0, g);
+function phoneModel(b, x, y, z, rot = 0) {
+  b.box(0.22, 0.05, 0.2, 'darkMetal', x, y + 0.025, z, { r: 0.015, ry: rot });
+  b.box(0.1, 0.015, 0.1, 'paint', x, y + 0.055, z, { ry: rot });
+  // Auricular
+  const c = Math.cos(rot), s = Math.sin(rot);
+  const px = x + 0.0 * c, pz = z - 0.0 * s;
+  b.capsule(0.022, 0.18, 'darkMetal', px, y + 0.085, pz, { rz: PI / 2, ry: rot, cs: 3, seg: 8 });
+  b.sphere(0.03, 'darkMetal', px - 0.1 * c, y + 0.085, pz + 0.1 * s, { seg: 8 });
+  b.sphere(0.03, 'darkMetal', px + 0.1 * c, y + 0.085, pz - 0.1 * s, { seg: 8 });
+}
+
+export function deskModel({ len = 2.4, small = false } = {}) {
+  const b = B();
+  const g = new THREE.Group();
+  const h = small ? 0.74 : 1.1;
+
+  // Cuerpo del mueble: zócalo, laterales con cajoneras y paneles hundidos
+  b.box(len, 0.07, 0.8, 'darkMetal', 0, 0.035, 0.0);
+  b.box(len, h - 0.07, 0.84, 'wood', 0, 0.07 + (h - 0.07) / 2, 0, { r: 0.012 });
+  // Paneles frontales hundidos
+  const nPan = Math.max(2, Math.round(len / 0.9));
+  const pw = (len - 0.1) / nPan;
+  for (let i = 0; i < nPan; i++) {
+    const px = -len / 2 + 0.05 + pw * (i + 0.5);
+    b.box(pw - 0.07, h - 0.3, 0.02, 'lightWood', px, h * 0.5 + 0.02, 0.43, { r: 0.006 });
+    if (small && i % 2 === 0) b.box(0.14, 0.02, 0.02, 'brushed', px, h - 0.2, 0.455, { r: 0.008 });
+  }
+  b.box(len + 0.02, 0.025, 0.86, 'darkMetal', 0, h - 0.04, 0);
+  // Encimera con borde redondeado
+  b.box(len + 0.12, 0.06, 0.98, 'lightWood', 0, h + 0.03, 0.0, { r: 0.02, rs: 3 });
 
   if (!small) {
-    // Columnas metálicas esbeltas de soporte para el mostrador de recepción
-    const postY = h + 0.38;
-    const postMat = 'chrome';
-    cyl(0.024, 0.024, 0.76, postMat, -len / 2 + 0.12, postY, -0.44, g, 10);
-    cyl(0.024, 0.024, 0.76, postMat, len / 2 - 0.12, postY, -0.44, g, 10);
-    cyl(0.024, 0.024, 0.76, postMat, -1.9, postY, -0.44, g, 10);
-    cyl(0.024, 0.024, 0.76, postMat, 1.9, postY, -0.44, g, 10);
-
-    // Viga superior horizontal de latón pulido
-    box(len, 0.04, 0.06, 'brass', 0, h + 0.76, -0.44, g);
-
-    // Mamparas de cristal de seguridad en los laterales (dejando el centro de 3.8m COMPLETAMENTE DESPEJADO para hablar y ver claramente a los personajes)
+    const top = h + 0.06;
+    // Mostrador alto para visitantes (frente) con borde
+    b.box(len + 0.1, 0.05, 0.26, 'lightWood', 0, top + 0.045, 0.62, { r: 0.015 });
+    b.box(len + 0.06, 0.06, 0.03, 'wood', 0, h - 0.0, 0.5, { r: 0.008 });
+    // Mamparas de cristal con columnas cromadas y riel de latón
     const wingW = Math.max(0.4, (len - 3.8) / 2);
     const wingX = len / 2 - wingW / 2;
-    // Cristal izquierdo
-    const paneL = new THREE.Mesh(new THREE.BoxGeometry(wingW, 0.68, 0.015), M('glass'));
-    paneL.position.set(-wingX, h + 0.38, -0.44); g.add(paneL);
-    // Cristal derecho
-    const paneR = new THREE.Mesh(new THREE.BoxGeometry(wingW, 0.68, 0.015), M('glass'));
-    paneR.position.set(wingX, h + 0.38, -0.44); g.add(paneR);
-
-    // Mostrador frontal elevado para visitantes con borde biselado
-    box(len + 0.12, 0.05, 0.28, 'lightWood', 0, h + 0.08, -0.56, g);
-
-    // Lámpara de escritorio articulada de latón con luz cálida sutil
-    const lamp = new THREE.Group();
-    lamp.position.set(0.65, h + 0.07, 0.2);
-    cyl(0.09, 0.09, 0.02, 'brass', 0, 0.01, 0, lamp);
-    cyl(0.012, 0.012, 0.35, 'brass', 0, 0.18, 0, lamp);
-    const shade = cyl(0.08, 0.14, 0.12, 'brass', 0, 0.38, 0.05, lamp);
-    shade.rotation.x = 0.4;
-    const bulb = new THREE.PointLight(0xffdfb0, 1.1, 2.6, 2.0);
-    bulb.position.set(0, 0.35, 0.08);
-    lamp.add(bulb);
-    g.add(lamp);
-  }
-
-  // Monitores CRT de tubo retro
-  const n = small ? 1 : 2;
-  for (let i = 0; i < n; i++) {
-    const x = n === 1 ? -len * 0.25 : (-len / 4 + i * (len / 2));
-    const zz = small ? 0.05 : 0.15;
-    const yy = h + 0.07;
-
-    // Carcasa beige mate de monitor CRT de los años 80 con bisel curvado
-    const crt = new THREE.Group();
-    crt.position.set(x, yy, zz);
-
-    box(0.52, 0.44, 0.42, 'casingMat', 0, 0.22, 0, crt);
-    // Ranuras traseras de ventilación
-    for (let sl = 0.05; sl < 0.38; sl += 0.06) {
-      box(0.38, 0.015, 0.02, 'darkMetal', 0, sl, -0.21, crt);
+    const gy = top + 0.36;
+    for (const x of [-len / 2 + 0.06, -len / 2 + wingW, len / 2 - wingW, len / 2 - 0.06]) {
+      b.cyl(0.022, 0.022, 0.72, 'chrome', x, top + 0.36, -0.42, { seg: 12 });
+      b.sphere(0.03, 'brass', x, top + 0.74, -0.42, { seg: 10 });
     }
-
-    // Pantalla de fósforo verde con curva convexa y telemetría activa
-    const scrGeo = new THREE.PlaneGeometry(0.42, 0.33, 4, 4);
-    const scr = new THREE.Mesh(scrGeo, i === 1 && !small ? M('screenOff') : M('screen'));
-    scr.position.set(0, 0.23, 0.211);
-    crt.add(scr);
-
-    // Botones frontales del monitor y LED indicador
-    box(0.04, 0.02, 0.02, 'darkMetal', 0.16, 0.04, 0.215, crt);
-    const led = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.015, 0.015), new THREE.MeshStandardMaterial({ color: 0x228833, emissive: 0x116622, emissiveIntensity: 0.6 }));
-    led.position.set(0.12, 0.04, 0.216); crt.add(led);
-
-    // Base giratoria del monitor
-    box(0.24, 0.04, 0.24, 'casingMat', 0, 0.02, 0, crt);
-
-    // Teclado vintage con teclas individuales y acabado mate
-    const kb = new THREE.Group();
-    kb.position.set(0, 0, 0.36);
-    box(0.44, 0.028, 0.16, 'keyboardMat', 0, 0.014, 0, kb);
-    // Bloques de teclas oscuras
-    box(0.38, 0.015, 0.12, 'darkMetal', 0, 0.03, 0, kb);
-    // Barra espaciadora
-    box(0.14, 0.02, 0.02, 'keyboardMat', 0, 0.032, 0.05, kb);
-    crt.add(kb);
-
-    g.add(crt);
+    b.box(len, 0.035, 0.05, 'brass', 0, top + 0.72, -0.42, { r: 0.012 });
+    b.box(len, 0.03, 0.05, 'brass', 0, top + 0.02, -0.42, { r: 0.01 });
+    for (const sx of [-1, 1]) b.box(wingW - 0.06, 0.64, 0.012, 'glass', sx * wingX, gy, -0.42);
+    // Lámpara de escritorio de latón
+    const lx = 0.9, lz = 0.15;
+    b.cyl(0.085, 0.095, 0.022, 'brass', lx, top + 0.011, lz, { seg: 20 });
+    b.tube([lx, top, lz], [lx, top + 0.3, lz], 0.01, 'brass');
+    b.tube([lx, top + 0.3, lz], [lx + 0.1, top + 0.4, lz + 0.05], 0.008, 'brass');
+    b.cyl(0.04, 0.11, 0.12, 'brass', lx + 0.12, top + 0.38, lz + 0.06, { seg: 20, rx: 0.5 });
+    b.sphere(0.035, 'lampGlow', lx + 0.12, top + 0.34, lz + 0.075, { seg: 10 });
   }
 
-  // Teléfono analógico con cable helicoidal
-  const phone = new THREE.Group();
-  phone.position.set(len / 2 - 0.36, h + 0.07, 0.22);
-  box(0.24, 0.07, 0.22, 'darkMetal', 0, 0.035, 0, phone);
-  // Teclado numérico del teléfono
-  box(0.12, 0.015, 0.12, 'paint', -0.04, 0.075, 0.02, phone);
-  // Auricular
-  box(0.06, 0.05, 0.24, 'darkMetal', 0.06, 0.09, 0, phone);
-  g.add(phone);
-
-  // Libreta de guardia y expedientes en el mostrador
-  const clipboard = new THREE.Group();
-  clipboard.position.set(-len / 2 + 0.42, h + 0.07, 0.26);
-  box(0.28, 0.02, 0.36, 'wood', 0, 0.01, 0, clipboard);
-  box(0.24, 0.005, 0.32, 'sheet', 0, 0.02, 0.01, clipboard);
-  box(0.10, 0.025, 0.04, 'metal', 0, 0.025, -0.15, clipboard); // Clip metálico
-  clipboard.rotation.y = 0.25;
-  g.add(clipboard);
-
-  // Lapicero cilíndrico con bolígrafos y el hueco vacío del marcador robado
-  const penCup = new THREE.Group();
-  penCup.position.set(0.28, h + 0.07, 0.32);
-  cyl(0.045, 0.04, 0.11, 'plastic', 0, 0.055, 0, penCup, 12);
-  // Bolígrafos azules y rojos
-  cyl(0.006, 0.006, 0.14, 'darkMetal', -0.015, 0.1, 0.01, penCup, 6).rotation.z = 0.15;
-  cyl(0.006, 0.006, 0.14, 'red', 0.018, 0.1, -0.01, penCup, 6).rotation.z = -0.2;
-  // Mancha circular de tinta negra donde estaba apoyado el felpón robado
-  const inkStain = new THREE.Mesh(new THREE.CircleGeometry(0.025, 12), new THREE.MeshBasicMaterial({ color: 0x050505 }));
-  inkStain.rotation.x = -Math.PI / 2;
-  inkStain.position.set(0.08, 0.002, 0);
-  penCup.add(inkStain);
-  g.add(penCup);
-
-  // Taza de café con poso oscuro
-  const mug = new THREE.Group();
-  mug.position.set(-0.28, h + 0.07, 0.34);
-  cyl(0.04, 0.038, 0.09, 'white', 0, 0.045, 0, mug, 12);
-  const coffee = new THREE.Mesh(new THREE.CircleGeometry(0.034, 12), new THREE.MeshStandardMaterial({ color: 0x221208, roughness: 0.1 }));
-  coffee.rotation.x = -Math.PI / 2;
-  coffee.position.set(0, 0.075, 0);
-  mug.add(coffee);
-  g.add(mug);
-
-  return g;
+  // Equipos CRT
+  const n = small ? 1 : 2;
+  const topY = h + 0.06;
+  for (let i = 0; i < n; i++) {
+    const x = n === 1 ? -len * 0.22 : (-len / 4 + i * (len / 2));
+    crtMonitor(b, x, topY, small ? -0.1 : -0.05, !(i === 1 && !small), small ? 0 : 0);
+  }
+  // Teléfono
+  phoneModel(b, len / 2 - 0.35, topY, small ? 0.05 : 0.2, -0.25);
+  // Carpeta/libreta con sujetapapeles
+  const cx = -len / 2 + 0.42, cz = small ? 0.15 : 0.3;
+  b.box(0.28, 0.018, 0.36, 'wood', cx, topY + 0.009, cz, { ry: 0.25, r: 0.004 });
+  b.box(0.24, 0.006, 0.32, 'sheet', cx, topY + 0.021, cz, { ry: 0.25 });
+  b.box(0.09, 0.02, 0.035, 'brushed', cx - 0.0, topY + 0.028, cz - 0.15, { ry: 0.25, r: 0.006 });
+  // Lapicero, taza
+  b.cyl(0.045, 0.04, 0.11, 'plastic', 0.28, topY + 0.055, 0.32, { seg: 14 });
+  b.tube([0.28, topY + 0.1, 0.32], [0.265, topY + 0.2, 0.31], 0.006, 'darkMetal', 5);
+  b.tube([0.28, topY + 0.1, 0.32], [0.3, topY + 0.19, 0.335], 0.006, 'red', 5);
+  b.lathe([[0.001, 0], [0.04, 0.0], [0.042, 0.09], [0.036, 0.09], [0.001, 0.01]], 'porcelain', -0.28, topY, 0.34, { seg: 16 });
+  b.torus(0.022, 0.006, 'porcelain', -0.235, topY + 0.05, 0.34, { arc: PI, seg: 10, rz: -PI / 2, ry: 0 });
+  return withGroup(b.build(), g);
 }
 
+function withGroup(built, g) { g.add(built); return g; }
+
 // =========================================================================
-// ARMARIO CLÍNICO Y ESTANTERÍAS
+// ARMARIO DE MEDICAMENTOS (vitrina vidriada, interior visible)
 // =========================================================================
 export function cabinet() {
-  const g = new THREE.Group();
-  // Cuerpo metálico
-  box(0.95, 1.9, 0.65, 'metal', 0, 0.95, 0, g);
-  // Puertas de cristal con marco metálico
-  for (const s of [-0.23, 0.23]) {
-    box(0.44, 1.75, 0.03, 'metal', s, 0.95, 0.32, g);
-    const glass = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 1.45), M('glass'));
-    glass.position.set(s, 0.95, 0.34); g.add(glass);
-    box(0.03, 0.12, 0.04, 'chrome', s + (s > 0 ? -0.16 : 0.16), 0.95, 0.35, g); // Tirador
-  }
-  // Frascos de medicamentos y gasas en los estantes interiores
-  for (let y = 0.5; y < 1.6; y += 0.38) {
-    box(0.85, 0.02, 0.55, 'metal', 0, y, 0, g);
-    for (let b = -0.3; b <= 0.3; b += 0.15) {
-      cyl(0.03, 0.03, 0.09, 'glass', b, y + 0.05, 0.1, g, 8);
-    }
-  }
-  return g;
-}
-
-export function bench() {
-  const g = new THREE.Group();
-  box(2.1, 0.06, 0.55, 'plastic', 0, 0.46, 0, g);
-  box(2.1, 0.48, 0.06, 'plastic', 0, 0.78, -0.24, g);
-  for (const x of [-0.96, 0, 0.96]) {
-    box(0.05, 0.46, 0.05, 'metal', x, 0.23, 0.12, g);
-    box(0.05, 0.46, 0.05, 'metal', x, 0.23, -0.22, g);
-  }
-  return g;
-}
-
-export function vending() {
-  const g = new THREE.Group();
-  box(1.08, 1.95, 0.85, 'darkMetal', 0, 0.975, 0, g);
-  const tex = paint(256, 512, (c, w, h) => {
-    c.fillStyle = '#141c26'; c.fillRect(0, 0, w, h);
-    c.fillStyle = '#d43f3a'; c.fillRect(0, 0, w, 44);
-    c.fillStyle = '#fff'; c.font = 'bold 22px sans-serif'; c.fillText('REFRESCOS', 24, 30);
-    for (let y = 60; y < 340; y += 58) {
-      for (let x = 18; x < 230; x += 44) {
-        c.fillStyle = ['#c0392b', '#e67e22', '#2980b9', '#27ae60'][Math.floor(Math.random() * 4)];
-        c.fillRect(x, y, 28, 42);
+  const b = B();
+  const W = 0.95, H = 1.85, D = 0.62;
+  // Carcasa hueca
+  b.box(0.03, H, D, 'enamel', -W / 2 + 0.015, H / 2, 0);
+  b.box(0.03, H, D, 'enamel', W / 2 - 0.015, H / 2, 0);
+  b.box(W, 0.03, D, 'enamel', 0, H - 0.015, 0);
+  b.box(W, 0.03, D, 'enamel', 0, 0.12, 0);
+  b.box(W, 0.02, 0.02, 'enamel', 0, H - 0.015, 0);
+  b.box(W - 0.06, H - 0.14, 0.02, 'paint', 0, H / 2 + 0.05, -D / 2 + 0.01);
+  b.box(W, 0.12, D - 0.04, 'darkMetal', 0, 0.06, -0.02);
+  // Estantes con frascos, cajas y gasas
+  const r = rng(7);
+  for (let i = 0; i < 4; i++) {
+    const y = 0.45 + i * 0.37;
+    b.box(W - 0.07, 0.015, D - 0.06, 'metal', 0, y, 0);
+    for (let k = 0; k < 6; k++) {
+      const x = -0.35 + k * 0.14 + (r() - 0.5) * 0.03, z = (r() - 0.5) * 0.18;
+      const t = r();
+      if (t < 0.4) {
+        b.cyl(0.032, 0.032, 0.1 + r() * 0.04, 'amber', x, y + 0.06, z, { seg: 10 });
+        b.cyl(0.024, 0.024, 0.02, 'white', x, y + 0.125, z, { seg: 10 });
+      } else if (t < 0.75) {
+        b.box(0.07, 0.11 + r() * 0.04, 0.05, 'white', x, y + 0.065, z, { r: 0.004, ry: (r() - 0.5) * 0.3 });
+      } else {
+        b.cyl(0.04, 0.04, 0.07, 'glassBottle', x, y + 0.045, z, { seg: 10 });
       }
     }
-    c.fillStyle = '#080808'; c.fillRect(30, 390, 196, 70);
+  }
+  // Puertas con marco cromado, vidrio y tiradores
+  for (const s of [-1, 1]) {
+    const cx = s * 0.235, fz = D / 2 + 0.005;
+    const fw = 0.46, fh = 1.66, fy = 0.12 + fh / 2 + 0.02;
+    b.box(fw, 0.035, 0.025, 'chrome', cx, fy + fh / 2 - 0.0175, fz, { r: 0.006 });
+    b.box(fw, 0.035, 0.025, 'chrome', cx, fy - fh / 2 + 0.0175, fz, { r: 0.006 });
+    b.box(0.035, fh, 0.025, 'chrome', cx - fw / 2 + 0.0175, fy, fz, { r: 0.006 });
+    b.box(0.035, fh, 0.025, 'chrome', cx + fw / 2 - 0.0175, fy, fz, { r: 0.006 });
+    b.box(fw - 0.04, fh - 0.04, 0.008, 'glass', cx, fy, fz);
+    b.box(0.022, 0.2, 0.03, 'brushed', cx - s * 0.18, fy, fz + 0.022, { r: 0.008 });
+  }
+  b.box(0.05, 0.08, 0.012, 'brass', 0, 0.9, D / 2 + 0.012, { r: 0.003 }); // cerradura
+  return b.build();
+}
+
+// =========================================================================
+// BANCO DE SALA DE ESPERA
+// =========================================================================
+export function bench() {
+  const b = B();
+  // Asientos y respaldo moldeados
+  b.box(2.1, 0.05, 0.5, 'plastic', 0, 0.45, 0.02, { r: 0.02, rs: 3, rx: -0.03 });
+  b.box(2.1, 0.4, 0.045, 'plastic', 0, 0.74, -0.22, { r: 0.02, rs: 3, rx: -0.14 });
+  // Separadores de asientos
+  for (const x of [-0.7, 0.0, 0.7]) b.box(0.02, 0.04, 0.5, 'plastic', x, 0.485, 0.02, { r: 0.008 });
+  // Bastidor tubular con patas
+  b.tube([-1.0, 0.44, -0.2], [1.0, 0.44, -0.2], 0.018, 'metal');
+  b.tube([-1.0, 0.44, 0.2], [1.0, 0.44, 0.2], 0.018, 'metal');
+  for (const x of [-1.0, 0.0, 1.0]) {
+    b.tube([x, 0.0, 0.25], [x, 0.44, 0.2], 0.02, 'metal');
+    b.tube([x, 0.0, -0.3], [x, 0.44, -0.2], 0.02, 'metal');
+    b.tube([x, 0.0, -0.3], [x, 0.0, 0.25], 0.015, 'metal');
+    b.tube([x, 0.44, -0.2], [x, 0.66, -0.24], 0.016, 'metal');
+  }
+  for (const x of [-1.04, 1.04]) b.box(0.03, 0.04, 0.46, 'darkMetal', x, 0.64, 0, { r: 0.01 });
+  return b.build();
+}
+
+// =========================================================================
+// MÁQUINA EXPENDEDORA
+// =========================================================================
+let vendTex = null;
+function vendingTexture() {
+  return vendTex ||= paint(256, 512, (c, w, h) => {
+    c.fillStyle = '#0e141c'; c.fillRect(0, 0, w, h);
+    const r = rng(11);
+    const cols = ['#c0392b', '#e0922a', '#2c82c0', '#2f9e5b', '#d6d6d0'];
+    for (let row = 0; row < 5; row++) {
+      const y = 70 + row * 62;
+      c.fillStyle = '#303840'; c.fillRect(8, y + 46, w - 16, 5);
+      for (let x = 14; x < 232; x += 36) {
+        c.fillStyle = cols[Math.floor(r() * cols.length)];
+        c.fillRect(x, y + 6 + r() * 6, 24, 38);
+        c.fillStyle = 'rgba(255,255,255,0.3)'; c.fillRect(x + 3, y + 8, 4, 32);
+      }
+    }
+    c.fillStyle = '#c8322e'; c.fillRect(0, 0, w, 52);
+    c.fillStyle = '#fff'; c.font = 'bold 26px sans-serif'; c.fillText('REFRESCOS', 36, 36);
+    // reflejo suave
+    const gr = c.createLinearGradient(0, 0, w, h); gr.addColorStop(0, 'rgba(255,255,255,0.14)'); gr.addColorStop(0.4, 'rgba(255,255,255,0)');
+    c.fillStyle = gr; c.fillRect(0, 0, w, h);
   });
-  const front = new THREE.Mesh(new THREE.PlaneGeometry(0.88, 1.7), new THREE.MeshBasicMaterial({ map: tex }));
-  front.position.set(0, 1.0, 0.43); g.add(front);
-  const l = new THREE.PointLight(0xa5d8ff, 1.4, 4.5, 2); l.position.set(0, 1.2, 0.7); g.add(l);
+}
+let vendMat = null;
+export function vending() {
+  const b = B();
+  const g = new THREE.Group();
+  b.box(1.04, 1.9, 0.82, 'darkMetal', 0, 0.97, 0, { r: 0.03, rs: 2 });
+  b.box(1.0, 0.06, 0.78, 'metal', 0, 0.03, 0);
+  b.box(0.98, 0.04, 0.02, 'red', 0, 1.82, 0.41);
+  // Marco de la vitrina y panel de botones
+  b.box(0.72, 1.45, 0.02, 'rubber', -0.12, 1.07, 0.405);
+  b.box(0.2, 1.45, 0.03, 'metal', 0.38, 1.07, 0.405, { r: 0.008 });
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) b.box(0.035, 0.022, 0.012, 'chrome', 0.33 + j * 0.05, 1.42 - i * 0.07, 0.425, { r: 0.004 });
+  b.box(0.12, 0.08, 0.012, 'ledRed', 0.38, 1.7, 0.425);
+  b.box(0.1, 0.03, 0.02, 'rubber', 0.38, 0.92, 0.425);           // ranura de monedas
+  // Compuerta de entrega
+  b.box(0.7, 0.2, 0.02, 'rubber', -0.12, 0.2, 0.405);
+  b.box(0.6, 0.12, 0.03, 'darkMetal', -0.12, 0.2, 0.42, { r: 0.01 });
+  // Patas
+  for (const x of [-0.46, 0.46]) b.cyl(0.03, 0.03, 0.03, 'rubber', x, 0.0, 0.34, { seg: 8 });
+  const built = b.build();
+  g.add(built);
+  vendMat ||= new THREE.MeshBasicMaterial({ map: vendingTexture(), color: 0xb8c2c8 });
+  vendMat.userData.isShared = true;
+  const front = new THREE.Mesh(new THREE.PlaneGeometry(0.68, 1.4), vendMat);
+  front.position.set(-0.12, 1.07, 0.418); g.add(front);
+  const l = new THREE.PointLight(0xa5d8ff, 1.2, 4.2, 2); l.position.set(0, 1.2, 0.8); g.add(l);
   return g;
 }
 
+// =========================================================================
+// SOPORTE DE SUERO
+// =========================================================================
 export function ivStand() {
-  const g = new THREE.Group();
-  cyl(0.016, 0.016, 1.9, 'chrome', 0, 0.95, 0, g, 8);
-  for (const a of [0, Math.PI / 2, Math.PI, Math.PI * 1.5]) {
-    const leg = box(0.24, 0.02, 0.02, 'chrome', Math.cos(a) * 0.12, 0.06, Math.sin(a) * 0.12, g);
-    leg.rotation.y = -a;
-    cyl(0.03, 0.03, 0.03, 'rubber', Math.cos(a) * 0.22, 0.03, Math.sin(a) * 0.22, g, 8);
+  const b = B();
+  b.tube([0, 0.07, 0], [0, 1.85, 0], 0.013, 'chrome');
+  b.cyl(0.035, 0.045, 0.1, 'chrome', 0, 0.1, 0, { seg: 12 });
+  for (let k = 0; k < 5; k++) {
+    const a = (k / 5) * PI * 2, c = Math.cos(a), s = Math.sin(a);
+    b.tube([0, 0.07, 0], [c * 0.26, 0.05, s * 0.26], 0.014, 'chrome', 6);
+    caster(b, c * 0.26, s * 0.26, 0.03, 0.03);
   }
-  // Ganchos superiores y bolsa de suero fisiológico transparente
-  box(0.26, 0.015, 0.015, 'chrome', 0, 1.88, 0, g);
-  const bag = box(0.12, 0.22, 0.04, 'glass', 0.07, 1.72, 0, g);
-  // Tubo de goteo transparente que baja
-  cyl(0.005, 0.005, 0.8, 'glass', 0.07, 1.28, 0, g, 6);
-  return g;
+  // Perilla de altura y cabezal con ganchos
+  b.cyl(0.02, 0.02, 0.08, 'darkMetal', 0, 1.2, 0, { seg: 10 });
+  b.cyl(0.03, 0.03, 0.05, 'chrome', 0, 1.86, 0, { seg: 10 });
+  for (let k = 0; k < 4; k++) {
+    const a = (k / 4) * PI * 2 + PI / 4, c = Math.cos(a), s = Math.sin(a);
+    b.tube([0, 1.86, 0], [c * 0.13, 1.8, s * 0.13], 0.007, 'chrome', 6);
+    b.sphere(0.011, 'chrome', c * 0.13, 1.795, s * 0.13, { seg: 6 });
+  }
+  // Bolsa de suero translúcida con líquido, y goteo
+  b.box(0.13, 0.22, 0.03, 'glassBottle', 0.1, 1.66, 0.0, { r: 0.012, rs: 2 });
+  b.box(0.105, 0.14, 0.022, 'fluid', 0.1, 1.64, 0.0, { r: 0.01 });
+  b.box(0.06, 0.04, 0.005, 'white', 0.1, 1.68, 0.02);
+  b.cyl(0.012, 0.012, 0.09, 'glassBottle', 0.1, 1.5, 0.0, { seg: 8 });
+  b.curve([[0.1, 1.46, 0], [0.12, 1.2, 0.05], [0.2, 0.95, 0.12], [0.18, 0.75, 0.16]], 0.004, 'glassBottle', { segs: 20, rs: 5 });
+  return b.build();
 }
 
+// =========================================================================
+// PLANTA
+// =========================================================================
 export function plant() {
-  const g = new THREE.Group();
-  cyl(0.25, 0.18, 0.45, 'paint', 0, 0.22, 0, g, 12);
-  cyl(0.22, 0.22, 0.04, 'soil', 0, 0.42, 0, g, 12);
-  for (let i = 0; i < 7; i++) {
-    const a = i / 7 * Math.PI * 2;
-    const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.65, 4), M('leaf'));
-    leaf.position.set(Math.cos(a) * 0.1, 0.65, Math.sin(a) * 0.1);
-    leaf.rotation.set(Math.sin(a) * 0.55, 0, -Math.cos(a) * 0.55);
-    leaf.castShadow = true; g.add(leaf);
+  const b = B();
+  b.lathe([[0.001, 0], [0.15, 0], [0.2, 0.05], [0.26, 0.4], [0.275, 0.45], [0.245, 0.45], [0.23, 0.4]], 'terracotta', 0, 0, 0, { seg: 20 });
+  b.cyl(0.235, 0.235, 0.02, 'soil', 0, 0.4, 0, { seg: 18 });
+  const r = rng(21);
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * PI * 2 + r() * 0.3;
+    const len = 0.55 + r() * 0.35, tilt = 0.25 + r() * 0.55;
+    b.geo(leafGeometry(len, 0.075, 0.18 + r() * 0.15), 'leaf', Math.cos(a) * 0.04, 0.4, Math.sin(a) * 0.04, { ry: a + PI / 2, rx: tilt });
   }
-  return g;
+  return b.build();
 }
 
+// =========================================================================
+// ESTANTERÍA METÁLICA
+// =========================================================================
 export function shelf() {
-  const g = new THREE.Group();
-  for (const [x, z] of [[-0.85, -0.22], [0.85, -0.22], [-0.85, 0.22], [0.85, 0.22]]) {
-    cyl(0.018, 0.018, 1.8, 'metal', x, 0.9, z, g, 8);
-  }
-  for (let y = 0.2; y <= 1.8; y += 0.4) {
-    box(1.75, 0.03, 0.5, 'metal', 0, y, 0, g);
-    for (let b = -0.65; b <= 0.65; b += 0.32) {
-      box(0.22, 0.24, 0.35, 'cardboard', b, y + 0.13, 0, g);
+  const b = B();
+  const r = rng(5);
+  for (const x of [-0.88, 0.88]) for (const z of [-0.22, 0.22]) b.box(0.04, 1.9, 0.04, 'metal', x, 0.95, z, { r: 0.006 });
+  // Travesaños en diagonal en los laterales
+  for (const x of [-0.88, 0.88]) { b.tube([x, 0.15, -0.22], [x, 1.6, 0.22], 0.008, 'metal', 5); b.tube([x, 0.15, 0.22], [x, 1.6, -0.22], 0.008, 'metal', 5); }
+  for (let i = 0; i < 5; i++) {
+    const y = 0.14 + i * 0.4;
+    b.box(1.78, 0.03, 0.52, 'metal', 0, y, 0, { r: 0.005 });
+    b.box(1.78, 0.05, 0.012, 'darkMetal', 0, y + 0.02, 0.26);
+    let x = -0.74;
+    while (x < 0.72) {
+      const w = 0.16 + r() * 0.16, h = 0.14 + r() * 0.16, d = 0.26 + r() * 0.12, t = r();
+      const m = t < 0.5 ? 'cardboardMat' : t < 0.75 ? 'cardboard' : t < 0.9 ? 'white' : 'plastic';
+      b.box(w, h, d, m, x + w / 2, y + 0.015 + h / 2, (r() - 0.5) * 0.05, { r: 0.004, ry: (r() - 0.5) * 0.08 });
+      x += w + 0.03 + r() * 0.04;
     }
   }
-  return g;
+  return b.build();
 }
 
+// =========================================================================
+// CASILLEROS METÁLICOS (3 puertas)
+// =========================================================================
 export function locker() {
-  const g = new THREE.Group();
-  box(0.9, 1.8, 0.55, 'darkMetal', 0, 0.9, 0, g);
+  const b = B();
+  b.box(0.92, 0.06, 0.56, 'darkMetal', 0, 0.03, 0);
+  b.box(0.92, 1.72, 0.54, 'metal', 0, 0.92, -0.0, { r: 0.008 });
+  b.box(0.94, 0.04, 0.56, 'darkMetal', 0, 1.8, 0, { r: 0.01 });
+  b.box(0.96, 0.08, 0.5, 'darkMetal', 0, 1.86, -0.02, { rx: -0.0 });
   for (let i = 0; i < 3; i++) {
     const x = -0.3 + i * 0.3;
-    box(0.26, 1.7, 0.02, 'paint', x, 0.9, 0.28, g);
-    box(0.02, 0.1, 0.03, 'chrome', x + 0.1, 0.9, 0.3, g);
-    // Ranuras de ventilación
-    box(0.18, 0.015, 0.01, 'darkMetal', x, 1.6, 0.29, g);
-    box(0.18, 0.015, 0.01, 'darkMetal', x, 1.55, 0.29, g);
+    b.box(0.285, 1.66, 0.025, 'paint', x, 0.92, 0.28, { r: 0.004 });
+    b.box(0.2, 0.008, 0.012, 'darkMetal', x, 1.1, 0.296);
+    for (let k = 0; k < 5; k++) b.box(0.2, 0.014, 0.014, 'darkMetal', x, 1.57 - k * 0.03, 0.294);
+    for (let k = 0; k < 4; k++) b.box(0.2, 0.014, 0.014, 'darkMetal', x, 0.22 + k * 0.03, 0.294);
+    b.box(0.02, 0.1, 0.02, 'chrome', x + 0.1, 0.95, 0.3, { r: 0.005 });
+    b.box(0.07, 0.035, 0.008, 'white', x, 1.3, 0.294);
+    b.box(0.26, 1.64, 0.004, 'darkMetal', x, 0.92, 0.268);
   }
-  return g;
+  return b.build();
 }
 
+// =========================================================================
+// SILLA GIRATORIA
+// =========================================================================
 export function chair() {
-  const g = new THREE.Group();
-  // Silla de oficina giratoria ergonómica con base estrella de 5 ruedas
-  for (let a = 0; a < Math.PI * 2; a += (Math.PI * 2) / 5) {
-    const leg = box(0.24, 0.025, 0.035, 'darkMetal', Math.cos(a) * 0.12, 0.06, Math.sin(a) * 0.12, g);
-    leg.rotation.y = -a;
-    const w = cyl(0.025, 0.025, 0.025, 'rubber', Math.cos(a) * 0.23, 0.025, Math.sin(a) * 0.23, g, 8);
-    w.rotation.z = Math.PI / 2;
+  const b = B();
+  for (let k = 0; k < 5; k++) {
+    const a = (k / 5) * PI * 2, c = Math.cos(a), s = Math.sin(a);
+    b.tube([0, 0.13, 0], [c * 0.27, 0.07, s * 0.27], 0.017, 'darkMetal', 6);
+    b.cyl(0.028, 0.028, 0.026, 'rubber', c * 0.27, 0.028, s * 0.27, { rz: PI / 2, ry: -a, seg: 10 });
   }
-  // Columna telescópica hidráulica de gas
-  cyl(0.028, 0.028, 0.38, 'chrome', 0, 0.24, 0, g, 10);
-  cyl(0.045, 0.045, 0.12, 'darkMetal', 0, 0.16, 0, g, 10);
-  // Asiento acolchado contorneado
-  box(0.48, 0.07, 0.46, 'fabric', 0, 0.46, 0.02, g);
-  // Respaldo ergonómico con soporte lumbar
-  box(0.44, 0.48, 0.06, 'fabric', 0, 0.76, -0.21, g);
-  box(0.04, 0.32, 0.04, 'darkMetal', 0, 0.52, -0.16, g); // Soporte trasero
-  // Reposabrazos curvados
-  for (const s of [-0.26, 0.26]) {
-    box(0.04, 0.22, 0.03, 'darkMetal', s, 0.58, 0, g);
-    box(0.06, 0.03, 0.26, 'plastic', s, 0.69, 0.04, g);
+  b.cyl(0.035, 0.05, 0.1, 'darkMetal', 0, 0.15, 0, { seg: 12 });
+  b.cyl(0.026, 0.026, 0.3, 'chrome', 0, 0.3, 0, { seg: 10 });
+  b.cyl(0.055, 0.055, 0.04, 'darkMetal', 0, 0.44, 0, { seg: 12 });
+  b.box(0.48, 0.07, 0.46, 'fabric', 0, 0.48, 0.02, { r: 0.03, rs: 3 });
+  b.box(0.42, 0.42, 0.06, 'fabric', 0, 0.78, -0.21, { r: 0.028, rs: 3, rx: -0.12 });
+  b.tube([0, 0.5, 0], [0, 0.58, -0.2], 0.015, 'darkMetal');
+  for (const s of [-1, 1]) {
+    b.tube([s * 0.23, 0.5, -0.05], [s * 0.26, 0.66, -0.05], 0.011, 'darkMetal', 6);
+    b.box(0.06, 0.03, 0.26, 'rubber', s * 0.26, 0.68, 0.04, { r: 0.012 });
   }
-  return g;
+  return b.build();
 }
 
+// =========================================================================
+// LAVABO QUIRÚRGICO CON ESPEJO
+// =========================================================================
 export function sink() {
-  const g = new THREE.Group();
-  // Mueble bajo esmaltado clínico verde hospitalario
-  box(1.3, 0.74, 0.52, 'hospitalGreen', 0, 0.37, 0, g);
-  // Encimera de porcelana vitrificada
-  box(1.38, 0.08, 0.56, 'porcelain', 0, 0.78, 0, g);
-  // Peto protector cerámico trasero contra salpicaduras
-  box(1.38, 0.18, 0.04, 'porcelain', 0, 0.91, -0.26, g);
-
+  const b = B();
+  b.box(1.3, 0.72, 0.5, 'hospitalGreen', 0, 0.38, 0.0, { r: 0.01 });
+  b.box(1.3, 0.08, 0.5, 'darkMetal', 0, 0.04, 0.02);
+  // Puertas del mueble
+  for (const x of [-0.32, 0.32]) {
+    b.box(0.6, 0.56, 0.015, 'enamel', x, 0.4, 0.255, { r: 0.006 });
+    b.box(0.025, 0.12, 0.02, 'brushed', x - Math.sign(x) * 0.22, 0.52, 0.27, { r: 0.006 });
+  }
+  b.box(1.4, 0.05, 0.58, 'porcelain', 0, 0.78, 0.02, { r: 0.015, rs: 2 });
+  b.box(1.4, 0.2, 0.035, 'porcelain', 0, 0.9, -0.26, { r: 0.01 });
   for (const x of [-0.35, 0.35]) {
-    // Seno cerámico de lavado (reborde y cuenco)
-    cyl(0.22, 0.22, 0.03, 'porcelain', x, 0.83, 0.04, g, 14);
-    cyl(0.18, 0.12, 0.10, 'white', x, 0.81, 0.04, g, 12);
-    // Válvula de desagüe cromada
-    cyl(0.03, 0.03, 0.015, 'chrome', x, 0.76, 0.04, g, 8);
-    // Grifo quirúrgico monomando de codo cromado
-    cyl(0.016, 0.016, 0.26, 'chrome', x, 0.99, -0.16, g, 8);
-    box(0.02, 0.018, 0.14, 'chrome', x, 1.12, -0.10, g);
-    // Palanca de accionamiento con el codo para cirujanos
-    box(0.015, 0.015, 0.16, 'chrome', x, 1.08, -0.20, g).rotation.x = -0.3;
-    // Dispensador de antiséptico mural
-    box(0.08, 0.15, 0.07, 'white', x + 0.22, 1.06, -0.22, g);
-    box(0.012, 0.012, 0.05, 'chrome', x + 0.22, 1.11, -0.18, g);
+    // Cuenco hundido
+    b.lathe([[0.2, 0], [0.2, -0.0], [0.17, -0.1], [0.1, -0.13], [0.001, -0.13]], 'porcelainIn', x, 0.805, 0.06, { seg: 24 });
+    b.torus(0.205, 0.012, 'porcelain', x, 0.806, 0.06, { rx: PI / 2, seg: 28, tseg: 6 });
+    b.cyl(0.032, 0.032, 0.008, 'chrome', x, 0.678, 0.06, { seg: 12 });
+    // Grifo de cuello de cisne
+    b.cyl(0.03, 0.035, 0.05, 'chrome', x, 0.835, -0.15, { seg: 12 });
+    b.curve([[x, 0.86, -0.15], [x, 1.02, -0.15], [x, 1.1, -0.1], [x, 1.07, 0.0]], 0.014, 'chrome', { segs: 16, rs: 8 });
+    b.cyl(0.02, 0.014, 0.04, 'chrome', x, 1.045, 0.0, { seg: 8 });
+    b.box(0.015, 0.015, 0.14, 'chrome', x + 0.09, 0.86, -0.18, { rx: -0.3 });
+    // Dispensador mural
+    b.box(0.09, 0.17, 0.08, 'white', x + 0.28, 1.16, -0.2, { r: 0.012 });
+    b.box(0.018, 0.018, 0.055, 'chrome', x + 0.28, 1.1, -0.15, { r: 0.004 });
   }
-  // Espejo clínico biselado
-  box(1.32, 0.82, 0.02, 'darkMetal', 0, 1.50, -0.27, g);
-  const mirrorGlass = new THREE.Mesh(new THREE.PlaneGeometry(1.26, 0.76), new THREE.MeshStandardMaterial({ color: 0x98b8c2, metalness: 0.94, roughness: 0.08 }));
-  mirrorGlass.position.set(0, 1.50, -0.258);
-  g.add(mirrorGlass);
-  return g;
+  // Espejo con marco
+  b.box(1.32, 0.84, 0.025, 'darkMetal', 0, 1.62, -0.262, { r: 0.008 });
+  b.box(1.26, 0.78, 0.006, 'mirror', 0, 1.62, -0.246);
+  return b.build();
 }
 
+// =========================================================================
+// CAJÓN DE MADERA CON CAJA DE CARTÓN
+// =========================================================================
 export function crate() {
-  const g = new THREE.Group();
-  // Caja de transporte de madera reforzada
-  box(0.85, 0.55, 0.85, 'wood', 0, 0.275, 0, g);
-  // Listones perimetrales de refuerzo
-  box(0.87, 0.08, 0.87, 'darkMetal', 0, 0.52, 0, g);
-  box(0.87, 0.08, 0.87, 'darkMetal', 0, 0.04, 0, g);
-  // Caja de cartón de suministros médicos apilada arriba con textura
-  const topBox = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.44, 0.65), M('cardboardMat'));
-  topBox.position.set(0.06, 0.77, 0.02);
-  topBox.rotation.y = 0.28;
-  topBox.castShadow = topBox.receiveShadow = true;
-  g.add(topBox);
-  return g;
+  const b = B();
+  const w = 0.85;
+  b.box(w, 0.5, w, 'wood', 0, 0.28, 0, { r: 0.012 });
+  for (const y of [0.03, 0.53]) b.box(w + 0.02, 0.06, w + 0.02, 'darkMetal', 0, y, 0, { r: 0.008 });
+  for (const x of [-w / 2 + 0.04, w / 2 - 0.04]) for (const z of [-w / 2 + 0.04, w / 2 - 0.04]) b.box(0.06, 0.52, 0.06, 'lightWood', x, 0.28, z);
+  // Tablillas
+  for (let i = 0; i < 4; i++) b.box(w + 0.01, 0.1, 0.012, 'lightWood', 0, 0.13 + i * 0.11, w / 2 + 0.003);
+  // Caja de suministros ladeada
+  b.box(0.62, 0.42, 0.62, 'cardboardMat', 0.06, 0.78, 0.02, { r: 0.012, ry: 0.28 });
+  b.box(0.64, 0.015, 0.1, 'white', 0.06, 0.995, 0.02, { ry: 0.28 });
+  return b.build();
 }
 
+// =========================================================================
+// PAPELERA DE PEDAL
+// =========================================================================
 export function trash() {
-  const g = new THREE.Group();
-  // Cubo de residuos hospitalarios con pedal
-  cyl(0.18, 0.16, 0.52, 'chrome', 0, 0.26, 0, g, 14);
-  // Tapa superior con bisagra
-  cyl(0.185, 0.185, 0.02, 'metal', 0, 0.53, 0, g, 14);
-  // Pedal de apertura cromado
-  box(0.08, 0.02, 0.12, 'chrome', 0, 0.02, 0.19, g);
-  // Aro de base de goma antideslizante
-  cyl(0.175, 0.175, 0.02, 'rubber', 0, 0.01, 0, g, 14);
-  return g;
+  const b = B();
+  b.lathe([[0.001, 0], [0.15, 0], [0.16, 0.04], [0.175, 0.5], [0.001, 0.5]], 'chrome', 0, 0, 0, { seg: 20 });
+  b.cyl(0.182, 0.182, 0.03, 'darkMetal', 0, 0.52, 0, { seg: 20 });
+  b.sphere(0.045, 'darkMetal', 0, 0.55, 0, { seg: 10, thetaLen: PI / 2 });
+  b.cyl(0.178, 0.178, 0.02, 'rubber', 0, 0.01, 0, { seg: 20 });
+  b.box(0.07, 0.018, 0.12, 'rubber', 0, 0.04, 0.2, { r: 0.006 });
+  b.tube([0, 0.05, 0.16], [0, 0.08, 0.2], 0.007, 'darkMetal', 5);
+  return b.build();
 }
 
 // =========================================================================
-// NUEVOS ELEMENTOS MÉDICOS Y DE QUIRÓFANO AAA
+// MONITOR CARDÍACO CON CARRO
 // =========================================================================
-
 export function cardiacMonitor() {
-  const g = new THREE.Group();
-  // Carro móvil de 4 ruedas
-  for (const [x, z] of [[-0.22, -0.22], [0.22, -0.22], [-0.22, 0.22], [0.22, 0.22]]) {
-    const w = cyl(0.035, 0.035, 0.025, 'rubber', x, 0.035, z, g, 10);
-    w.rotation.z = Math.PI / 2;
-    cyl(0.012, 0.012, 0.25, 'chrome', x, 0.16, z, g, 8);
+  const b = B();
+  b.cyl(0.03, 0.06, 0.1, 'metal', 0, 0.3, 0, { seg: 10 });
+  for (let k = 0; k < 4; k++) {
+    const a = (k / 4) * PI * 2 + PI / 4, c = Math.cos(a), s = Math.sin(a);
+    b.tube([0, 0.1, 0], [c * 0.27, 0.07, s * 0.27], 0.017, 'metal', 6);
+    caster(b, c * 0.27, s * 0.27, 0.035, 0.035);
   }
-  // Bandeja inferior para cables y accesorios
-  box(0.52, 0.03, 0.52, 'hospitalGreen', 0, 0.28, 0, g);
-  // Columnas de soporte tubulares
-  for (const x of [-0.22, 0.22]) {
-    cyl(0.016, 0.016, 0.65, 'chrome', x, 0.62, 0, g, 8);
-  }
-  // Módulo principal del monitor
-  box(0.56, 0.38, 0.42, 'paint', 0, 1.05, 0, g);
-  // Pantalla con trazado ECG verde brillante
-  const scr = new THREE.Mesh(new THREE.PlaneGeometry(0.38, 0.28), M('ecgMat'));
-  scr.position.set(0, 1.06, 0.212);
-  g.add(scr);
-  // Botonera y selector rotativo
-  box(0.08, 0.02, 0.02, 'darkMetal', -0.16, 0.90, 0.215, g);
-  cyl(0.02, 0.02, 0.02, 'darkMetal', 0.16, 0.90, 0.215, g).rotation.x = Math.PI / 2;
-  // Luz LED de pulso
-  const pulseLed = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.015, 0.015), new THREE.MeshBasicMaterial({ color: 0x44ff66 }));
-  pulseLed.position.set(0.16, 1.20, 0.215); g.add(pulseLed);
-  // Cables de paciente colgando por el lateral
-  cyl(0.006, 0.006, 0.55, 'rubber', -0.26, 0.75, 0.08, g, 6);
-  return g;
+  b.cyl(0.03, 0.03, 0.62, 'chrome', 0, 0.62, 0, { seg: 10 });
+  b.box(0.5, 0.03, 0.4, 'hospitalGreen', 0, 0.33, 0.02, { r: 0.01 });
+  b.box(0.52, 0.03, 0.02, 'metal', 0, 0.35, 0.22);
+  // Carcasa del monitor con bisel
+  b.box(0.56, 0.4, 0.2, 'enamel', 0, 1.05, 0, { r: 0.03, rs: 3 });
+  b.box(0.42, 0.32, 0.03, 'darkMetal', -0.04, 1.07, 0.1, { r: 0.008 });
+  b.plane(0.38, 0.28, 'ecgMat', -0.04, 1.07, 0.116);
+  b.box(0.08, 0.3, 0.025, 'darkMetal', 0.22, 1.05, 0.1, { r: 0.006 });
+  b.cyl(0.025, 0.025, 0.02, 'darkMetal', 0.22, 0.98, 0.118, { rx: PI / 2, seg: 12 });
+  b.box(0.03, 0.015, 0.01, 'ledGreen', 0.22, 1.16, 0.115);
+  b.box(0.012, 0.012, 0.01, 'ledRed', 0.22, 1.12, 0.115);
+  b.box(0.16, 0.05, 0.06, 'enamel', 0, 1.27, 0, { r: 0.015 }); // asa
+  // Cables de paciente
+  b.curve([[0.2, 0.88, 0.0], [0.3, 0.7, 0.1], [0.28, 0.5, 0.2], [0.18, 0.36, 0.26]], 0.007, 'rubber', { segs: 16, rs: 5 });
+  b.curve([[0.15, 0.88, 0.0], [0.24, 0.64, 0.12], [0.2, 0.42, 0.24]], 0.006, 'ledRed', { segs: 14, rs: 5 });
+  return b.build();
 }
 
+// =========================================================================
+// NEGATOSCOPIO (visor de radiografías de pared)
+// =========================================================================
 export function xrayViewer() {
-  const g = new THREE.Group();
-  // Marco de aluminio de perfil delgado montado en pared
-  box(0.68, 0.88, 0.06, 'chrome', 0, 1.8, 0, g);
-  // Panel acrílico retroiluminado con radiografía
-  const rad = new THREE.Mesh(new THREE.PlaneGeometry(0.58, 0.78), M('xrayMat'));
-  rad.position.set(0, 1.8, 0.032);
-  g.add(rad);
-  // Pinzas superiores de sujeción
-  box(0.12, 0.02, 0.02, 'chrome', -0.16, 2.21, 0.038, g);
-  box(0.12, 0.02, 0.02, 'chrome', 0.16, 2.21, 0.038, g);
-  // Interruptor basculante lateral
-  box(0.015, 0.04, 0.02, 'red', 0.345, 1.45, 0, g);
-  // Luz suave clínica emanada por la pantalla
-  const l = new THREE.PointLight(0xb4d8ff, 1.2, 3.2, 1.8);
-  l.position.set(0, 1.8, 0.25);
-  g.add(l);
+  const b = B();
+  const y = 1.8;
+  b.box(0.7, 0.9, 0.07, 'darkMetal', 0, y, -0.015, { r: 0.012 });
+  b.box(0.64, 0.84, 0.01, 'metal', 0, y, 0.025);
+  b.plane(0.58, 0.78, 'xrayMat', 0, y, 0.032);
+  b.box(0.14, 0.03, 0.03, 'chrome', 0, y + 0.43, 0.04, { r: 0.006 });
+  b.box(0.03, 0.05, 0.03, 'red', 0.3, y - 0.38, 0.04, { r: 0.006 });
+  b.box(0.06, 0.06, 0.04, 'darkMetal', 0, y, -0.055); // espaciador
+  const g = b.build();
+  const l = new THREE.PointLight(0xb4d8ff, 1.0, 3.2, 1.8); l.position.set(0, y, 0.3); g.add(l);
   return g;
 }
 
+// =========================================================================
+// LÁMPARA CIALÍTICA DE QUIRÓFANO (colgada del techo)
+// =========================================================================
 export function surgicalLamp() {
-  const g = new THREE.Group();
-  // Anclaje a techo
-  cyl(0.18, 0.18, 0.06, 'chrome', 0, 3.26, 0, g, 14);
-  cyl(0.03, 0.03, 0.35, 'chrome', 0, 3.08, 0, g, 10);
-  // Brazo articulado horizontal y oblicuo
-  box(0.04, 0.04, 0.85, 'chrome', 0, 2.92, 0.38, g);
-  box(0.03, 0.45, 0.03, 'chrome', 0, 2.70, 0.75, g).rotation.x = 0.3;
-  // Cúpulas reflectoras gemelas con difusor
-  for (const s of [-0.35, 0.35]) {
-    const domeGroup = new THREE.Group();
-    domeGroup.position.set(s, 2.45, 0.82);
-    // Campana reflectora exterior cóncava
-    const dome = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2), M('chrome'));
-    dome.rotation.x = Math.PI; dome.castShadow = true; domeGroup.add(dome);
-    // Asa central esterilizable para el cirujano
-    cyl(0.015, 0.015, 0.12, 'chrome', 0, -0.06, 0, domeGroup, 8);
-    // Foco emisor
-    const bulb = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.02, 12), new THREE.MeshBasicMaterial({ color: 0xfffcf0 }));
-    bulb.position.set(0, 0.02, 0); domeGroup.add(bulb);
-    g.add(domeGroup);
+  const b = B();
+  const CH = 3.3;
+  b.cyl(0.2, 0.2, 0.05, 'chrome', 0, CH - 0.025, 0, { seg: 20 });
+  b.cyl(0.05, 0.05, 0.3, 'chrome', 0, CH - 0.2, 0, { seg: 12 });
+  b.sphere(0.07, 'chrome', 0, CH - 0.36, 0, { seg: 14 });
+  b.tube([0, CH - 0.36, 0], [0, CH - 0.62, 0.5], 0.032, 'chrome');
+  b.sphere(0.05, 'chrome', 0, CH - 0.62, 0.5, { seg: 12 });
+  b.tube([0, CH - 0.62, 0.5], [0, CH - 0.7, 0.82], 0.028, 'chrome');
+  // Cúpulas gemelas (cuenco reflectante hacia abajo + luz difusa)
+  for (const s of [-0.34, 0.34]) {
+    const cy = CH - 0.88;
+    b.tube([0, CH - 0.7, 0.82], [s * 0.7, cy + 0.12, 0.82], 0.02, 'chrome', 8);
+    b.lathe([[0.001, -0.02], [0.2, -0.04], [0.28, -0.1], [0.3, -0.1], [0.29, -0.06], [0.23, 0.0], [0.1, 0.03], [0.001, 0.03]], 'chrome', s, cy + 0.1, 0.82, { seg: 28 });
+    b.cyl(0.24, 0.24, 0.012, 'lampGlow', s, cy - 0.04, 0.82, { seg: 28 });
+    b.cyl(0.02, 0.02, 0.16, 'white', s, cy - 0.12, 0.82, { seg: 10 });
+    b.sphere(0.03, 'white', s, cy - 0.2, 0.82, { seg: 10 });
   }
-  // Haz concentrado de quirófano hacia la mesa
-  const spot = new THREE.SpotLight(0xfffaea, 28, 8, Math.PI / 6, 0.5, 1.5);
-  spot.position.set(0, 2.45, 0.82);
-  spot.target.position.set(0, 0.8, 0.82);
+  const g = b.build();
+  const spot = new THREE.SpotLight(0xfffaea, 26, 8, PI / 6, 0.5, 1.5);
+  spot.position.set(0, CH - 0.95, 0.82); spot.target.position.set(0, 0.8, 0.82);
   g.add(spot, spot.target);
   return g;
 }
 
+// =========================================================================
+// MESA DE CIRUGÍA
+// =========================================================================
 export function surgeryTable() {
-  const g = new THREE.Group();
-  // Pedestal hidráulico central de acero inoxidable pesado
-  box(0.65, 0.12, 0.95, 'metal', 0, 0.06, 0, g);
-  cyl(0.18, 0.22, 0.65, 'chrome', 0, 0.42, 0, g, 14);
-  // Pedales de inclinación y altura
-  box(0.08, 0.03, 0.12, 'darkMetal', 0.28, 0.08, 0.15, g);
-  box(0.08, 0.03, 0.12, 'darkMetal', 0.28, 0.08, -0.15, g);
-  // Estructura articulada del plano quirúrgico
-  box(0.72, 0.08, 2.15, 'chrome', 0, 0.78, 0, g);
-  // Rieles laterales para accesorios
-  for (const s of [-0.38, 0.38]) {
-    box(0.018, 0.025, 1.9, 'chrome', s, 0.79, 0, g);
+  const b = B();
+  b.box(0.7, 0.1, 1.0, 'metal', 0, 0.05, 0, { r: 0.025 });
+  b.cyl(0.14, 0.2, 0.55, 'chrome', 0, 0.37, 0, { seg: 20 });
+  b.cyl(0.19, 0.19, 0.06, 'metal', 0, 0.68, 0, { seg: 20 });
+  for (const z of [-0.25, 0.25]) b.box(0.1, 0.03, 0.14, 'darkMetal', 0.3, 0.12, z, { r: 0.008 });
+  // Plano articulado en 4 secciones sobre rieles
+  b.box(0.68, 0.05, 2.14, 'chrome', 0, 0.74, 0, { r: 0.015 });
+  const secs = [[-0.78, 0.5, 0], [-0.3, 0.62, 0], [0.3, 0.55, 0], [0.82, 0.5, 0]];
+  for (const [z, l] of secs) b.box(0.64, 0.08, l - 0.02, 'vinyl', 0, 0.805, z, { r: 0.025, rs: 2 });
+  for (const s of [-1, 1]) {
+    b.tube([s * 0.36, 0.78, -1.0], [s * 0.36, 0.78, 1.0], 0.012, 'chrome');
+    b.box(0.015, 0.03, 0.12, 'chrome', s * 0.36, 0.76, -0.6);
   }
-  // Colchoneta conductora antiestática negra (4 secciones)
-  box(0.68, 0.08, 0.45, 'leather', 0, 0.85, -0.80, g);
-  box(0.68, 0.08, 0.65, 'leather', 0, 0.85, -0.22, g);
-  box(0.68, 0.08, 0.45, 'leather', 0, 0.85, 0.35, g);
-  box(0.68, 0.08, 0.55, 'leather', 0, 0.85, 0.86, g);
-  // Reposabrazos articulados bilaterales
-  for (const s of [-0.48, 0.48]) {
-    box(0.16, 0.04, 0.55, 'leather', s, 0.84, -0.2, g);
-    box(0.02, 0.12, 0.02, 'chrome', s * 0.85, 0.76, -0.2, g);
+  // Apoyabrazos y correas
+  for (const s of [-1, 1]) {
+    b.tube([s * 0.4, 0.8, -0.3], [s * 0.6, 0.86, -0.3], 0.012, 'chrome');
+    b.box(0.15, 0.035, 0.5, 'vinyl', s * 0.68, 0.87, -0.3, { r: 0.015 });
   }
-  // Correas de sujeción de seguridad de cuero
-  box(0.70, 0.015, 0.06, 'darkMetal', 0, 0.89, -0.15, g);
-  box(0.70, 0.015, 0.06, 'darkMetal', 0, 0.89, 0.55, g);
-  return g;
+  b.box(0.7, 0.014, 0.06, 'rubber', 0, 0.85, 0.35);
+  b.box(0.7, 0.014, 0.06, 'rubber', 0, 0.85, 0.7);
+  return b.build();
 }
 
+// =========================================================================
+// EXTINTOR (montado en pared)
+// =========================================================================
 export function fireExtinguisher() {
-  const g = new THREE.Group();
-  // Cilindro rojo presurizado colgado en pared
-  cyl(0.09, 0.09, 0.52, 'red', 0, 1.45, 0, g, 12);
-  cyl(0.085, 0.04, 0.08, 'red', 0, 1.74, 0, g, 12);
-  // Válvula de latón y manómetro
-  cyl(0.025, 0.025, 0.08, 'brass', 0, 1.80, 0, g, 8);
-  box(0.08, 0.04, 0.02, 'metal', 0, 1.82, 0, g);
-  cyl(0.018, 0.018, 0.012, 'metal', 0.035, 1.82, 0.03, g, 8);
-  // Manguera de descarga de goma
-  cyl(0.012, 0.012, 0.42, 'rubber', 0.08, 1.55, 0.05, g, 6);
-  // Soporte de anclaje a pared
-  box(0.04, 0.35, 0.02, 'darkMetal', 0, 1.50, -0.09, g);
-  return g;
+  const b = B();
+  const z = 0.035;
+  b.lathe([[0.001, 0], [0.07, 0], [0.085, 0.05], [0.085, 0.45], [0.06, 0.52], [0.03, 0.55], [0.001, 0.55]], 'red', 0, 1.2, z, { seg: 22 });
+  b.cyl(0.03, 0.03, 0.06, 'brass', 0, 1.78, z, { seg: 10 });
+  b.box(0.1, 0.03, 0.03, 'chrome', 0.0, 1.82, z, { r: 0.008 });
+  b.box(0.1, 0.015, 0.03, 'chrome', 0.06, 1.79, z + 0.01, { rz: -0.4 });
+  b.cyl(0.022, 0.022, 0.012, 'white', 0.05, 1.77, z + 0.045, { rx: PI / 2, seg: 10 });
+  b.curve([[0.02, 1.78, z], [0.14, 1.7, z + 0.02], [0.14, 1.4, z + 0.05], [0.06, 1.28, z + 0.07]], 0.011, 'rubber', { segs: 20, rs: 6 });
+  b.box(0.05, 0.03, 0.04, 'rubber', 0.06, 1.27, z + 0.07);
+  b.box(0.17, 0.12, 0.012, 'white', 0, 1.5, z + 0.087, { r: 0.002 }); // etiqueta
+  // Soporte de pared
+  b.box(0.08, 0.5, 0.015, 'darkMetal', 0, 1.45, -0.048);
+  b.box(0.19, 0.035, 0.03, 'darkMetal', 0, 1.62, 0.0, { r: 0.008 });
+  b.box(0.19, 0.035, 0.03, 'darkMetal', 0, 1.34, 0.0, { r: 0.008 });
+  return b.build();
 }
 
+// =========================================================================
+// DISPENSADOR DE AGUA
+// =========================================================================
 export function waterDispenser() {
-  const g = new THREE.Group();
-  // Carcasa de pie blanca
-  box(0.38, 0.95, 0.38, 'white', 0, 0.475, 0, g);
-  // Rejilla de goteo
-  box(0.28, 0.02, 0.16, 'darkMetal', 0, 0.68, 0.14, g);
-  // Grifos de agua fría y caliente
-  box(0.03, 0.06, 0.04, 'red', -0.06, 0.74, 0.16, g);
-  box(0.03, 0.06, 0.04, 'screen', 0.06, 0.74, 0.16, g);
-  // Botellón de 20 litros translúcido azul
-  cyl(0.14, 0.15, 0.42, 'glass', 0, 1.20, 0, g, 14);
-  cyl(0.06, 0.14, 0.12, 'glass', 0, 1.01, 0, g, 12);
-  // Dispensador cilíndrico de vasos cónicos
-  cyl(0.045, 0.045, 0.45, 'glass', -0.22, 0.85, 0, g, 10);
-  cyl(0.04, 0.04, 0.25, 'white', -0.22, 0.76, 0, g, 10);
-  return g;
+  const b = B();
+  b.box(0.36, 0.98, 0.34, 'white', 0, 0.5, 0, { r: 0.02, rs: 2 });
+  b.box(0.3, 0.12, 0.02, 'darkMetal', 0, 0.12, 0.17);
+  b.box(0.3, 0.3, 0.012, 'enamel', 0, 0.3, 0.172);
+  b.box(0.3, 0.02, 0.14, 'darkMetal', 0, 0.62, 0.15, { r: 0.006 });
+  b.box(0.28, 0.01, 0.12, 'brushed', 0, 0.635, 0.15);
+  b.box(0.036, 0.07, 0.05, 'ledRed', -0.06, 0.73, 0.16, { r: 0.008 });
+  b.box(0.036, 0.07, 0.05, 'darkMetal', 0.06, 0.73, 0.16, { r: 0.008 });
+  b.box(0.012, 0.012, 0.01, 'ledGreen', 0.0, 0.83, 0.17);
+  // Botellón
+  b.lathe([[0.001, 0], [0.12, 0], [0.14, 0.08], [0.14, 0.38], [0.1, 0.43], [0.05, 0.46], [0.045, 0.5], [0.001, 0.5]], 'amber', 0, 0.98, 0, { seg: 24 });
+  b.cyl(0.13, 0.13, 0.04, 'fluid', 0, 1.2, 0, { seg: 24 });
+  // Portavasos
+  b.cyl(0.04, 0.04, 0.36, 'glass', -0.26, 0.78, 0, { seg: 14 });
+  b.cyl(0.03, 0.03, 0.18, 'white', -0.26, 0.7, 0, { seg: 12 });
+  b.box(0.012, 0.012, 0.012, 'chrome', -0.26, 0.97, 0);
+  return b.build();
 }
 
+// =========================================================================
+// CORTINA DIVISORIA CON RIEL
+// =========================================================================
 export function curtainDivider() {
-  const g = new THREE.Group();
-  // Riel de aluminio anclado al techo
-  box(2.4, 0.03, 0.03, 'chrome', 0, 3.25, 0, g);
-  for (const x of [-1.1, 0, 1.1]) {
-    cyl(0.008, 0.008, 0.25, 'chrome', x, 3.12, 0, g, 6);
+  const b = B();
+  b.box(2.4, 0.03, 0.035, 'chrome', 0, 3.2, 0, { r: 0.008 });
+  for (let i = 0; i < 12; i++) {
+    const x = -1.1 + i * 0.2;
+    b.torus(0.012, 0.0035, 'chrome', x, 3.15, 0, { seg: 8, tseg: 4 });
   }
+  for (const x of [-1.1, 1.1]) b.tube([x, 3.2, 0], [x, 3.3, 0], 0.006, 'chrome', 5);
   // Malla superior de ventilación
-  box(2.35, 0.35, 0.015, 'dirtySheet', 0, 2.82, 0, g);
-  // Cortina de privacidad plisada
-  const c = new THREE.Mesh(new THREE.PlaneGeometry(2.35, 2.1), M('curtain'));
-  c.position.set(0, 1.6, 0); c.castShadow = c.receiveShadow = true;
+  b.box(2.35, 0.3, 0.012, 'dirtySheet', 0, 3.0, 0);
+  const g = b.build();
+  // Cortina plisada: plano subdividido con ondas reales
+  const geo = new THREE.PlaneGeometry(2.35, 2.2, 56, 6);
+  const p = geo.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i);
+    p.setZ(i, Math.sin(x * 11) * 0.045 + Math.sin(x * 3.1 + y * 0.8) * 0.02);
+    p.setX(i, x * (1 - (1.1 - y) * 0.006));
+  }
+  geo.computeVertexNormals();
+  const c = new THREE.Mesh(geo, M('curtain'));
+  c.position.set(0, 1.85, 0); c.castShadow = c.receiveShadow = true;
   g.add(c);
-  const cBack = c.clone(); cBack.rotation.y = Math.PI; g.add(cBack);
   return g;
 }
 
 export const MODELS = {
   bed, gurney, wheelchair, desk: deskModel, cabinet, bench, vending, iv: ivStand,
   plant, shelf, locker, chair, sink, crate, trash,
-  cardiacMonitor, xrayViewer, surgicalLamp, surgeryTable, fireExtinguisher, waterDispenser, curtainDivider
+  cardiacMonitor, xrayViewer, surgicalLamp, surgeryTable, fireExtinguisher, waterDispenser, curtainDivider,
 };
 
 // =========================================================================
-// PUERTA CON MARCO Y CRISTAL REFORZADO
+// PUERTA CON ROSETA, VENTANILLA DE VIDRIO ARMADO Y HERRAJES
 // =========================================================================
 export function doorLeaf(mat, w, h, t, isExit) {
   const g = new THREE.Group();
-  const leaf = new THREE.Mesh(new THREE.BoxGeometry(w, h, t), mat);
+  const leaf = new THREE.Mesh(new THREE.BoxGeometry(w - 0.01, h - 0.02, t), mat);
   leaf.castShadow = leaf.receiveShadow = true;
-  leaf.position.set(w / 2, h / 2, 0);
+  leaf.position.set(w / 2, h / 2 + 0.01, 0);
   g.add(leaf);
 
+  const b = B();
+  // Chapa de pateo inferior y herrajes
+  for (const s of [-1, 1]) {
+    b.box(w - 0.12, 0.22, 0.008, 'brushed', w / 2, 0.14, s * (t / 2 + 0.004), { r: 0.002 });
+    b.box(0.06, 0.16, 0.012, 'brushed', w - 0.14, h * 0.47, s * (t / 2 + 0.006), { r: 0.004 });
+    // Palanca
+    b.box(0.16, 0.022, 0.03, 'chrome', w - 0.2, h * 0.49, s * (t / 2 + 0.03), { r: 0.008 });
+    b.cyl(0.014, 0.014, 0.03, 'chrome', w - 0.14, h * 0.49, s * (t / 2 + 0.02), { rx: PI / 2, seg: 10 });
+  }
+  // Bisagras
+  for (const y of [0.35, h * 0.5, h - 0.35]) {
+    b.cyl(0.014, 0.014, 0.12, 'darkMetal', 0.012, y, 0, { seg: 8 });
+  }
   if (!isExit) {
-    // Ventanilla con vidrio armado con alambre
-    const winFrame = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.58, t + 0.02), M('darkMetal'));
-    winFrame.position.set(w / 2, h * 0.68, 0); g.add(winFrame);
-    const win = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.54), M('glass'));
-    win.position.set(w / 2, h * 0.68, t / 2 + 0.012); g.add(win);
-    const win2 = win.clone(); win2.position.z = -t / 2 - 0.012; win2.rotation.y = Math.PI; g.add(win2);
+    // Ventanilla: marco metálico con vidrio armado oscurecido
+    const wy = h * 0.66;
+    b.box(0.4, 0.6, t + 0.03, 'darkMetal', w / 2, wy, 0, { r: 0.008 });
+    for (const s of [-1, 1]) b.plane(0.33, 0.53, 'doorGlass', w / 2, wy, s * (t / 2 + 0.0155), { ry: s > 0 ? 0 : PI });
+  } else {
+    // Barra antipánico
+    b.box(w - 0.3, 0.05, 0.04, 'brushed', w / 2, h * 0.45, t / 2 + 0.04, { r: 0.012 });
+    b.box(0.06, 0.1, 0.05, 'darkMetal', 0.2, h * 0.45, t / 2 + 0.03);
+    b.box(0.06, 0.1, 0.05, 'darkMetal', w - 0.2, h * 0.45, t / 2 + 0.03);
   }
-
-  // Picaporte metálico con roseta
-  const handleMat = M('chrome');
-  for (const s of [1, -1]) {
-    const escutcheon = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.16, 0.01), handleMat);
-    escutcheon.position.set(w - 0.16, h * 0.47, s * (t / 2 + 0.006)); g.add(escutcheon);
-    const lever = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.025, 0.035), handleMat);
-    lever.position.set(w - 0.21, h * 0.49, s * (t / 2 + 0.035)); g.add(lever);
-  }
+  g.add(b.build());
   return g;
 }
 
 // =========================================================================
-// MODELO HUMANOIDE REALISTA (RECEPCIONISTAS, GUARDIA, FANTASMA, ASESINO)
+// PERSONAS
 // =========================================================================
+const _skinCache = new Map();
+
+/** Une geometrías de un Builder privado con materiales concretos (no compartidos). */
+function limb(parent, fn) {
+  const b = new Builder(m => m);
+  fn(b);
+  const g = b.build();
+  parent.add(g);
+  return g;
+}
+
 export function person(o = {}) {
   const {
     skin = '#e0b9a0', shirt = '#3b78b0', pants = '#2a2f3a', hair = 0x2a1c12, height = 1.7,
@@ -807,239 +810,165 @@ export function person(o = {}) {
   const body = new THREE.Group(); root.add(body);
 
   const clothMat = new THREE.MeshStandardMaterial({
-    map: clothTexture(shirt, blood, ghost ? 0.6 : 0.25),
-    roughness: 0.92,
-    transparent: ghost,
-    opacity: ghost ? 0.82 : 1,
+    map: clothTexture(shirt, blood, ghost ? 0.6 : 0.25), roughness: 0.92,
+    transparent: ghost, opacity: ghost ? 0.82 : 1,
     emissive: ghost ? new THREE.Color(0x182836) : new THREE.Color(0x000000),
+    side: gown ? THREE.DoubleSide : THREE.FrontSide,
   });
-
-  const pantMat = gown ? clothMat : new THREE.MeshStandardMaterial({ color: pants, roughness: 0.95 });
+  const pantMat = gown ? clothMat : new THREE.MeshStandardMaterial({ color: pants, roughness: 0.92, transparent: ghost, opacity: ghost ? 0.85 : 1 });
   const skinMat = new THREE.MeshStandardMaterial({
-    color: skin,
-    roughness: 0.68,
-    transparent: ghost,
-    opacity: ghost ? 0.88 : 1,
+    color: skin, roughness: 0.62, transparent: ghost, opacity: ghost ? 0.88 : 1,
     emissive: ghost ? new THREE.Color(0x14202c) : new THREE.Color(0x000000),
   });
+  const shoeMat = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.6, transparent: ghost, opacity: ghost ? 0.85 : 1 });
+  const soleMat = new THREE.MeshStandardMaterial({ color: 0xe8e8e8, roughness: 0.5 });
+  const metalMat = M('chrome'), darkMat = M('darkMetal'), brassMat = M('brass'), rubberMat = M('rubber');
+  const nurseShoes = shirt === '#d9d9d9' || shirt === '#5a8fb8' || shirt === '#f0f0eb';
 
-  const mk = (geo, mat, x, y, z, parent = body) => {
-    const m = new THREE.Mesh(geo, mat);
-    m.position.set(x, y, z);
-    m.castShadow = !ghost;
-    m.receiveShadow = true;
-    parent.add(m);
-    return m;
-  };
-
-  // Piernas y calzado clínico
+  // Piernas: muslo + pantorrilla con rodilla, zapato con puntera
   const legs = [];
   for (const s of [-1, 1]) {
-    const pivot = new THREE.Group();
-    pivot.position.set(s * 0.10, 0.92, 0);
-    body.add(pivot);
-
-    // Muslo y pantorrilla con volumen anatómico
-    mk(new THREE.CapsuleGeometry(0.08, 0.70, 6, 10), pantMat, 0, -0.44, 0, pivot);
-
-    // Calzado hospitalario / borcegos con suela
-    const shoe = mk(new THREE.BoxGeometry(0.12, 0.08, 0.25), new THREE.MeshStandardMaterial({ color: 0x181818, roughness: 0.8 }), 0, -0.89, 0.04, pivot);
-    // Suela blanca de zueco clínico para las enfermeras
-    if (shirt === '#d9d9d9' || shirt === '#5a8fb8') {
-      mk(new THREE.BoxGeometry(0.124, 0.025, 0.26), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 }), 0, -0.92, 0.04, pivot);
-    }
+    const pivot = new THREE.Group(); pivot.position.set(s * 0.095, 0.93, 0); body.add(pivot);
+    limb(pivot, b => {
+      b.capsule(0.077, 0.33, pantMat, 0, -0.27, 0, { cs: 4, seg: 10, sx: 1, sz: 1.02 });
+      b.capsule(0.062, 0.34, pantMat, 0, -0.64, 0.005, { cs: 4, seg: 10 });
+      b.box(0.1, 0.075, 0.26, shoeMat, 0, -0.875, 0.045, { r: 0.03, rs: 2 });
+      b.sphere(0.052, shoeMat, 0, -0.86, 0.14, { seg: 10, sx: 1.0, sy: 0.7, sz: 1.0 });
+      b.box(0.104, 0.02, 0.29, nurseShoes ? soleMat : rubberMat, 0, -0.915, 0.05, { r: 0.008 });
+    });
     legs.push(pivot);
   }
 
-  // Torso esculpido con chaqueta / guardapolvo
-  const torso = mk(new THREE.CapsuleGeometry(0.18, 0.44, 6, 12), clothMat, 0, 1.24, 0);
-  torso.scale.z = 0.72;
-
-  // Si tiene bata de paciente abierta por detrás
+  // Pelvis + torso con cintura, pecho y hombros
+  limb(body, b => {
+    b.capsule(0.17, 0.08, pantMat, 0, 0.97, 0, { sz: 0.7, cs: 4, seg: 12 });                  // cadera
+    b.capsule(0.17, 0.26, clothMat, 0, 1.25, 0, { sz: 0.7, cs: 4, seg: 14 });                 // torso
+    b.capsule(0.185, 0.1, clothMat, 0, 1.38, 0.005, { sz: 0.7, cs: 4, seg: 14 });             // pecho
+    b.capsule(0.05, 0.34, clothMat, 0, 1.47, 0, { rz: PI / 2, cs: 4, seg: 10 });              // línea de hombros
+  });
   if (gown) {
-    const skirt = mk(new THREE.CylinderGeometry(0.19, 0.29, 0.60, 14, 1, true), clothMat, 0, 0.84, 0);
-    skirt.scale.z = 0.75;
+    limb(body, b => b.cyl(0.18, 0.28, 0.6, clothMat, 0, 0.78, 0, { seg: 20, open: true, sz: 0.76 }));
+  } else {
+    // Cuello en V y solapas
+    limb(body, b => {
+      b.box(0.045, 0.16, 0.012, clothMat, -0.055, 1.5, 0.125, { rz: -0.35, ry: 0.15 });
+      b.box(0.045, 0.16, 0.012, clothMat, 0.055, 1.5, 0.125, { rz: 0.35, ry: -0.15 });
+      b.box(0.36, 0.045, 0.24, pantMat, 0, 0.99, 0, { sz: 0.9 });                             // cinturón
+    });
   }
+  // Cuello
+  limb(body, b => b.cyl(0.05, 0.058, 0.14, skinMat, 0, 1.6, 0, { seg: 12 }));
+  limb(body, b => b.cyl(0.078, 0.09, 0.05, clothMat, 0, 1.56, 0, { seg: 14, sz: 0.9 }));
 
-  // Cuello anatómico y cuello de chaqueta / casaca médica en V
-  mk(new THREE.CylinderGeometry(0.055, 0.065, 0.12, 10), skinMat, 0, 1.63, 0);
-  const collar = mk(new THREE.CylinderGeometry(0.08, 0.11, 0.08, 12), clothMat, 0, 1.55, 0);
-  collar.scale.set(1.0, 1.0, 0.85);
-
-  // Solapas de uniforme clínico / chaqueta en el pecho
-  if (!gown) {
-    const lapelL = mk(new THREE.BoxGeometry(0.04, 0.14, 0.015), clothMat, -0.06, 1.48, 0.14);
-    lapelL.rotation.z = -0.22;
-    const lapelR = mk(new THREE.BoxGeometry(0.04, 0.14, 0.015), clothMat, 0.06, 1.48, 0.14);
-    lapelR.rotation.z = 0.22;
-  }
-
-  // Brazos articulados con antebrazo, ligera flexión en el codo y manos modeladas
+  // Brazos: hombro esférico, brazo, codo, antebrazo y mano con dedos
   const arms = [];
   for (const s of [-1, 1]) {
-    const pivot = new THREE.Group();
-    pivot.position.set(s * 0.24, 1.46, 0);
-    body.add(pivot);
-
-    // Hombro y brazo superior con leve caída y postura relajada hacia adelante
-    const upperArm = mk(new THREE.CapsuleGeometry(0.055, 0.26, 6, 8), clothMat, 0, -0.15, 0, pivot);
-    upperArm.rotation.x = 0.10;
-
-    // Antebrazo articulado con flexión natural hacia el frente
-    const forearmGroup = new THREE.Group();
-    forearmGroup.position.set(0, -0.30, 0.035);
-    forearmGroup.rotation.x = ghost ? 0.35 : 0.22;
-    pivot.add(forearmGroup);
-
-    mk(new THREE.CapsuleGeometry(0.048, 0.24, 6, 8), clothMat, 0, -0.12, 0, forearmGroup);
-
-    // Mano esculpida
-    const handGroup = new THREE.Group();
-    handGroup.position.set(0, -0.28, 0);
-    mk(new THREE.BoxGeometry(0.062, 0.08, 0.03), skinMat, 0, 0, 0, handGroup);
-    // Pulgar
-    const thumb = mk(new THREE.BoxGeometry(0.02, 0.035, 0.02), skinMat, s * 0.036, 0.01, 0.012, handGroup);
-    thumb.rotation.z = -s * 0.35;
-    forearmGroup.add(handGroup);
-
-    // Si tiene bisturí en la mano derecha
+    const pivot = new THREE.Group(); pivot.position.set(s * 0.225, 1.45, 0); body.add(pivot);
+    limb(pivot, b => {
+      b.sphere(0.054, clothMat, 0, 0, 0, { seg: 12 });
+      b.capsule(0.046, 0.22, clothMat, 0, -0.17, 0, { cs: 4, seg: 10, rx: 0.08 });
+    });
+    const fore = new THREE.Group(); fore.position.set(0, -0.31, 0.03); fore.rotation.x = ghost ? 0.38 : 0.24; pivot.add(fore);
+    limb(fore, b => {
+      b.sphere(0.047, clothMat, 0, 0, 0, { seg: 10 });
+      b.capsule(0.044, 0.2, gown ? clothMat : skinMat, 0, -0.14, 0, { cs: 4, seg: 10 });
+      b.capsule(0.05, 0.05, clothMat, 0, -0.04, 0, { cs: 3, seg: 10 });                       // puño
+    });
+    const hand = new THREE.Group(); hand.position.set(0, -0.3, 0); fore.add(hand);
+    limb(hand, b => {
+      b.box(0.062, 0.085, 0.032, skinMat, 0, -0.02, 0, { r: 0.012, rs: 2 });
+      for (let f = 0; f < 4; f++) b.capsule(0.0095, 0.045, skinMat, -0.022 + f * 0.0148, -0.088, 0, { cs: 2, seg: 6, rx: 0.15 });
+      b.capsule(0.011, 0.035, skinMat, s * 0.04, -0.03, 0.012, { cs: 2, seg: 6, rz: -s * 0.5 });
+    });
     if (scalpel && s === 1) {
-      const knife = new THREE.Group();
-      knife.position.set(0, -0.05, 0.08);
-      knife.rotation.x = Math.PI / 2.5;
-      // Mango metálico con remaches
-      box(0.02, 0.16, 0.008, 'brass', 0, -0.04, 0, knife);
-      // Hoja de bisturí afilada y ensangrentada
-      const blade = box(0.018, 0.14, 0.004, 'scalpelSteel', 0, 0.1, 0, knife);
-      knife.scale.set(1, 1, 1);
-      handGroup.add(knife);
+      const knife = new THREE.Group(); knife.position.set(0, -0.07, 0.03); knife.rotation.x = PI / 2.2; hand.add(knife);
+      limb(knife, b => {
+        b.box(0.016, 0.15, 0.008, brassMat, 0, -0.03, 0, { r: 0.003 });
+        b.box(0.015, 0.1, 0.003, M('scalpelSteel'), 0, 0.095, 0);
+        b.box(0.012, 0.012, 0.003, M('scalpelSteel'), 0, 0.15, 0, { rz: PI / 4 });
+      });
     }
-
     arms.push(pivot);
   }
 
-  // Cabeza con volumen craneal y orejas
-  const head = new THREE.Group();
-  head.position.set(0, 1.76, 0);
-  body.add(head);
-
-  // Cráneo
-  const skull = mk(new THREE.SphereGeometry(0.12, 22, 18), skinMat, 0, 0, 0, head);
-  skull.scale.set(0.92, 1.16, 1.0);
-
-  // Orejas
-  for (const s of [-1, 1]) {
-    const ear = mk(new THREE.BoxGeometry(0.015, 0.045, 0.025), skinMat, s * 0.114, 0.01, -0.01, head);
-    ear.rotation.y = s * 0.2;
-  }
-
-  // Rostro detallado en alta resolución
-  const faceMat = new THREE.MeshStandardMaterial({
-    map: faceTexture(skin, kind),
-    roughness: 0.68,
-    transparent: ghost,
-    opacity: ghost ? 0.95 : 1,
+  // Cabeza
+  const head = new THREE.Group(); head.position.set(0, 1.76, 0); body.add(head);
+  limb(head, b => {
+    b.sphere(0.12, skinMat, 0, 0, 0, { seg: 22, sx: 0.92, sy: 1.16, sz: 1.0 });
+    b.sphere(0.085, skinMat, 0, -0.09, 0.02, { seg: 14, sx: 0.95, sy: 0.8, sz: 0.95 });                 // mandíbula
+    for (const s of [-1, 1]) b.sphere(0.024, skinMat, s * 0.113, 0.0, -0.01, { seg: 8, sx: 0.4, sy: 1.3, sz: 0.8 });
   });
-  const face = new THREE.Mesh(new THREE.SphereGeometry(0.122, 22, 18, Math.PI / 2 - 0.65, 1.3, Math.PI / 2 - 0.58, 1.15), faceMat);
-  face.scale.set(0.92, 1.16, 1.0);
-  head.add(face);
+  limb(head, b => b.capsule(0.017, 0.03, skinMat, 0, -0.025, 0.122, { cs: 3, seg: 8, rx: -0.25 }));   // nariz
+  const faceMat = new THREE.MeshStandardMaterial({ map: faceTexture(skin, kind), roughness: 0.66, transparent: ghost, opacity: ghost ? 0.95 : 1, polygonOffset: true, polygonOffsetFactor: -1 });
+  const face = new THREE.Mesh(new THREE.SphereGeometry(0.1225, 24, 18, PI / 2 - 0.65, 1.3, PI / 2 - 0.58, 1.15), faceMat);
+  face.scale.set(0.92, 1.16, 1.0); head.add(face);
 
-  // Nariz modelada en 3D
-  const nose = mk(new THREE.ConeGeometry(0.018, 0.05, 4), skinMat, 0, -0.01, 0.126, head);
-  nose.rotation.x = -Math.PI / 2;
-
-  // Cabello con peinado tridimensional y flequillo natural
-  const hairMat = new THREE.MeshStandardMaterial({
-    color: hair,
-    roughness: 0.88,
-    transparent: ghost,
-    opacity: ghost ? 0.92 : 1,
-  });
-  const hairCap = new THREE.Mesh(new THREE.SphereGeometry(0.128, 20, 16, 0, Math.PI * 2, 0, 1.7), hairMat);
-  hairCap.scale.set(0.94, 1.18, 1.04);
-  hairCap.position.y = 0.014;
-  hairCap.rotation.x = -0.14;
-  head.add(hairCap);
-
-  // Mechones de flequillo y patillas que enmarcan el rostro
-  mk(new THREE.BoxGeometry(0.14, 0.035, 0.04), hairMat, 0, 0.08, 0.09, head);
-  mk(new THREE.BoxGeometry(0.025, 0.11, 0.03), hairMat, -0.095, 0.02, 0.065, head);
-  mk(new THREE.BoxGeometry(0.025, 0.11, 0.03), hairMat, 0.095, 0.02, 0.065, head);
-
-  if (longHair || hairStyle === 'long') {
-    // Melena que cae por la espalda
-    mk(new THREE.CapsuleGeometry(0.11, 0.38, 4, 10), hairMat, 0, -0.16, -0.08, head);
-    // Mechones laterales
-    mk(new THREE.BoxGeometry(0.035, 0.22, 0.02), hairMat, -0.09, -0.06, 0.08, head);
-    mk(new THREE.BoxGeometry(0.035, 0.22, 0.02), hairMat, 0.09, -0.06, 0.08, head);
-  }
-
-  if (hairStyle === 'bun') {
-    // Rodete de enfermera recogido detrás
-    const bun = mk(new THREE.SphereGeometry(0.065, 12, 10), hairMat, 0, 0.06, -0.12, head);
-    // Cofia clínica blanca clásica de enfermera con cruz roja
-    const nCap = new THREE.Group();
-    nCap.position.set(0, 0.14, 0.01);
-    box(0.11, 0.035, 0.06, 'white', 0, 0, 0, nCap);
-    box(0.08, 0.02, 0.035, 'white', 0, 0.022, -0.01, nCap);
-    box(0.018, 0.007, 0.002, 'red', 0, 0.004, 0.032, nCap);
-    box(0.007, 0.018, 0.002, 'red', 0, 0.004, 0.032, nCap);
-    head.add(nCap);
-  }
-
-  if (hairStyle === 'wild') {
-    // Pelo desgreñado y alborotado del hermano recluido
-    for (let i = 0; i < 14; i++) {
-      const a = (i / 14) * Math.PI * 2;
-      const strand = mk(new THREE.ConeGeometry(0.028, 0.18, 4), hairMat, Math.cos(a) * 0.11, 0.11, Math.sin(a) * 0.1 - 0.02, head);
-      strand.rotation.set(Math.sin(a) * 1.1, 0, -Math.cos(a) * 1.1);
+  // Cabello
+  const hairMat = new THREE.MeshStandardMaterial({ color: hair, roughness: 0.82, transparent: ghost, opacity: ghost ? 0.92 : 1 });
+  limb(head, b => {
+    const cap = new THREE.SphereGeometry(0.128, 26, 16, 0, PI * 2, 0, 1.22);
+    b.geo(cap, hairMat, 0, 0.012, -0.008, { sx: 0.95, sy: 1.18, sz: 1.04, rx: -0.12 });
+    const back = new THREE.SphereGeometry(0.128, 26, 12, 0, PI * 2, 1.0, 0.9);
+    b.geo(back, hairMat, 0, 0.0, -0.03, { sx: 0.95, sy: 1.12, sz: 0.96 });
+    b.box(0.15, 0.03, 0.05, hairMat, 0, 0.112, 0.07, { r: 0.012, rx: 0.5 });
+    for (const s of [-1, 1]) b.box(0.025, 0.11, 0.045, hairMat, s * 0.1, 0.015, 0.045, { r: 0.008 });
+    if (longHair || hairStyle === 'long') {
+      b.capsule(0.11, 0.36, hairMat, 0, -0.16, -0.075, { cs: 4, seg: 12, sx: 1, sz: 0.8 });
+      for (const s of [-1, 1]) b.capsule(0.022, 0.2, hairMat, s * 0.1, -0.08, 0.06, { cs: 3, seg: 8 });
     }
+    if (hairStyle === 'bun') b.sphere(0.065, hairMat, 0, 0.07, -0.12, { seg: 12 });
+    if (hairStyle === 'wild') {
+      for (let i = 0; i < 16; i++) {
+        const a = (i / 16) * PI * 2;
+        b.cyl(0.001, 0.026, 0.19, hairMat, Math.cos(a) * 0.11, 0.12, Math.sin(a) * 0.1 - 0.02, { seg: 5, rx: Math.sin(a) * 1.1, rz: -Math.cos(a) * 1.1 });
+      }
+    }
+  });
+  if (hairStyle === 'bun') {
+    limb(head, b => {
+      const w = M('white');
+      b.box(0.12, 0.04, 0.07, w, 0, 0.145, 0.01, { r: 0.012 });
+      b.box(0.085, 0.025, 0.04, w, 0, 0.172, -0.01, { r: 0.01 });
+      b.box(0.022, 0.008, 0.003, M('red'), 0, 0.147, 0.047);
+      b.box(0.008, 0.022, 0.003, M('red'), 0, 0.147, 0.047);
+    });
   }
-
-  // Estetoscopio de Marta alrededor del cuello
-  if (stethoscope) {
-    const steth = new THREE.Group();
-    steth.position.set(0, 1.56, 0.02);
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.01, 8, 24, Math.PI * 1.3), M('rubber'));
-    ring.rotation.x = Math.PI / 2.3;
-    steth.add(ring);
-    // Campana metálica pectoral
-    cyl(0.025, 0.025, 0.015, 'chrome', 0.06, -0.22, 0.14, steth, 12);
-    body.add(steth);
-  }
-
-  // Credencial identificatoria con foto
-  if (badge) {
-    const card = box(0.065, 0.09, 0.005, 'white', 0.11, 1.38, 0.14, body);
-    box(0.015, 0.02, 0.008, 'chrome', 0.11, 1.44, 0.14, body); // Gancho de clip
-  }
-
-  // Gorra de seguridad de Raúl con visera brillante
   if (guardCap) {
-    const cap = new THREE.Group();
-    cap.position.set(0, 0.11, 0.02);
-    // Corona de la gorra
-    cyl(0.125, 0.11, 0.07, 'darkMetal', 0, 0, 0, cap, 16);
-    // Visera curva delantera
-    const visor = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.015, 12, 1, false, 0, Math.PI * 0.8), M('rubber'));
-    visor.rotation.y = -Math.PI * 0.4;
-    visor.position.set(0, -0.02, 0.06);
-    cap.add(visor);
-    // Placa dorada en la gorra
-    box(0.035, 0.035, 0.005, 'brass', 0, 0.02, 0.12, cap);
-    head.add(cap);
-
-    // Cinturón de servicio con radio y funda
-    const belt = box(0.42, 0.06, 0.32, 'rubber', 0, 0.94, 0, body);
-    box(0.07, 0.14, 0.05, 'darkMetal', 0.22, 0.96, 0.05, body); // Radio policial
-    box(0.05, 0.05, 0.02, 'brass', 0, 0.94, 0.16, body); // Hebilla
+    limb(head, b => {
+      b.cyl(0.128, 0.122, 0.08, darkMat, 0, 0.115, 0.0, { seg: 20 });
+      b.cyl(0.13, 0.13, 0.025, darkMat, 0, 0.158, 0.0, { seg: 20, sx: 1.05 });
+      b.cyl(0.13, 0.13, 0.012, rubberMat, 0, 0.09, 0.06, { seg: 14, arc: PI * 0.9, ry: PI * 0.55 + 0.0, sx: 1.0, sz: 1.15 });
+      b.box(0.04, 0.04, 0.006, brassMat, 0, 0.125, 0.125, { r: 0.002 });
+    });
   }
 
-  // Aura fantasmal del niño asesinado
+  // Accesorios del torso
+  if (stethoscope) {
+    limb(body, b => {
+      b.torus(0.105, 0.008, rubberMat, 0, 1.5, 0.02, { arc: PI * 1.25, seg: 24, rx: PI / 2.2, rz: PI * 0.88, sz: 1.1 });
+      b.cyl(0.026, 0.026, 0.014, metalMat, 0.05, 1.3, 0.14, { rx: PI / 2, seg: 14 });
+      b.tube([0.0, 1.43, 0.12], [0.05, 1.31, 0.14], 0.005, rubberMat, 5);
+    });
+  }
+  if (badge) {
+    const badgeMat = new THREE.MeshStandardMaterial({ color: '#cfcab8', roughness: 0.95, metalness: 0 });
+    limb(body, b => {
+      b.box(0.07, 0.095, 0.006, badgeMat, 0.1, 1.36, 0.125, { r: 0.003 });
+      b.box(0.02, 0.025, 0.008, darkMat, 0.1, 1.42, 0.125);
+      b.box(0.05, 0.035, 0.002, M('hospitalGreen'), 0.1, 1.355, 0.129);
+    });
+  }
+  if (guardCap) {
+    limb(body, b => {
+      b.box(0.4, 0.055, 0.28, rubberMat, 0, 0.99, 0, { r: 0.012, sz: 0.95 });
+      b.box(0.06, 0.13, 0.05, darkMat, 0.23, 0.98, 0.05, { r: 0.01 });
+      b.box(0.045, 0.045, 0.012, brassMat, 0, 0.99, 0.135, { r: 0.004 });
+    });
+  }
+
   if (ghost) {
     const glow = new THREE.PointLight(0x7fe3ff, 1.2, 3.5, 2);
-    glow.position.set(0, 1.2, 0.2);
-    root.add(glow);
+    glow.position.set(0, 1.2, 0.2); root.add(glow);
   }
 
   root.scale.setScalar(height / 1.72);
@@ -1060,134 +989,128 @@ export const PEOPLE = {
 // OBJETOS RECOGIBLES / INTERACTIVOS
 // =========================================================================
 export function noteMesh() {
+  const g = new THREE.Group();
   const m = new THREE.Mesh(new THREE.PlaneGeometry(0.32, 0.40), new THREE.MeshStandardMaterial({ map: noteTex(), roughness: 0.95, emissive: 0x241e12 }));
-  m.rotation.x = -Math.PI / 2 + 0.08;
   m.castShadow = true;
-  return m;
+  g.add(m);
+  g.rotation.x = -PI / 2 + 0.08;
+  return g;
 }
 
 export function keyMesh() {
-  const g = new THREE.Group();
-  const mat = M('brass');
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.065, 0.016, 8, 20), mat);
-  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.22, 10), mat);
-  shaft.position.y = -0.12;
-  const bit1 = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.02, 0.015), mat);
-  bit1.position.set(0.026, -0.20, 0);
-  const bit2 = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.016, 0.015), mat);
-  bit2.position.set(0.018, -0.16, 0);
-
-  // Etiqueta de cartulina colgando de la anilla
-  const tag = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 0.002), new THREE.MeshStandardMaterial({ color: 0xd8ceb0, roughness: 0.9 }));
-  tag.position.set(-0.06, 0.06, 0);
-  tag.rotation.z = 0.4;
-
-  g.add(ring, shaft, bit1, bit2, tag);
-  g.rotation.z = Math.PI / 2;
-  return g;
+  const b = B();
+  b.torus(0.062, 0.015, 'brass', 0, 0, 0, { seg: 24, tseg: 10 });
+  b.cyl(0.012, 0.012, 0.22, 'brass', 0, -0.17, 0, { seg: 12 });
+  b.box(0.055, 0.02, 0.014, 'brass', 0.03, -0.26, 0, { r: 0.004 });
+  b.box(0.035, 0.016, 0.014, 'brass', 0.02, -0.22, 0, { r: 0.004 });
+  b.cyl(0.02, 0.02, 0.018, 'brass', 0, -0.075, 0, { seg: 10 });
+  // Etiqueta de cartulina con cordel
+  b.box(0.08, 0.12, 0.003, 'white', -0.07, 0.07, 0, { rz: 0.4, r: 0.001 });
+  b.curve([[-0.03, 0.05, 0], [-0.04, 0.07, 0.005], [-0.05, 0.08, 0]], 0.002, 'rubber', { segs: 6, rs: 4 });
+  const g = b.build();
+  g.rotation.z = PI / 2;
+  const w = new THREE.Group(); w.add(g);
+  return w;
 }
 
 export function flashlightMesh() {
-  const g = new THREE.Group();
-  // Tubo moleteado negro
-  cyl(0.028, 0.028, 0.22, 'darkMetal', 0, 0, 0, g, 12);
-  // Cabezal biselado
-  cyl(0.046, 0.030, 0.07, 'chrome', 0, 0.13, 0, g, 14);
-  // Cristal delantero
-  const lens = new THREE.Mesh(new THREE.CircleGeometry(0.042, 14), M('glass'));
-  lens.position.set(0, 0.166, 0);
-  lens.rotation.x = -Math.PI / 2;
-  g.add(lens);
-  // Interruptor de goma
-  box(0.015, 0.03, 0.012, 'rubber', 0, 0.04, 0.03, g);
-  g.rotation.z = Math.PI / 2;
-  return g;
+  const b = B();
+  b.cyl(0.028, 0.028, 0.24, 'darkMetal', 0, 0, 0, { seg: 16 });
+  for (let k = 0; k < 6; k++) b.torus(0.029, 0.003, 'rubber', 0, -0.08 + k * 0.025, 0, { rx: PI / 2, seg: 16, tseg: 4 });
+  b.cyl(0.048, 0.03, 0.07, 'chrome', 0, 0.15, 0, { seg: 20 });
+  b.cyl(0.04, 0.04, 0.008, 'lampGlow', 0, 0.187, 0, { seg: 20 });
+  b.cyl(0.03, 0.03, 0.02, 'darkMetal', 0, -0.13, 0, { seg: 12 });
+  b.box(0.018, 0.034, 0.014, 'rubber', 0, 0.04, 0.03, { r: 0.005 });
+  const g = b.build();
+  g.rotation.z = PI / 2;
+  const w = new THREE.Group(); w.add(g);
+  return w;
 }
 
 export function batteryMesh() {
-  const g = new THREE.Group();
-  cyl(0.038, 0.038, 0.11, new THREE.MeshStandardMaterial({ color: 0x1f8542, roughness: 0.4 }), 0, 0, 0, g, 12);
-  cyl(0.018, 0.018, 0.018, 'chrome', 0, 0.064, 0, g, 10);
-  box(0.07, 0.04, 0.075, 'darkMetal', 0, -0.03, 0, g);
-  return g;
+  const b = B();
+  const green = new THREE.MeshStandardMaterial({ color: 0x1f8542, roughness: 0.4, metalness: 0.2 });
+  b.cyl(0.036, 0.036, 0.1, green, 0, 0, 0, { seg: 18 });
+  b.cyl(0.037, 0.037, 0.03, 'chrome', 0, -0.05, 0, { seg: 18 });
+  b.cyl(0.017, 0.017, 0.02, 'chrome', 0, 0.06, 0, { seg: 12 });
+  b.cyl(0.037, 0.037, 0.012, 'brass', 0, 0.045, 0, { seg: 18 });
+  b.box(0.01, 0.05, 0.002, 'white', 0.0, 0.0, 0.037);
+  return b.build();
 }
 
 export function markerMesh() {
-  const g = new THREE.Group();
-  // Felpón negro con tapa
-  cyl(0.012, 0.012, 0.14, new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3 }), 0, 0, 0, g, 10);
-  cyl(0.014, 0.014, 0.05, new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.2 }), 0, 0.055, 0, g, 10);
-  // Clip de plástico de la tapa
-  box(0.005, 0.04, 0.01, 'darkMetal', 0, 0.055, 0.016, g);
-  g.rotation.z = Math.PI / 2;
-  return g;
+  const b = B();
+  const black = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3 });
+  b.cyl(0.012, 0.012, 0.14, black, 0, 0, 0, { seg: 12 });
+  b.cyl(0.014, 0.014, 0.055, 'darkMetal', 0, 0.055, 0, { seg: 12 });
+  b.box(0.005, 0.045, 0.012, 'darkMetal', 0, 0.055, 0.018);
+  b.cyl(0.002, 0.012, 0.018, 'rubber', 0, -0.078, 0, { seg: 10 });
+  const g = b.build();
+  g.rotation.z = PI / 2;
+  const w = new THREE.Group(); w.add(g);
+  return w;
 }
 
 export function photoMesh() {
   const t = paint(128, 160, (g, w, h) => {
-    // Foto polaroid de 1984 con dos gemelos
     g.fillStyle = '#eae2cf'; g.fillRect(0, 0, w, h);
     g.fillStyle = '#2d2824'; g.fillRect(10, 10, w - 20, h - 40);
-
-    // Gemelo sano a la izquierda
-    g.fillStyle = '#b0947e'; g.beginPath(); g.arc(42, 54, 15, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#b0947e'; g.beginPath(); g.arc(42, 54, 15, 0, PI * 2); g.fill();
     g.fillStyle = '#3a4b60'; g.fillRect(26, 72, 32, 45);
-
-    // Gemelo enfermo pálido a la derecha (en cama de hospital)
-    g.fillStyle = '#8f9da2'; g.beginPath(); g.arc(86, 54, 15, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#8f9da2'; g.beginPath(); g.arc(86, 54, 15, 0, PI * 2); g.fill();
     g.fillStyle = '#7a8588'; g.fillRect(70, 72, 32, 45);
-    // Ojeras y respirador
-    g.fillStyle = 'rgba(20,20,30,0.5)'; g.beginPath(); g.arc(86, 56, 8, 0, Math.PI * 2); g.fill();
-
-    // Texto al pie de la polaroid
-    g.fillStyle = '#1a1814';
-    g.font = '10px "Special Elite", monospace';
+    g.fillStyle = 'rgba(20,20,30,0.5)'; g.beginPath(); g.arc(86, 56, 8, 0, PI * 2); g.fill();
+    g.fillStyle = '#1a1814'; g.font = '10px "Special Elite", monospace';
     g.fillText('14-NOV-1984 · HNOS. V.', 14, h - 14);
   });
+  const grp = new THREE.Group();
   const m = new THREE.Mesh(new THREE.PlaneGeometry(0.25, 0.31), new THREE.MeshStandardMaterial({ map: t, roughness: 0.85 }));
-  m.rotation.x = -Math.PI / 2;
-  return m;
+  grp.add(m);
+  grp.rotation.x = -PI / 2;
+  return grp;
 }
 
 export function phoneMesh() {
-  const g = new THREE.Group();
-  box(0.24, 0.08, 0.22, 'darkMetal', 0, 0, 0, g);
-  box(0.12, 0.02, 0.12, 'paint', -0.04, 0.045, 0.02, g);
-  box(0.06, 0.05, 0.24, 'darkMetal', 0.06, 0.06, 0, g);
-  return g;
+  const b = B();
+  phoneModel(b, 0, 0, 0, 0);
+  return b.build();
 }
 
+// =========================================================================
+// ESCALERAS
+// =========================================================================
 export function stairsModel(dir) {
-  const g = new THREE.Group();
-  const stepMat = new THREE.MeshStandardMaterial({ color: 0x5a5850, roughness: 0.85 });
-  const treadMat = new THREE.MeshStandardMaterial({ color: 0x8a7a50, roughness: 0.5 }); // Borde de seguridad antideslizante
-
+  const b = B();
+  const w = 2.6, len = 2.9;
   if (dir === 'up') {
-    const n = 16;
+    const n = 16, rise = 0.2, run = len / n;
     for (let i = 0; i < n; i++) {
-      const h = 0.2 * (i + 1);
-      const s = new THREE.Mesh(new THREE.BoxGeometry(2.6, h, 2.9 / n), stepMat);
-      s.position.set(0, h / 2, -1.45 + (2.9 / n) * (i + 0.5));
-      s.castShadow = s.receiveShadow = true;
-      g.add(s);
-
-      // Franja amarilla antideslizante en el borde de cada escalón
-      const tread = new THREE.Mesh(new THREE.BoxGeometry(2.56, 0.015, 0.05), treadMat);
-      tread.position.set(0, h + 0.008, -1.45 + (2.9 / n) * (i + 0.5) + (2.9 / n) * 0.4);
-      g.add(tread);
+      const h = rise * (i + 1), z = -len / 2 + run * (i + 0.5);
+      b.box(w, h, run, 'concrete', 0, h / 2, z);
+      b.box(w - 0.04, 0.018, 0.06, 'hazardYellow', 0, h + 0.001, z + run / 2 - 0.035);
     }
-    // Barandilla tubular de escalera
-    for (const s of [-1.28, 1.28]) {
-      const rail = box(0.04, 0.04, 3.2, 'chrome', s, 1.8, 0, g);
-      rail.rotation.x = 0.65;
+    // Barandillas inclinadas con balaustres
+    for (const s of [-1, 1]) {
+      const x = s * 1.26;
+      b.tube([x, 1.0, -len / 2], [x, 1.0 + rise * n - 0.2, len / 2], 0.022, 'chrome');
+      for (let i = 0; i <= n; i += 2) {
+        const z = -len / 2 + run * i, y = rise * i;
+        b.tube([x, y + 0.02, z], [x, y + 1.0 - 0.0, z], 0.011, 'metal', 6);
+      }
     }
-    g.rotation.y = Math.PI;
-  } else {
-    const hole = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 2.9), new THREE.MeshBasicMaterial({ color: 0x000000 }));
-    hole.rotation.x = -Math.PI / 2; hole.position.y = 0.01; g.add(hole);
-    for (const x of [-1.3, 1.3]) {
-      box(0.05, 1.05, 2.9, 'metal', x, 0.52, 0, g);
-    }
+    const g = b.build();
+    g.rotation.y = PI;
+    return g;
   }
-  return g;
+  // Hueco hacia abajo: abismo, bordes de seguridad, barandas
+  b.plane(w, len, 'abyss', 0, 0.012, 0, { rx: -PI / 2 });
+  for (const s of [-1, 1]) {
+    const x = s * 1.27;
+    b.tube([x, 1.0, -len / 2], [x, 1.0, len / 2], 0.022, 'chrome');
+    b.tube([x, 0.55, -len / 2], [x, 0.55, len / 2], 0.014, 'chrome');
+    for (let i = 0; i <= 4; i++) b.tube([x, 0.0, -len / 2 + (len / 4) * i], [x, 1.0, -len / 2 + (len / 4) * i], 0.014, 'metal', 6);
+    b.box(0.05, 0.012, len, 'hazardYellow', s * 1.2, 0.013, 0);
+  }
+  b.box(w, 0.012, 0.05, 'hazardYellow', 0, 0.013, -len / 2 + 0.03);
+  return b.build();
 }

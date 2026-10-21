@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { Hospital } from '../world/Hospital.js';
 import { Player } from '../player/Player.js';
 import { Ghost, Actor } from '../enemy/Ghost.js';
@@ -150,17 +151,17 @@ export class Game {
       if (e.code === 'ArrowRight' || e.code === 'KeyD') { this.autoTour.next(); return; }
       if (e.code === 'ArrowLeft' || e.code === 'KeyA') { this.autoTour.prev(); return; }
     }
-    if (this.skipFlashback && (e.code === 'Space' || e.code === 'KeyE' || e.code === 'Escape')) { this.skipFlashback(); return; }
+    if (this.skipFlashback && (e.code === 'Space' || e.code === 'KeyF' || e.code === 'KeyE' || e.code === 'Escape')) { this.skipFlashback(); return; }
     if (this.isHiding) {
-      if (e.code === 'KeyE' || e.code === 'Escape') { this.exitHiding(); return; }
+      if (e.code === 'KeyF' || e.code === 'Escape') { this.exitHiding(); return; }
       if (e.code === 'Space') { e.preventDefault(); return; }
     }
     if (this.state === 'ui') {
       if (this.choiceCb && (e.code === 'Digit1' || e.code === 'Numpad1')) this.choiceCb(0);
       if (this.choiceCb && (e.code === 'Digit2' || e.code === 'Numpad2')) this.choiceCb(1);
       if (this.keypadKey && /^Digit\d$/.test(e.code)) this.keypadKey(e.code.slice(5));
-      if (this.closeNote && (e.code === 'KeyE' || e.code === 'Escape')) this.closeNote();
-      if (this.closeCctv && (e.code === 'Escape' || e.code === 'KeyE')) this.closeCctv();
+      if (this.closeNote && (e.code === 'KeyF' || e.code === 'KeyE' || e.code === 'Escape')) this.closeNote();
+      if (this.closeCctv && (e.code === 'Escape' || e.code === 'KeyF' || e.code === 'KeyE')) this.closeCctv();
     }
     if (e.code === 'Escape' && this.state === 'play') { this.input.unlock(); return; }
     if (this.qteCb && e.code === this.qteCode) this.qteCb(true);
@@ -175,6 +176,19 @@ export class Game {
     $('fx-fade').style.opacity = 0; this.buildMenu(); show('menu', true);
     this.scene = new THREE.Scene(); this.scene.background = new THREE.Color(0x020203);
     this.postProcess?.setScene(this.scene);
+  }
+
+  /** Mapa de entorno tenue: da vida a los metales (cromo, acero) sin iluminar la escena. */
+  applyEnvironment(scene) {
+    try {
+      if (!this._envTex) {
+        const pm = new THREE.PMREMGenerator(this.renderer);
+        this._envTex = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+        pm.dispose();
+      }
+      scene.environment = this._envTex;
+      scene.environmentIntensity = 0.16;
+    } catch (e) { console.warn('Environment map no disponible', e); }
   }
 
   // ------------------------------------------------------------------ capítulo
@@ -193,6 +207,7 @@ export class Game {
 
     this.scene = new THREE.Scene(); this.scene.background = new THREE.Color(0x020203);
     this.scene.fog = new THREE.FogExp2(0x040506, 0.06);
+    this.applyEnvironment(this.scene);
     this.postProcess?.setScene(this.scene);
     this.hospital = new Hospital(this.scene);
     this.player = new Player(this.camera, this.scene, this.hospital, this.input);
@@ -204,7 +219,7 @@ export class Game {
     this.ghost.onCatch = () => this.catchPlayer();
     this.ghost.onStep = null;
 
-    this.isHiding = false; this.flashbackPlayer.stop();
+    this.isHiding = false; this.hidingDecor = null; this.flashbackPlayer.stop();
     ['menu', 'pause', 'end', 'note', 'choice', 'keypad', 'cctv', 'qte', 'flashback', 'hiding', 'examiner'].forEach(id => show(id, false));
     show('hud', true); show('touch-ui', this.input.isTouch);
     $('fx-fade').style.transition = 'none'; $('fx-fade').style.opacity = 1;
@@ -659,9 +674,11 @@ export class Game {
   }
 
   // ----- escondites (lockers) estilo Resident Evil
-  enterHiding(spot) {
+  enterHiding(spot, decor) {
     if (this.isHiding) return;
     this.isHiding = true;
+    // El casillero se oculta mientras estás dentro: antes la cámara quedaba pegada a sus paneles y se veía todo negro
+    this.hidingDecor = decor || null; if (decor) decor.visible = false;
     this.breath = 1.0;
     this.holdingBreath = false;
     this.gaspCd = 0;
@@ -670,7 +687,11 @@ export class Game {
     this.audio.lockerHide();
     this.player.flashOn = false;
     this.player.pos.set(spot.x * S, 1.45, spot.z * S);
-    this.player.yaw = ((spot.rot || 0) + 180) * Math.PI / 180;
+    this.player.yaw = this.player.targetYaw = ((spot.rot || 0) + 180) * Math.PI / 180;
+    this.player.pitch = this.player.targetPitch = 0;
+    this.hideBaseYaw = this.player.yaw; this.hideLook = { y: 0, p: 0 };
+    this.hideNearT = 0; this.hideUnheldT = 0;
+    this.player.crouch = false;
     show('hiding', true);
     show('hud', false);
     show('touch-ui', false);
@@ -679,15 +700,37 @@ export class Game {
   exitHiding() {
     if (!this.isHiding) return;
     this.isHiding = false;
-    this.holdingBreath = false;
+    this.holdingBreath = false; this.gaspCd = 0;
+    if (this.hidingDecor) { this.hidingDecor.visible = true; this.hidingDecor = null; }
     this.audio.lockerExit();
     if (this.hidingReturnPos) {
       this.player.pos.copy(this.hidingReturnPos);
-      this.player.yaw = this.hidingReturnYaw;
+      this.player.yaw = this.player.targetYaw = this.hidingReturnYaw;
+      this.player.pitch = this.player.targetPitch = 0;
     }
     show('hiding', false);
     show('hud', true);
     show('touch-ui', this.input.isTouch);
+  }
+
+  /** Dentro del casillero: solo se puede mirar un poco por las rejillas; el fantasma busca si respiras. */
+  updateHiding(dt) {
+    const p = this.player, inp = this.input, L = this.hideLook;
+    if (L) {
+      L.y = Math.max(-0.75, Math.min(0.75, L.y - Math.max(-120, Math.min(120, inp.dx)) * p.sens));
+      L.p = Math.max(-0.4, Math.min(0.3, L.p - Math.max(-120, Math.min(120, inp.dy)) * p.sens));
+      p.yaw = p.targetYaw = this.hideBaseYaw + L.y; p.pitch = p.targetPitch = L.p;
+    }
+    p.flashOn = false;
+    const g = this.ghost;
+    if (g.mode === 'chase' && g.mesh.visible && g.floor === this.hospital.floorNum && g.dist < 6) {
+      if (!this.holdingBreath || this.gaspCd > 0) this.hideUnheldT += dt; else this.hideNearT += dt;
+      if (this.hideUnheldT > 0.7) {            // te oyó respirar: te saca del casillero
+        this.exitHiding(); this.catchPlayer();
+      } else if (this.hideNearT > 1.8) {       // contuviste el aliento: pierde tu rastro
+        g.vanish(); this.audio.whisper(); this.hideNearT = 0;
+      }
+    }
   }
 
   // ----- fantasmas / sustos
@@ -719,7 +762,7 @@ export class Game {
     if (this.isHiding) return this.exitHiding();
     const it = this.player.findInteractable(); if (!it) return;
     if (it.inUse) return;
-    if (it.kind === 'hiding') return this.enterHiding(it.spot);
+    if (it.kind === 'hiding') return this.enterHiding(it.spot, it.decor);
     if (it.kind === 'door') return this.useDoor(it.door);
     if (it.kind === 'stairs') {
       if (this.stairsBlocked) { this.audio.locked(); this.say(typeof this.stairsBlocked === 'string' ? this.stairsBlocked : 'No debería subir ahora.', 'Clara', { thought: true }); return; }
@@ -757,7 +800,22 @@ export class Game {
       this.flags['unlock:' + d.lock] = true; d.lock = null; d.open = true; this.audio.door(); return;
     }
     if (d.isExit && !d.open) { this.audio.locked(); return; }
+    if (d.open) {
+      // No se puede cerrar una puerta con alguien en el marco (antes el jugador quedaba atrapado dentro de la celda)
+      const p = this.player, m = S / 2 + 0.45;
+      const inFrame = o => Math.abs(o.x - d.x * S) < m && Math.abs(o.z - d.z * S) < m;
+      if (inFrame(p.pos) || (this.ghost?.mesh.visible && this.ghost.floor === this.hospital.floorNum && inFrame(this.ghost.pos))) {
+        this.audio.locked(); return;
+      }
+    }
     d.open = !d.open; this.audio.door(); this.player.noise = 8;
+  }
+
+  /** Red de seguridad: si por cualquier motivo el jugador queda dentro de una celda de puerta cerrada, se abre. */
+  unstickFromDoor() {
+    const h = this.hospital, p = this.player;
+    const d = h.doorAt(h.cellOf(p.pos.x), h.cellOf(p.pos.z));
+    if (d && !d.open && !d.isExit) { d.open = true; }
   }
 
   // ------------------------------------------------------------------ bucle
@@ -800,7 +858,9 @@ export class Game {
     const pulseFactor = (tension > 0.15 || (this.isHiding && this.breath < 0.4)) ? Math.max(0, Math.sin(t * heartRate)) : 0;
     this.heartPulse = pulseFactor * (tension > 0 ? tension : 0.45);
 
-    this.player.update(dt, t, frozen || !!this.look, d, tension);
+    if (this.state === 'play' && !this.isHiding) this.unstickFromDoor();
+    if (this.isHiding && this.state === 'play') this.updateHiding(dt);
+    this.player.update(dt, t, frozen || !!this.look || this.isHiding, d, tension);
 
     // Renderizado 3D de estudio para el examinador de objetos si está activo
     if (this.examiner?.active) {
@@ -814,7 +874,7 @@ export class Game {
     }
 
     // interacción
-    if (this.state === 'play' && !this.frozen && this.input.wasPressed('KeyE')) this.interact();
+    if (this.state === 'play' && !this.frozen && this.input.wasPressed('KeyF')) this.interact();
     // HUD
     $('bar-battery').style.width = (this.player.battery * 100) + '%';
     $('bar-stamina').style.width = (this.player.stamina * 100) + '%';
@@ -822,7 +882,7 @@ export class Game {
     const it = this.state === 'play' && !this.frozen ? this.player.findInteractable() : null;
     $('tb-act').classList.toggle('ready', !!it);
     const pr = $('prompt');
-    if (it) { const lab = typeof it.label === 'function' ? it.label() : it.label; pr.textContent = `[E] ${it.kind === 'door' && it.door.open ? 'Cerrar' : it.kind === 'door' ? 'Abrir' : ''} ${lab}`.replace('  ', ' '); pr.classList.remove('hidden'); }
+    if (it) { const lab = typeof it.label === 'function' ? it.label() : it.label; pr.textContent = `[F] ${it.kind === 'door' && it.door.open ? 'Cerrar' : it.kind === 'door' ? 'Abrir' : ''} ${lab}`.replace('  ', ' '); pr.classList.remove('hidden'); }
     else pr.classList.add('hidden');
     $('state-tag').textContent = (this.isHiding ? 'OCULTA EN CASILLERO · ' : this.player.crouch ? 'AGACHADA · ' : '') + (this.player.hasFlash && !this.player.flashOn ? 'LINTERNA APAGADA' : '');
     if (this.cctvDraw) this.cctvDraw(t);

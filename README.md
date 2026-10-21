@@ -53,8 +53,8 @@ A lo largo de 5 capítulos de tensión psicológica creciente, llamadas telefón
 |---|---|---|
 | **Moverse** | `W`, `A`, `S`, `D` o Flechas | Joystick analógico táctil (mitad izquierda) |
 | **Mirar / Girar** | Movimiento del ratón | Deslizar dedo (mitad derecha) |
-| **Interactuar / Esconderse** | Tecla `E` | Botón táctil `[ACTUAR]` (se ilumina en verde) |
-| **Linterna** | Tecla `F` (consume batería) | Botón táctil `[LINTERNA]` |
+| **Interactuar / Esconderse / Cerrar notas** | Tecla `F` | Botón táctil `[ACTUAR]` (se ilumina en verde) |
+| **Linterna** | Tecla `R` (consume batería) | Botón táctil `[LINTERNA]` |
 | **Agacharse / Sigilo** | Tecla `C` o `Ctrl Izquierdo` | Botón táctil `[AGACHADA]` |
 | **Correr (Sprint)** | `Shift Izquierdo` (consume aguante) | Empujar joystick virtual al extremo superior |
 | **Elegir opciones** | Teclas `1` y `2` o clic | Tocar directamente sobre la decisión |
@@ -216,7 +216,9 @@ The repository includes a ready `vercel.json` configuration for instant web host
 │   │   └── Flashback.js    # Reproductor cinemático VHS de flashbacks y archivos de 1984
 │   └── world/
 │       ├── Hospital.js     # Constructor de arquitectura, zócalos, colisiones e iluminación
-│       ├── Models.js       # Modelos 3D anatómicos, muebles clínicos, CRT, camillas y accesorios
+│       ├── Builder.js      # Constructor de geometría fusionada por material (biseles, tubos, revolución, curvas)
+│       ├── Materials.js    # Materiales PBR compartidos de todos los props
+│       ├── Models.js       # Modelos 3D: muebles clínicos, CRT, camillas, personajes, escaleras y accesorios
 │       └── Textures.js     # Texturas PBR procedimentales, cookie de linterna y rostros
 ```
 

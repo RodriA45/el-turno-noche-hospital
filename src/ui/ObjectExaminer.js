@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 
 // =============================================================================
 // VISOR DE INSPECCIÓN DE OBJETOS 3D ESTILO RESIDENT EVIL (OBJECT EXAMINER)
@@ -56,6 +57,14 @@ export class ObjectExaminer {
     // Luz ambiental suave
     this.ambientLight = new THREE.AmbientLight(0x182026, 1.2);
     this.scene.add(this.ambientLight);
+
+    // Reflejos de estudio para los metales (sin entorno, cromo y aluminio salen negros)
+    try {
+      const pm = new THREE.PMREMGenerator(this.renderer);
+      this.scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+      this.scene.environmentIntensity = 0.7;
+      pm.dispose();
+    } catch (e) { /* sin entorno: se ve con las luces directas */ }
 
     // Pivote donde se monta el objeto a inspeccionar
     this.pivot = new THREE.Group();
@@ -185,7 +194,17 @@ export class ObjectExaminer {
       // Montar nuevo modelo 3D detallado
       if (itemDef.model) {
         const mesh = typeof itemDef.model === 'function' ? itemDef.model() : itemDef.model.clone();
+        // Encuadre automático: centra el objeto y lo escala para que ocupe siempre el mismo espacio
         mesh.position.set(0, 0, 0);
+        mesh.updateMatrixWorld(true);
+        const box = new THREE.Box3().setFromObject(mesh);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z) || 1;
+        const k = 1.05 / maxDim;
+        mesh.scale.multiplyScalar(k);
+        mesh.position.copy(center).multiplyScalar(-k);
+        mesh.position.y += 0.12; // sube un poco para no quedar tapado por el panel de texto
         this.pivot.add(mesh);
         this.currentModel = mesh;
       }
@@ -210,9 +229,9 @@ export class ObjectExaminer {
 
       const keyHandler = (e) => {
         if (!this.active) return;
-        if (e.code === 'KeyE' || e.code === 'Escape' || e.code === 'Space') {
+        if (e.code === 'KeyF' || e.code === 'KeyE' || e.code === 'Escape' || e.code === 'Space') {
           finish();
-        } else if (e.code === 'KeyF') {
+        } else if (e.code === 'KeyV') {
           this.flip();
         }
       };

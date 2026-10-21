@@ -125,7 +125,7 @@ export const CHAPTERS = [
         y: 1.15,
         z: 6.0,
         range: 3.2,
-        label: 'Consola de Monitores CCTV [FNAF]',
+        label: 'Consola de monitores CCTV',
         async onUse(g) {
           if (cctvCompleted) {
             await g.say('El sistema de cámaras sufrió un colapso eléctrico total.', 'Clara', { thought: true });
@@ -195,7 +195,7 @@ export const CHAPTERS = [
               await g2.examineItem({
                 title: 'LINTERNA INDUSTRIAL',
                 sub: 'Modelo táctico pesado · Hospital San Anselmo',
-                desc: 'Una sólida linterna de patrulla fabricada en aluminio anodizado y óptica estriada. Pulsa [F] para encender el haz de luz durante la guardia.',
+                desc: 'Una sólida linterna de patrulla fabricada en aluminio anodizado y óptica estriada. Pulsa [R] para encender el haz de luz durante la guardia.',
                 model: createDetailedFlashlight
               });
               await g2.say(g2.input.isTouch ? '¡La encontré! Es metálica y pesada. Toca el botón de linterna para encenderla.' : '¡La encontré! Es metálica y pesada. Pulsa F para encenderla.', 'Clara', { thought: true });
@@ -214,25 +214,21 @@ export const CHAPTERS = [
           // Fantasma aparece al final del pasillo y avanza hacia recepción
           const ghost = game.ghost;
           ghost.appear(1, 16.0, 6.0, 'stand', false);
-          ghost.goTo(7.5, 6.0, 1.3);
+          ghost.goTo(7.5, 6.0, 1.6);
 
           game.objective(game.input.isTouch ? '¡VIENE HACIA AQUÍ! ¡ESCÓNDETE EN EL CASILLERO Y TOCA LA PANTALLA PARA CONTENER EL ALIENTO!' : '¡VIENE HACIA AQUÍ! ¡ESCÓNDETE EN EL CASILLERO CON [E] Y CONTÉN LA RESPIRACIÓN [ESPACIO]!');
           await game.say(game.input.isTouch ? '¡Viene arrastrando los pies hacia la recepción! ¡Tengo que meterme en el casillero YA y contener el aliento tocando la pantalla!' : '¡Viene arrastrando los pies hacia la recepción! ¡Tengo que meterme en el casillero YA y contener el aliento!', 'Clara', { thought: true });
 
-          // Período de acecho: evaluar si Clara se esconde y contiene la respiración
+          // Período de acecho: el fantasma tarda en llegar; solo cuenta cuando está a menos de 5 m del casillero.
+          let unheld = 0;
           let spotted = false;
+          const lockerX = (game.hospital.interactables.find(i => i.kind === 'hiding')?.x) ?? 25;
           const waitStart = performance.now();
-          while (performance.now() - waitStart < 6200) {
+          while (performance.now() - waitStart < 30000 && ghost.pos.x > lockerX - 2) {
             await game.sleep(0.25);
-            // Cuando el fantasma llega cerca de recepción y los casilleros (x < 11.5)
-            if (ghost.pos.x < 11.5 * 3) {
-              if (!game.isHiding) {
-                spotted = true;
-                break;
-              } else if (game.gaspCd > 0 || !game.holdingBreath) {
-                spotted = true;
-                break;
-              }
+            if (ghost.pos.x < lockerX + 5) {
+              if (!game.isHiding) { spotted = true; break; }
+              if (game.gaspCd > 0 || !game.holdingBreath) { unheld += 0.25; if (unheld > 0.6) { spotted = true; break; } }
             }
           }
 
@@ -313,6 +309,7 @@ export const CHAPTERS = [
 
       await game.title('CAPÍTULO 2', 'LA PRESENCIA', 'Hospital San Anselmo · 02:30 AM');
       await game.fade(0, 1.2);
+      game.cine(false); // el jugador puede moverse desde el inicio del capítulo
 
       await game.say('Las noches siguientes comenzaron a volverse una pesadilla despierta...', 'Clara', { thought: true });
       await game.say('Cada madrugada se escuchan pasos pesados arrastrándose por los pasillos vacíos de arriba.', 'Clara', { thought: true });
@@ -520,6 +517,7 @@ export const CHAPTERS = [
 
       await game.title('CAPÍTULO 3', 'LOS EXPEDIENTES', 'Hospital San Anselmo · 03:10 AM');
       await game.fade(0, 1.2);
+      game.cine(false); // el jugador puede moverse desde el inicio del capítulo
 
       await game.say('Al tomar la guardia encontré algo brillante asomándose bajo el teclado...', 'Clara', { thought: true });
 
@@ -645,7 +643,7 @@ export const CHAPTERS = [
             g.shakeCam(0.65);
             await g.say('¡Se apagaron las luces del archivo! Y... se escuchan pasos arrastrándose afuera en el pasillo...', 'Clara', { thought: true });
 
-            g.objective('¡APAGA LA LINTERNA [F] Y AGÁCHATE [C]! Una silueta acecha frente al vidrio del archivo');
+            g.objective('¡APAGA LA LINTERNA [R] Y AGÁCHATE [C]! Una silueta acecha frente al vidrio del archivo');
 
             // Fantasma camina lentamente por el pasillo frente a la puerta de vidrio del archivo (x: 16, z: 6)
             const shadow = g.ghost;
@@ -734,7 +732,8 @@ export const CHAPTERS = [
         }
       });
 
-      await game.waitUse('desk_keys');
+      // El capítulo termina dentro del archivador (g.finish): no dar por concluido al recoger la llave
+      await game.until(() => game.state === 'end');
     }
   },
 
@@ -754,9 +753,10 @@ export const CHAPTERS = [
 
       await game.title('CAPÍTULO 4', 'EL ÚLTIMO PISO', 'Hospital San Anselmo · 03:00 AM');
       await game.fade(0, 1.2);
+      game.cine(false); // el jugador puede moverse desde el inicio del capítulo
 
       await game.say('Al entrar a la guardia el monitor de la Cámara 4 estaba encendido...', 'Clara', { thought: true });
-      game.objective('Observa la cámara CAM 05 del piso 4 en el monitor y baja el monitor con [E]');
+      game.objective('Observa la cámara CAM 05 del piso 4 en el monitor y baja el monitor con [F]');
 
       // Interacción con CCTV mostrando el graffiti del felpón en CAM 05
       game.cctvState = { cam4On: true, cam4Writing: true };
@@ -938,6 +938,7 @@ export const CHAPTERS = [
 
       await game.title('CAPÍTULO 5', 'EL FINAL', 'Hospital San Anselmo · 03:33 AM');
       await game.fade(0, 1.2);
+      game.cine(false); // el jugador puede moverse desde el inicio del capítulo
 
       await game.say('Ya no puedo distinguir qué es real y qué es una pesadilla de la vigilia...', 'Clara', { thought: true });
 
@@ -974,7 +975,7 @@ export const CHAPTERS = [
           await g.examineItem({
             title: 'FOTOGRAFÍA POLAROID (1984)',
             sub: 'Evidencia Forense Nº 84 · Gemelos Valenzuela',
-            desc: 'Una fotografía de época de los dos hermanos en la habitación 401. Pulsa [F] para voltearla o rota con el ratón en 360° para leer la macabra inscripción al dorso.',
+            desc: 'Una fotografía de época de los dos hermanos en la habitación 401. Pulsa [V] para voltearla o rota con el ratón en 360° para leer la macabra inscripción al dorso.',
             model: createDetailedPolaroid
           });
           await g.note(

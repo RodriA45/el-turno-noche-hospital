@@ -63,8 +63,8 @@ export function flashlightCookie() {
 
     // Hotspot central con transición suave (evita quemados especulares en suelo)
     const hotGrad = g.createRadialGradient(cx, cy, 0, cx, cy, w * 0.32);
-    hotGrad.addColorStop(0, 'rgba(255, 252, 235, 0.75)');
-    hotGrad.addColorStop(0.25, 'rgba(255, 248, 225, 0.50)');
+    hotGrad.addColorStop(0, 'rgba(255, 252, 235, 0.55)');
+    hotGrad.addColorStop(0.25, 'rgba(255, 248, 225, 0.38)');
     hotGrad.addColorStop(0.6, 'rgba(240, 235, 210, 0.18)');
     hotGrad.addColorStop(1, 'rgba(200, 200, 190, 0)');
     g.fillStyle = hotGrad;
@@ -163,7 +163,7 @@ export function wallMaps() {
     for (let y = y0; y <= h; y += 32) g.fillRect(0, y - 1, w, 2);
     g.fillStyle = '#b0b0b0';
     g.fillRect(0, y0 - 4, w, 4);
-    grain(g, w, h, 35);
+    grain(g, w, h, 10);
   }, 1, 1, false);
 
   return { map, bump };
@@ -769,3 +769,96 @@ export function crtScreenTexture() {
   });
 }
 
+
+// =============================================================================
+// Texturas añadidas para los props reconstruidos con Builder (uso por metro)
+// =============================================================================
+
+/** Madera barnizada con vetas y poros */
+export function woodTexture(dark = '#4a3020', light = '#6e4a2c') {
+  return paint(256, 256, (g, w, h) => {
+    g.fillStyle = dark; g.fillRect(0, 0, w, h);
+    for (let y = 0; y < h; y += 2) {
+      const t = 0.5 + 0.5 * Math.sin(y * 0.21 + Math.sin(y * 0.047) * 3.1);
+      g.fillStyle = light; g.globalAlpha = 0.10 + t * 0.34;
+      g.fillRect(0, y, w, 2);
+    }
+    g.globalAlpha = 1;
+    for (let i = 0; i < 26; i++) {
+      g.strokeStyle = `rgba(20,10,4,${0.10 + Math.random() * 0.14})`; g.lineWidth = 0.6 + Math.random();
+      const y = Math.random() * h; g.beginPath(); g.moveTo(0, y);
+      for (let x = 0; x <= w; x += 32) g.lineTo(x, y + Math.sin(x * 0.04 + i) * 3);
+      g.stroke();
+    }
+    grain(g, w, h, 16);
+  });
+}
+
+/** Sábana de hospital: tejido fino, con manchas si está sucia */
+export function sheetTexture(dirty = false) {
+  return paint(256, 256, (g, w, h) => {
+    g.fillStyle = dirty ? '#bdb392' : '#d6d2c4'; g.fillRect(0, 0, w, h);
+    g.globalAlpha = 0.12; g.fillStyle = '#000';
+    for (let y = 0; y < h; y += 3) g.fillRect(0, y, w, 1);
+    for (let x = 0; x < w; x += 3) g.fillRect(x, 0, 1, h);
+    g.globalAlpha = 1;
+    for (let i = 0; i < 7; i++) {
+      const x = Math.random() * w, y = Math.random() * h, r = 30 + Math.random() * 60;
+      const gr = g.createRadialGradient(x, y, 0, x, y, r);
+      gr.addColorStop(0, dirty ? 'rgba(90,60,25,0.26)' : 'rgba(255,255,255,0.12)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    }
+    if (dirty) stains(g, w, h, 3, 40, '70,10,10', 0.22);
+    grain(g, w, h, 10);
+  });
+}
+
+/** Colchón de vinilo azul grisáceo con costuras */
+export function mattressTexture() {
+  return paint(256, 256, (g, w, h) => {
+    g.fillStyle = '#5d7480'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = 'rgba(15,25,30,0.5)'; g.lineWidth = 2;
+    for (let x = 0; x <= w; x += 64) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
+    for (let y = 0; y <= h; y += 64) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
+    stains(g, w, h, 4, 50, '20,20,10', 0.18);
+    grain(g, w, h, 12);
+  });
+}
+
+/** Acero cepillado: estrías horizontales finas */
+export function brushedMetalTexture() {
+  return paint(256, 256, (g, w, h) => {
+    g.fillStyle = '#b9bec3'; g.fillRect(0, 0, w, h);
+    for (let y = 0; y < h; y++) {
+      g.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.12)';
+      g.fillRect(0, y, w, 1);
+    }
+    grain(g, w, h, 10);
+  });
+}
+
+/** Vidrio armado de puerta: malla de alambre sobre vidrio verdoso */
+export function wiredGlassTexture() {
+  return paint(128, 128, (g, w, h) => {
+    g.fillStyle = '#9fb7ae'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = 'rgba(40,50,48,0.8)'; g.lineWidth = 1.2;
+    for (let i = -h; i < w + h; i += 16) {
+      g.beginPath(); g.moveTo(i, 0); g.lineTo(i + h, h); g.stroke();
+      g.beginPath(); g.moveTo(i + h, 0); g.lineTo(i, h); g.stroke();
+    }
+    grain(g, w, h, 12);
+  });
+}
+
+/** Abismo con escalones que se hunden en la oscuridad (v crece hacia -Z) */
+export function stairAbyssTexture() {
+  return paint(64, 256, (g, w, h) => {
+    g.fillStyle = '#0c0d0e'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 10; i++) {
+      const y = (i / 10) * h, k = 1 - i / 10;
+      g.fillStyle = `rgba(90,88,80,${0.35 * k * k})`; g.fillRect(0, y, w, 6);
+      g.fillStyle = `rgba(0,0,0,${0.15 + (i / 10) * 0.8})`; g.fillRect(0, y + 6, w, h / 10 - 6);
+    }
+    g.fillStyle = 'rgba(0,0,0,0.85)'; g.fillRect(0, h * 0.7, w, h * 0.3);
+  });
+}

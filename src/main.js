@@ -20,7 +20,7 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setPixelRatio(pixelRatio);
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = isMobile ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.15;
 
@@ -103,5 +103,6 @@ function frame() {
 }
 
 window.__game = game;
+window.__THREE = THREE;
 
 frame();

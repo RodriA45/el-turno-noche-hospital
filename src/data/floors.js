@@ -158,7 +158,7 @@ function buildInpatientFloor(n = 2) {
   f.deco('iv', 7.8, 5.68, 0);
   f.deco('wheelchair', 10.4, 6.32, 40);
   f.deco('locker', 16.5, 5.68, 0, { hiding: true });
-  f.deco('locker', 17.5, 5.68, 0, { hiding: true });
+  f.deco('locker', 17.3, 5.68, 0, { hiding: true });
   f.deco('fireExtinguisher', 4.5, 5.52, 0);
   f.deco('fireExtinguisher', 20.5, 5.52, 0);
   f.deco('bench', 18.2, 6.32, 180);
@@ -255,7 +255,7 @@ function buildSurgicalFloor() {
 
   f.carve(13, 8, 15, 11); f.door(14, 7, { label: 'Suministros Estériles' });
   f.deco('shelf', 14.0, 11.38, 180);
-  f.deco('shelf', 14.0, 7.62, 0);
+  f.deco('shelf', 13.0, 7.62, 0);
   f.deco('crate', 14.8, 9.5, 30);
 
   // 311: Sala de Autopsias / Morgue Clínica (Escenario de terror de los flashbacks)
@@ -269,14 +269,14 @@ function buildSurgicalFloor() {
   // 312: Depósito de reactivos y muestras biológicas
   f.carve(21, 8, 23, 11); f.door(22, 7, { label: 'Depósito Biológico' });
   f.deco('cabinet', 22.0, 11.38, 180);
-  f.deco('shelf', 22.0, 7.62, 0);
+  f.deco('shelf', 21.1, 7.62, 0);
   f.deco('trash', 22.8, 9.5, 0);
 
   // Pasillo del Piso 3 (Pared norte z = 5.5, sur z = 6.5)
   f.deco('gurney', 5.5, 5.68, 90);
   f.deco('wheelchair', 8.5, 6.32, 25);
   f.deco('locker', 16.5, 5.68, 0, { hiding: true });
-  f.deco('locker', 17.5, 5.68, 0, { hiding: true });
+  f.deco('locker', 17.3, 5.68, 0, { hiding: true });
   f.deco('waterDispenser', 12.0, 6.32, 180);
   f.deco('fireExtinguisher', 7.5, 5.52, 0);
   f.deco('fireExtinguisher', 19.5, 5.52, 0);
@@ -290,7 +290,7 @@ function buildSurgicalFloor() {
 }
 
 // =========================================================================
-// PISO 4: ÁREA RESTattributeNGIDA Y CLAUSURADA TRAS LA TRAGEDIA DE 1984
+// PISO 4: ÁREA RESTRINGIDA Y CLAUSURADA TRAS LA TRAGEDIA DE 1984
 // =========================================================================
 function buildForbiddenFloor() {
   const f = new FB(27, 13);
@@ -311,7 +311,7 @@ function buildForbiddenFloor() {
     f.deco('cabinet', a + 0.4, 0.62, 0);
     f.deco('wheelchair', a + 1.8, 11.2, 30 + i * 40);
     if (i === 1) f.deco('crate', b - 0.38, 8.8, 20);
-    if (i === 2) f.deco('locker', a + 1.2, 4.38, 0, { hiding: true });
+    if (i === 2) f.deco('locker', a + 1.7, 4.38, 0, { hiding: true });
     if (i === 3) f.deco('cardiacMonitor', a + 0.6, 9.5, 75);
   });
 
@@ -347,7 +347,7 @@ function buildForbiddenFloor() {
 // =========================================================================
 // ENTRADA PRINCIPAL: CONSTRUCTOR DE PISOS 1 A 4
 // =========================================================================
-export function buildFloor(n) {
+function buildFloorRaw(n) {
   if (n === 1) {
     const f = new FB(27, 13);
     f.name = 'Planta baja';
@@ -487,4 +487,52 @@ export function buildFloor(n) {
   if (n === 3) return buildSurgicalFloor();
   if (n === 4) return buildForbiddenFloor();
   return buildInpatientFloor(n);
+}
+
+// =========================================================================
+// NORMALIZACIÓN DE DECORADO: muebles de pared siempre con la espalda contra la
+// pared más cercana (frente hacia la habitación) y a ras, sin flotar ni
+// atravesar el muro. Corrige rotaciones invertidas y separaciones del mapa.
+// =========================================================================
+const WALL_HALF_DEPTH = {
+  cabinet: 0.31, locker: 0.28, shelf: 0.27, sink: 0.27, xrayViewer: 0.055,
+  fireExtinguisher: 0.05, vending: 0.425, waterDispenser: 0.17,
+};
+// rot (grados) con la espalda hacia: [dx, dz] -> rot
+const BACK_ROT = [[0, -1, 0], [0, 1, 180], [-1, 0, 90], [1, 0, 270]];
+
+function normalizeDecor(f) {
+  const map = f.map();
+  const isWall = (x, z) => {
+    const cx = Math.round(x / S), cz = Math.round(z / S);
+    if (cz < 0 || cx < 0 || cz >= map.length || cx >= map[0].length) return true;
+    return map[cz][cx] === '#';
+  };
+  for (const d of f.decor) {
+    const half = WALL_HALF_DEPTH[d.type];
+    if (half === undefined) continue;
+    const maxGap = d.type === 'sink' ? 4.2 : 2.8;
+    const px = d.x * S, pz = d.z * S;
+    let best = null;
+    for (const [bx, bz, rot] of BACK_ROT) {
+      for (let t = 0; t < 3.2; t += 0.01) {
+        if (isWall(px + bx * t, pz + bz * t)) {
+          if (!best || t < best.t) best = { t, bx, bz, rot };
+          break;
+        }
+      }
+    }
+    if (!best) continue;
+    const gap = best.t - half;
+    if (gap > maxGap || gap < -0.25) continue;      // objeto exento (a propósito en el medio de la sala)
+    d.rot = best.rot;
+    const shift = gap - 0.03;
+    d.x = (px + best.bx * shift) / S;
+    d.z = (pz + best.bz * shift) / S;
+  }
+  return f;
+}
+
+export function buildFloor(n) {
+  return normalizeDecor(buildFloorRaw(n));
 }

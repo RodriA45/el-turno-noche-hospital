@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { S, WALL_H, buildFloor } from '../data/floors.js';
 import { wallMaps, floorMaps, ceilingMap, doorMap, signTexture } from './Textures.js';
 import { MODELS, FOOT, doorLeaf, stairsModel } from './Models.js';
@@ -15,6 +16,24 @@ export class Hospital {
     const wm = wallMaps();
     this.wallMat.map = wm.map;
     this.wallMat.bumpMap = wm.bump;
+    // UV en coordenadas de mundo: la textura de pared es continua entre celdas (sin costuras ni reinicios del zócalo)
+    this.wallMat.onBeforeCompile = (shader) => {
+      shader.vertexShader = shader.vertexShader.replace('#include <uv_vertex>', `#include <uv_vertex>
+        #ifdef USE_INSTANCING
+          vec4 wpw = modelMatrix * instanceMatrix * vec4(position, 1.0);
+        #else
+          vec4 wpw = modelMatrix * vec4(position, 1.0);
+        #endif
+        vec2 wuv = abs(normal.x) > 0.5 ? vec2(wpw.z, wpw.y) : vec2(wpw.x, wpw.y);
+        wuv = vec2(wuv.x / ${S.toFixed(1)}, wuv.y / ${WALL_H.toFixed(2)});
+        #ifdef USE_MAP
+          vMapUv = wuv;
+        #endif
+        #ifdef USE_BUMPMAP
+          vBumpMapUv = wuv;
+        #endif
+      `);
+    };
 
     this.doorMat = new THREE.MeshStandardMaterial({ map: doorMap(), roughness: 0.72 });
     this.exitMat = new THREE.MeshStandardMaterial({ color: 0x421310, roughness: 0.5, metalness: 0.25 });
@@ -115,15 +134,20 @@ export class Hospital {
       }
     }
 
-    // Paredes principales
-    const walls = new THREE.InstancedMesh(new THREE.BoxGeometry(S, WALL_H, S), this.wallMat, wallCells.length);
-    const mt = new THREE.Matrix4();
-    wallCells.forEach(([x, z], i) => {
-      mt.setPosition(x * S, WALL_H / 2, z * S);
-      walls.setMatrixAt(i, mt);
+    // Paredes principales: una única malla fusionada (watertight). Con InstancedMesh aparecían
+    // fisuras de 1px entre celdas por redondeo de float, visibles al iluminarlas con la linterna.
+    const wallGeos = wallCells.map(([x, z]) => {
+      const bg = new THREE.BoxGeometry(S, WALL_H, S);
+      bg.translate(x * S, WALL_H / 2, z * S);
+      return bg;
     });
-    walls.castShadow = walls.receiveShadow = true;
-    g.add(walls);
+    if (wallGeos.length) {
+      const merged = mergeGeometries(wallGeos, false);
+      wallGeos.forEach(bg => bg.dispose());
+      const walls = new THREE.Mesh(merged, this.wallMat);
+      walls.castShadow = walls.receiveShadow = true;
+      g.add(walls);
+    }
 
     // Detalles arquitectónicos: zócalos y guardacamillas
     this.addWallTrims(g, wallCells, map);
@@ -214,7 +238,8 @@ export class Hospital {
     const spanX = this.isWall(x - 1, z) && this.isWall(x + 1, z);
     const isExit = !!info.exit;
     // Altura arquitectónica estándar de puerta de hospital (2.4m)
-    const dh = 2.4, dw = S - 0.2;
+    // Puerta de hospital real (hoja de ~1.3 m) dentro de la celda de 3 m: el resto se cierra con paños de pared
+    const dh = 2.4, dw = isExit ? 1.6 : 1.3;
     const leaf = doorLeaf(isExit ? this.exitMat : this.doorMat, dw, dh, 0.08, isExit);
     const pivot = new THREE.Group();
     pivot.add(leaf);
@@ -228,6 +253,20 @@ export class Hospital {
       pivot.rotation.y = 0;
     }
     g.add(pivot);
+
+    // Paños de pared a ambos lados de la hoja (visual + colisión), así la puerta ya no se ve estirada ni de 3 m
+    const fillW = (S - dw) / 2;
+    for (const sgn of [-1, 1]) {
+      const fx = spanX ? x * S + sgn * (dw / 2 + fillW / 2) : x * S;
+      const fz = spanX ? z * S : z * S + sgn * (dw / 2 + fillW / 2);
+      const fill = new THREE.Mesh(new THREE.BoxGeometry(spanX ? fillW : S, WALL_H, spanX ? S : fillW), this.wallMat);
+      fill.position.set(fx, WALL_H / 2, fz);
+      fill.castShadow = fill.receiveShadow = true;
+      g.add(fill);
+      this.colliders.push(spanX
+        ? { x1: fx - fillW / 2, x2: fx + fillW / 2, z1: z * S - S / 2, z2: z * S + S / 2 }
+        : { x1: x * S - S / 2, x2: x * S + S / 2, z1: fz - fillW / 2, z2: fz + fillW / 2 });
+    }
 
     // Dintel superior de pared institucional con la misma textura que los muros circundantes
     const lintelH = WALL_H - dh;
@@ -334,6 +373,7 @@ export class Hospital {
         range: 2.3,
         label: 'Esconderse en el casillero',
         spot: d,
+        decor: m,
       });
     }
 
@@ -387,17 +427,45 @@ export class Hospital {
     this.lights.push({ light, tube, base: L.intensity, color: new THREE.Color(L.color), unstable: !!L.unstable, seed: Math.random() * 100 });
   }
 
+  /**
+   * Altura a la que debe apoyarse un objeto recogible en (x, z): busca hacia abajo la superficie
+   * horizontal más cercana (mesa, estante, suelo). Sin esto, las notas/pilas/llaves colocadas
+   * a una altura fija quedaban hundidas dentro de la encimera del mostrador.
+   */
+  surfaceY(x, y, z, self, hover) {
+    if (!this.group) return y;
+    this.group.updateMatrixWorld(true);
+    const ray = new THREE.Raycaster(new THREE.Vector3(x, y + 0.7, z), new THREE.Vector3(0, -1, 0), 0, 3);
+    const hits = ray.intersectObject(this.group, true);
+    const nrm = new THREE.Vector3();
+    for (const h of hits) {
+      const o = h.object;
+      if (!o.isMesh || !h.face) continue;
+      let p = o, mine = false;
+      while (p) { if (p === self) { mine = true; break; } p = p.parent; }
+      if (mine) continue;
+      const m = o.material;
+      if (m && !Array.isArray(m) && m.transparent && m.opacity < 0.9) continue;
+      nrm.copy(h.face.normal).transformDirection(o.matrixWorld);
+      if (nrm.y < 0.6) continue;
+      return Math.max(y, h.point.y + (hover ? 0.12 : 0.012));
+    }
+    return y;
+  }
+
   /** Añade un objeto interactivo dinámico (mesh opcional). */
   add(e) {
     let mesh = null;
+    let y = e.y ?? 1.0;
     if (e.model) {
       mesh = typeof e.model === 'function' ? e.model() : e.model.clone();
-      mesh.position.set(e.x * S, e.y ?? 1.0, e.z * S);
+      y = this.surfaceY(e.x * S, y, e.z * S, mesh, !!e.spin);
+      mesh.position.set(e.x * S, y, e.z * S);
       if (e.rotY) mesh.rotation.y = e.rotY;
       mesh.traverse(o => { if (o.isMesh) { o.castShadow = true; } });
       this.group.add(mesh);
     }
-    const it = { range: 2.4, ...e, x: e.x * S, z: e.z * S, mesh, baseY: e.y ?? 1.0, seed: Math.random() * 10 };
+    const it = { range: 2.4, ...e, x: e.x * S, z: e.z * S, mesh, baseY: y, seed: Math.random() * 10 };
     this.interactables.push(it);
     return it;
   }

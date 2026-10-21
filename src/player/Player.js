@@ -52,11 +52,12 @@ export class Player {
 
     // Linterna principal con haz óptico (cookie con anillos de difracción Fresnel y hotspot orgánico)
     const cookie = flashlightCookie();
-    const spot = new THREE.SpotLight(0xfff2dc, 48, 34, Math.PI / 3.8, 0.85, 1.35);
+    const spot = new THREE.SpotLight(0xfff2dc, 30, 34, Math.PI / 3.8, 0.85, 1.35);
     spot.map = cookie;
     spot.castShadow = true;
     spot.shadow.mapSize.set(1024, 1024);
-    spot.shadow.bias = -0.0005;
+    spot.shadow.bias = -0.0004;
+    spot.shadow.normalBias = 0.04;
     spot.shadow.camera.near = 0.2;
     spot.position.set(0.18, -0.16, 0.05);
     spot.target.position.set(0, -0.05, -6);
@@ -64,7 +65,7 @@ export class Player {
     spot.target.userData.isPlayerAttachment = true;
     camera.add(spot, spot.target);
     this.spot = spot;
-    this.baseIntensity = 48;
+    this.baseIntensity = 30;
 
     // Luz difusa de rebote en el suelo y paredes cercanas (bounce light)
     const bounce = new THREE.PointLight(0xffeedd, 0, 4.5, 2.0);
@@ -104,7 +105,7 @@ export class Player {
 
     const dustMat = new THREE.PointsMaterial({
       map: dustTex,
-      size: 0.08,
+      size: 0.03,
       transparent: true,
       opacity: 0,
       blending: THREE.AdditiveBlending,
@@ -388,7 +389,7 @@ export class Player {
     }
 
     if (!frozen && (inp.wasPressed('KeyC') || inp.wasPressed('ControlLeft'))) this.crouch = !this.crouch;
-    if (!frozen && inp.wasPressed('KeyF') && this.hasFlash && this.battery > 0) {
+    if (!frozen && inp.wasPressed('KeyR') && this.hasFlash && this.battery > 0) {
       this.flashOn = !this.flashOn;
       this.onFlashToggle?.();
     }
@@ -433,7 +434,7 @@ export class Player {
     let wantLean = 0;
     if (!frozen) {
       if (inp.down('KeyQ') || inp.down('LeanLeft')) wantLean -= 1.0;
-      if ((inp.down('KeyE') || inp.down('LeanRight')) && (!this.currentInteractable || inp.down('LeanRight'))) wantLean += 1.0;
+      if (inp.down('KeyE') || inp.down('LeanRight')) wantLean += 1.0;
     }
     this.targetLean = wantLean;
     this.lean += (this.targetLean - this.lean) * Math.min(1, dt * 14);
@@ -520,7 +521,7 @@ export class Player {
     }
     this.spot.intensity = this.baseIntensity * k;
     this.spot.castShadow = this.flashOn;
-    this.bounceLight.intensity = this.flashOn ? 3.0 * k : 0;
+    this.bounceLight.intensity = this.flashOn ? 0.7 * k : 0;
 
     // Actualizar motas de polvo volumétrico en el cono de luz
     const targetDustOpacity = (this.flashOn && k > 0.05) ? 0.38 * k : 0;
